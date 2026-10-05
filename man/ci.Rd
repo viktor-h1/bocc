@@ -3,11 +3,12 @@
 \name{ci}
 \alias{ci}
 \alias{ci_mean}
+\alias{est_mean}
 \alias{ci_paired}
 \alias{ci_2means}
 \alias{ci_prop}
 \alias{ci_2props}
-\title{Confidence intervals}
+\title{Point estimates and confidence intervals}
 \usage{
 ci_mean(
   x = NULL,
@@ -16,7 +17,20 @@ ci_mean(
   xbar = NULL,
   s = NULL,
   n = NULL,
-  sigma = NULL
+  sigma = NULL,
+  sum_x = NULL,
+  sum_x2 = NULL
+)
+
+est_mean(
+  x = NULL,
+  xbar = NULL,
+  s = NULL,
+  n = NULL,
+  sigma = NULL,
+  sum_x = NULL,
+  sum_x2 = NULL,
+  se_target = NULL
 )
 
 ci_paired(
@@ -32,7 +46,8 @@ ci_paired(
   s1 = NULL,
   s2 = NULL,
   cov = NULL,
-  r = NULL
+  r = NULL,
+  sigma_d = NULL
 )
 
 ci_2means(
@@ -90,6 +105,12 @@ Student t) or \code{"z"} (large sample, normal approximation).}
 \item{xbar, s, n, sigma}{Summary numbers for one mean (sigma = known
 population SD).}
 
+\item{sum_x, sum_x2}{Sum of the observations and sum of their squares
+(with \code{n}), when the question gives these instead of xbar and s.}
+
+\item{se_target}{\code{est_mean()}: target standard error; prints the sample
+size needed, n >= (sigma / SE*)^2.}
+
 \item{y}{Second sample (paired: second measurement, D = x - y;
 two-sample: the second group).}
 
@@ -97,6 +118,8 @@ two-sample: the second group).}
 
 \item{mean1, mean2, s1, s2, cov, r}{Paired summary numbers when only the two
 means/SDs and their covariance or correlation are given.}
+
+\item{sigma_d}{Known standard deviation of the paired differences.}
 
 \item{case}{Two independent means: \code{"pooled"} (variances unknown but
 assumed equal), \code{"welch"} (unknown, not assumed equal), \code{"large"}
@@ -115,25 +138,34 @@ e.g. \verb{group = df$loyalty, levels = c("High", "Medium")}.}
 \item{count1, count2, phat1, phat2}{Two-sample successes / proportions.}
 }
 \value{
-An \code{sc_result} with \code{estimate}, \code{se}, \code{critical}, \code{margin}, \code{ci}.
+An \code{sc_result} with \code{estimate}, \code{se}, \code{critical}, \code{margin}, \code{ci}
+(and \code{ci_z}, \code{ci_t} or \code{intervals} when several intervals are shown).
 }
 \description{
-One function per interval. Each accepts raw data (any vector or R
-expression) or the summary numbers from the question, and prints the
-point estimate, standard error, critical value, margin of error, the
-interval and exam wording.
+One function per parameter (book chapter 6). Each accepts raw data (any
+vector or R expression) or the summary numbers from the question, and
+prints a table like the course package UBStats (Normal.Approx and
+Student-t rows when the variance is unknown), the point estimate, the
+standard error, the reliability factor, the margin of error, the
+interval, exam wording and the matching UBStats call.
 }
 \details{
 \itemize{
-\item \code{ci_mean()}    one mean (sigma known -> Z; unknown -> t, or Z for large samples).
-\item \code{ci_paired()}  mean of paired differences D = x - y.
-\item \code{ci_2means()}  difference of two independent means (\code{case} as in \code{\link[=test_2means]{test_2means()}}).
+\item \code{est_mean()}   point estimate of a mean and its standard error
+(sigma / sqrt(n) known, s / sqrt(n) estimated); see \code{\link[=desc_prop]{desc_prop()}} for a proportion.
+\item \code{ci_mean()}    one mean (sigma known -> Z; unknown -> both z and t shown,
+\code{method} chooses the one explained step by step).
+\item \code{ci_paired()}  mean of paired differences D = x - y (sigma_D known -> Z).
+\item \code{ci_2means()}  difference of two independent means. Without \code{case}, the
+four intervals of the book / UBStats (variances equal or different x
+Normal or t); with \code{case} the chosen one is explained step by step.
 \item \code{ci_prop()}    one proportion (SE uses p-hat).
 \item \code{ci_2props()}  difference of two proportions (unpooled SE).
 }
 }
 \examples{
-ci_mean(xbar = 52.3, s = 6.1, n = 40, conf = 0.95)
-ci_prop(count = 120, n = 400, conf = 90)
-ci_2means(xbar1 = 50, s1 = 8, n1 = 35, xbar2 = 46, s2 = 9, n2 = 30, case = "welch")
+ci_mean(xbar = 82, sigma = 20, n = 64, conf = 0.95)
+ci_mean(sum_x = 2755, sum_x2 = 585203, n = 15)
+ci_prop(count = 120, n = 2000, conf = 90)
+ci_2means(xbar1 = 1120, s1 = 310, n1 = 85, xbar2 = 970, s2 = 280, n2 = 100)
 }

@@ -1,4 +1,4 @@
-# statcram 0.8.4
+# statcram 0.8.5
 
 An offline statistics exam toolkit for R / RStudio. One numbered menu, plus plain functions
 with consistent names. Every procedure works with **raw data** (including data frames and
@@ -12,7 +12,7 @@ Pure R, no compilation, no internet needed after installing.
 
 ```r
 # from the built file
-install.packages("statcram_0.8.4.tar.gz", repos = NULL, type = "source")
+install.packages("statcram_0.8.5.tar.gz", repos = NULL, type = "source")
 # or from GitHub
 remotes::install_github("viktor-h1/bocc", ref = "claude/quirky-gates-9i7hvr")
 
@@ -47,9 +47,9 @@ table from paper first.
 |---|---|---|
 | 1 | Describe data | `desc_freq` `desc_classes` `desc_summary` `desc_compare` `desc_cv` `desc_prop` `desc_crosstab` `desc_cor` |
 | 2 | Probability & random variables | `prob_events` `prob_bayes` `rv_discrete` `prob_binom` `prob_unif` `prob_normal` `prob_t` `prob_chisq` `rv_lincomb` `rv_joint` `rv_iid` `rv_prop` |
-| 3 | Confidence intervals | `ci_mean` `ci_prop` `ci_paired` `ci_2means` `ci_2props` |
+| 3 | Estimation and confidence intervals | `ci_mean` `ci_prop` `ci_paired` `ci_2means` `ci_2props` `est_mean` |
 | 4 | Hypothesis tests | `test_mean` `test_prop` `test_paired` `test_2means` `test_2props` |
-| 5 | Power / Type II error / sample size | `power_mean` `power_prop` `n_mean` `n_prop` |
+| 5 | Power / Type II error / sample size | `power_mean` `power_prop` `n_mean` `n_prop` `n_2props` |
 | 6 | Chi-square | `chisq_gof` `chisq_indep` |
 | 7 | Regression | `reg_fit` `reg_predict` `reg_test` `reg_check` `reg_compare` |
 | 8 | Enter a table from paper / data tools | `sc_table` `sc_data` `sc_recipes` |
@@ -105,16 +105,28 @@ q_alpha = x_(1-alpha), central intervals; `var =` accepted), `rv_lincomb()` (any
 with correlations), `rv_joint()` (marginals, conditionals, covariance, independence) and `rv_iid()`
 (sums and means, CLT, quantiles).
 
+Estimation follows chapter 6. `est_mean()` gives xbar, its standard error (sigma / sqrt(n) or
+s / sqrt(n)) and the n needed for a target SE. With sigma unknown, `ci_mean()` and `ci_paired()`
+print both rows of the UBStats output (Normal.Approx and Student-t). Without `case`, `ci_2means()`
+prints all four intervals: variances assumed equal (s^2_pool, n_x + n_y - 2 df) or different
+(Welch-Satterthwaite df), each with z and t. `ci_mean(sum_x =, sum_x2 =, n =)` works from the sums
+in the question, and `ci_paired(sigma_d =)` from a known sigma_D. `n_mean()` / `n_prop()` take
+`width =` (= 2 x margin) and, for sigma unknown, `s =` (approximate). `n_2props()` gives the n per
+group for p_x - p_y. Each interval also prints the matching UBStats call, e.g.
+`CI.diffmean(x = df$spend, by = df$loyalty, conf.level = 0.95)`.
+
 Classes are `[a, b)` with the last one closed, densities are c_k = p_k / w_k, histograms use
 densities, and proportions inside a class are approximated assuming values are spread uniformly
 (Freq(X <= 250) = Freq(X < 200) + c_k x 50). Columns holding interval labels such as `"[0,50)"` are
 recognised and sorted by their limits, not alphabetically.
 
 `alt` takes `"<"`, `">"`, `"!="` (or less / greater / two.sided). `alpha` and `conf` take
-`0.05` or `5`, `0.95` or `95`. Two independent means require `case =` `"pooled"`, `"welch"`,
-`"large"` or `"known"`: the package never guesses an assumption the question did not state.
+`0.05` or `5`, `0.95` or `95`. The two-means test requires `case =` `"pooled"`, `"welch"`,
+`"large"` or `"known"`: the package never guesses an assumption the question did not state (the CI
+shows all four intervals instead).
 Turn parts of the output off with `options(statcram.plot = FALSE)`,
-`options(statcram.wording = FALSE)`; change decimals with `options(statcram.digits = 6)`.
+`options(statcram.wording = FALSE)`, `options(statcram.ubstats = FALSE)`; change decimals with
+`options(statcram.digits = 6)`.
 
 ## Tables printed on paper: `sc_table()`
 

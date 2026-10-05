@@ -166,3 +166,33 @@
   vals <- list(...)
   if (any(vapply(vals, is.null, logical(1)))) stop(msg, call. = FALSE)
 }
+
+# ---------- UBStats equivalents (course package) ----------
+
+.ub_raw_note <- "UBStats functions need the raw data: with summary numbers, use the formulas above."
+
+# Build "FUN(arg = value, ...)" from language objects / constants, dropping NULLs.
+.ub_call <- function(fn, ...) {
+  args <- list(...)
+  args <- args[!vapply(args, is.null, logical(1))]
+  if (!length(args)) return(paste0(fn, "()"))
+  txt <- vapply(names(args), function(nm) {
+    v <- args[[nm]]
+    val <- if (is.language(v)) paste(deparse(v, width.cutoff = 500L), collapse = " ")
+           else paste(deparse(v, width.cutoff = 500L), collapse = " ")
+    paste(nm, "=", val)
+  }, character(1))
+  paste0(fn, "(", paste(txt, collapse = ", "), ")")
+}
+
+# Expression selecting one group: x[group == "level"].
+.ub_subset <- function(x_expr, g_expr, level) call("[", x_expr, call("==", g_expr, level))
+
+# UBStats "by" uses the standard order of the grouping variable (factor levels,
+# else alphabetical / numeric); TRUE when the requested levels match it.
+.ub_by_ok <- function(group, levels) {
+  if (is.null(group)) return(FALSE)
+  g <- if (is.data.frame(group)) group[[1]] else group
+  lv <- .cats(g[!is.na(g)])
+  length(lv) == 2 && (is.null(levels) || identical(as.character(levels), lv))
+}

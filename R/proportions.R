@@ -67,16 +67,25 @@ test_prop <- function(x = NULL, p0, event = NULL, alt = "two.sided", alpha = 0.0
 #' @export
 ci_prop <- function(x = NULL, event = NULL, conf = 0.95, count = NULL, n = NULL, phat = NULL) {
   conf <- .prob(conf, "conf")
-  P <- .one_prop(x, event, count, n, phat, .label(substitute(x)))
+  sx <- substitute(x)
+  P <- .one_prop(x, event, count, n, phat, .label(sx))
   se <- sqrt(P$phat * (1 - P$phat) / P$n)
   cr <- .crit_ci("z", conf, NULL)
   b <- .ci_lines(sprintf("Point estimate: p-hat = %s", .f(P$phat)),
-                 sprintf("SE = sqrt(p-hat (1 - p-hat) / n) = sqrt(%s x %s / %s) = %s", .f(P$phat), .f(1 - P$phat), .f(P$n), .f(se)),
+                 sprintf("se = sqrt(p-hat (1 - p-hat) / n) = sqrt(%s x %s / %s) = %s", .f(P$phat), .f(1 - P$phat), .f(P$n), .f(se)),
                  cr$v, cr$txt, se, P$phat, conf, "p")
-  lines <- c(P$inputs, "Case: large-sample Z interval (SE estimated with p-hat)", "", b$lines)
+  tab <- data.frame(row.names = "", n = P$n, phat = P$phat, s_X = sqrt(P$phat * (1 - P$phat)), se = se,
+                    Lower = b$ci[1], Upper = b$ci[2])
+  lines <- c(sprintf("Confidence interval for the proportion   (confidence level %s)", .f(conf)), .ci_table_lines(tab), "",
+             P$inputs, "Case: large-sample normal approximation (CLT); the unknown p in the SE is replaced by p-hat", "", b$lines)
+  ub <- if (is.null(x)) .ub_raw_note
+        else if (is.null(event)) .ub_call("CI.prop", x = sx, conf.level = conf)
+        else if (length(event) == 1) .ub_call("CI.prop", x = sx, success = event, conf.level = conf)
+        else .ub_call("CI.prop", x = call("%in%", sx, event), conf.level = conf)
   .result("Confidence interval for a proportion", lines,
-          .ci_wording(conf, sprintf("population proportion of %s", P$ev), b$ci), P$note, match.call(),
-          estimate = P$phat, se = se, critical = cr$v, margin = b$me, ci = b$ci)
+          c("For a large sample the sample proportion is approximately normal (Central Limit Theorem); since p is unknown, its standard error is estimated by sqrt(p-hat (1 - p-hat) / n).",
+            .ci_wording(conf, sprintf("population proportion of %s", P$ev), b$ci)), P$note, match.call(),
+          estimate = P$phat, se = se, critical = cr$v, margin = b$me, ci = b$ci, table = tab, ubstats = ub)
 }
 
 # ---------- two proportions ----------
@@ -151,19 +160,31 @@ test_2props <- function(x = NULL, y = NULL, event = NULL, alt = "two.sided", alp
 ci_2props <- function(x = NULL, y = NULL, event = NULL, conf = 0.95, group = NULL, levels = NULL,
                       count1 = NULL, n1 = NULL, count2 = NULL, n2 = NULL, phat1 = NULL, phat2 = NULL) {
   conf <- .prob(conf, "conf")
-  P <- .two_props(x, y, event, group, levels, count1, n1, count2, n2, phat1, phat2,
-                  .label(substitute(x)), .label(substitute(y)))
+  sx <- substitute(x); sy <- substitute(y); sg <- substitute(group)
+  P <- .two_props(x, y, event, group, levels, count1, n1, count2, n2, phat1, phat2, .label(sx), .label(sy))
   se <- sqrt(P$p1 * (1 - P$p1) / P$n1 + P$p2 * (1 - P$p2) / P$n2)
   cr <- .crit_ci("z", conf, NULL)
-  b <- .ci_lines(sprintf("Point estimate: p1-hat - p2-hat = %s - %s = %s", .f(P$p1), .f(P$p2), .f(P$diff)),
-                 sprintf("SE = sqrt(p1(1-p1)/n1 + p2(1-p2)/n2) = sqrt(%s x %s/%s + %s x %s/%s) = %s",
+  b <- .ci_lines(sprintf("Point estimate: p_x-hat - p_y-hat = %s - %s = %s", .f(P$p1), .f(P$p2), .f(P$diff)),
+                 sprintf("se = sqrt(p_x(1-p_x)/n_x + p_y(1-p_y)/n_y) = sqrt(%s x %s/%s + %s x %s/%s) = %s",
                          .f(P$p1), .f(1 - P$p1), .f(P$n1), .f(P$p2), .f(1 - P$p2), .f(P$n2), .f(se)),
-                 cr$v, cr$txt, se, P$diff, conf, "p1 - p2")
-  lines <- c(sprintf("Group 1 = %s,  Group 2 = %s", P$labs[1], P$labs[2]), P$table,
-             "Case: large-sample Z interval (unpooled SE: each p-hat separately)", "", b$lines)
+                 cr$v, cr$txt, se, P$diff, conf, "p_x - p_y")
+  tab <- data.frame(row.names = "", n_x = P$n1, n_y = P$n2, phat_x = P$p1, phat_y = P$p2, `phat_x-phat_y` = P$diff,
+                    s_X = sqrt(P$p1 * (1 - P$p1)), s_Y = sqrt(P$p2 * (1 - P$p2)), se = se, Lower = b$ci[1], Upper = b$ci[2],
+                    check.names = FALSE)
+  lines <- c(sprintf("Confidence interval for p_x - p_y   (independent samples, confidence level %s)   x = %s, y = %s",
+                     .f(conf), P$labs[1], P$labs[2]), .ci_table_lines(tab), "",
+             "Case: large-sample normal approximation; unpooled se (each p-hat separately)", "", b$lines)
   wording <- c(.ci_wording(conf, sprintf("difference between the population proportions (%s minus %s)", P$labs[1], P$labs[2]), b$ci),
                if (b$ci[1] > 0 || b$ci[2] < 0) "The interval does not contain 0, so the data indicate a difference between the two population proportions."
-               else "The interval contains 0, so equal population proportions are plausible.")
+               else "The interval contains 0, so equal population proportions are plausible: the data are compatible both with no difference and with a difference in either direction.")
+  succ <- if (!is.null(event) && length(event) == 1) event else NULL
+  ub <- if (is.null(x)) .ub_raw_note
+        else if (!is.null(event) && length(event) > 1) "UBStats needs a single success category: build a TRUE/FALSE vector first, e.g. x %in% c(...)."
+        else if (!is.null(group)) {
+          if (.ub_by_ok(group, levels)) .ub_call("CI.diffprop", x = sx, by = sg, success.x = succ, conf.level = conf)
+          else .ub_call("CI.diffprop", x = .ub_subset(sx, sg, P$labs[1]), y = .ub_subset(sx, sg, P$labs[2]),
+                        success.x = succ, conf.level = conf)
+        } else .ub_call("CI.diffprop", x = sx, y = sy, success.x = succ, conf.level = conf)
   .result("Confidence interval for two proportions", lines, wording, P$note, match.call(),
-          estimate = P$diff, se = se, critical = cr$v, margin = b$me, ci = b$ci)
+          estimate = P$diff, se = se, critical = cr$v, margin = b$me, ci = b$ci, table = tab, ubstats = ub)
 }

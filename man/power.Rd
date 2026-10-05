@@ -6,15 +6,26 @@
 \alias{power_prop}
 \alias{n_mean}
 \alias{n_prop}
+\alias{n_2props}
 \title{Type II error, power and sample size}
 \usage{
 power_mean(mu0, mu1, sigma, n, alpha = 0.05, alt)
 
 power_prop(p0, p1, n, alpha = 0.05, alt)
 
-n_mean(margin = NULL, sigma, conf = 0.95, se = NULL)
+n_mean(
+  margin = NULL,
+  sigma = NULL,
+  conf = 0.95,
+  se = NULL,
+  width = NULL,
+  s = NULL,
+  n = NULL
+)
 
-n_prop(margin = NULL, p = 0.5, conf = 0.95, se = NULL)
+n_prop(margin = NULL, p = 0.5, conf = 0.95, se = NULL, width = NULL)
+
+n_2props(margin = NULL, p1 = 0.5, p2 = 0.5, conf = 0.95, width = NULL)
 }
 \arguments{
 \item{mu0, mu1}{Mean under H0 and the true (alternative) mean.}
@@ -27,13 +38,21 @@ n_prop(margin = NULL, p = 0.5, conf = 0.95, se = NULL)
 
 \item{alt}{Alternative of the test: \code{"<"}, \code{">"} or \code{"!="}.}
 
-\item{p0, p1}{Proportion under H0 and the true (alternative) proportion.}
+\item{p0}{Proportion under H0 (\code{power_prop()}).}
+
+\item{p1, p2}{\code{power_prop()}: \code{p1} is the true (alternative) proportion.
+\code{n_2props()}: prior guesses of the two proportions (0.5 = conservative).}
 
 \item{margin}{Target margin of error (half-width of the CI).}
 
 \item{conf}{Confidence level for \code{margin}.}
 
 \item{se}{Target standard error (instead of \code{margin}).}
+
+\item{width}{Target width of the CI (= 2 x margin), as many questions phrase it.}
+
+\item{s}{Sample SD when sigma is unknown (\code{n_mean()}; approximate result).
+With the current sample size \code{n} the t quantile with n - 1 df is used.}
 
 \item{p}{Prior guess of the proportion (default 0.5, the conservative choice).}
 }
@@ -49,10 +68,14 @@ proportion is \code{p1}.
 \item \code{n_mean()}     sample size so that the margin of error (or the SE) of a
 mean is at most a target. Always rounded UP.
 \item \code{n_prop()}     the same for a proportion (p = 0.5 if no prior guess).
+\item \code{n_2props()}   equal group sizes for the CI of p1 - p2 to have a given
+margin of error / width.
 }
 }
 \examples{
 power_mean(mu0 = 2500, mu1 = 2400, sigma = 850, n = 100, alt = "<")
 n_mean(margin = 3, sigma = 12, conf = 0.95)
 n_prop(margin = 0.03)
+n_prop(width = 0.01)
+n_2props(width = 0.08)
 }

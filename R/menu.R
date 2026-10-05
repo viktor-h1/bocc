@@ -13,12 +13,14 @@
     "sigma unknown, normality not stated / not normal, n LARGE -> Z (CLT approximation)"))]
 }
 
-.ask_case_2means <- function() {
-  c("pooled", "welch", "large", "known")[.ask_choice("What does the question say about the two populations?", c(
-    "variances unknown but ASSUMED EQUAL (normal populations)   -> pooled t",
-    "variances unknown, NOT assumed equal (normal populations)  -> Welch t",
-    "not normal / not stated, both samples LARGE                -> Z (CLT)",
-    "population sigmas KNOWN                                    -> Z"))]
+.ask_case_2means <- function(allow_all = FALSE) {
+  opts <- c("variances unknown but ASSUMED EQUAL (normal populations)   -> pooled t",
+            "variances unknown, NOT assumed equal (normal populations)  -> Welch t",
+            "not normal / not stated, both samples LARGE                -> Z (CLT)",
+            "population sigmas KNOWN                                    -> Z")
+  cases <- c("pooled", "welch", "large", "known")
+  if (allow_all) { opts <- c(opts, "not stated -> show all four intervals (equal / different x z / t), as UBStats"); cases <- c(cases, "all") }
+  cases[.ask_choice("What does the question say about the two populations?", opts)]
 }
 
 .one_mean_args <- function(data_what) {
@@ -26,9 +28,15 @@
   case <- .ask_mean_case()
   a <- list()
   if (d$summary) {
-    a$xbar <- .ask_num("Sample mean xbar")
+    k <- .ask_choice("Which numbers does the question give?", c("the sample mean (and SD)", "the sums: sum of x and sum of x^2"))
     a$n <- .ask_num("Sample size n")
-    if (case != "known") a$s <- .ask_num("Sample standard deviation s")
+    if (k == 1) {
+      a$xbar <- .ask_num("Sample mean xbar")
+      if (case != "known") a$s <- .ask_num("Sample standard deviation s  (type sqrt(v) if you have the variance)")
+    } else {
+      a$sum_x <- .ask_num("Sum of the observations (sum x_i)")
+      if (case != "known") a$sum_x2 <- .ask_num("Sum of the squares (sum x_i^2)")
+    }
   } else a$x <- .code(d$expr)
   if (case == "known") a$sigma <- .ask_num("Population standard deviation sigma")
   list(args = a, method = if (case == "known") NULL else case)
@@ -107,10 +115,10 @@
   list(args = a, summary = i == 3)
 }
 
-.two_means_args <- function() {
+.two_means_args <- function(allow_all = FALSE) {
   t <- .two_sample_args("mean")
   a <- t$args
-  case <- .ask_case_2means()
+  case <- .ask_case_2means(allow_all)
   if (case == "known") {
     a$sigma1 <- .ask_num("Group 1: population sigma"); a$sigma2 <- .ask_num("Group 2: population sigma")
   } else if (t$summary) {
@@ -425,10 +433,19 @@
                      a[setdiff(names(a), c("x", "y"))]))
 }
 .m_ci_2means <- function() {
-  o <- .two_means_args()
+  o <- .two_means_args(allow_all = TRUE)
   first <- o$args[intersect(c("x", "y"), names(o$args))]
-  .mk("ci_2means", c(first, list(case = o$case, conf = .ask_prob("Confidence level", 0.95)),
+  .mk("ci_2means", c(first, list(case = if (o$case %in% c("all", "known")) NULL else o$case, conf = .ask_prob("Confidence level", 0.95)),
                      o$args[setdiff(names(o$args), names(first))]))
+}
+
+.m_est <- function() {
+  if (.ask_choice("Point estimate of:", c("a population mean (xbar and its standard error)", "a population proportion (p-hat and its standard error)")) == 2)
+    return(.m_desc_prop())
+  o <- .one_mean_args("the sample values")
+  a <- o$args
+  if (.ask_yes("Also the sample size needed for a target standard error?", FALSE)) a$se_target <- .ask_num("Target standard error")
+  .mk("est_mean", a)
 }
 .m_ci_2props <- function() {
   t <- .two_sample_args("prop")
@@ -483,17 +500,37 @@
   .mk("power_prop", list(p0 = p0, p1 = .ask_prob("p1 (the true proportion)", NULL), n = .ask_num("Sample size n"),
                          alpha = .ask_prob("alpha", 0.05), alt = .ask_alt("p", .f(p0))))
 }
+# Target of a sample-size question: margin of error, width or standard error.
+.ask_target <- function(se_ok = TRUE) {
+  opts <- c("margin of error ME (half-width of the CI)", "width of the CI (= 2 x ME)")
+  if (se_ok) opts <- c(opts, "standard error")
+  i <- .ask_choice("Target:", opts)
+  switch(i, list(margin = .ask_num("Margin of error")), list(width = .ask_num("Width of the interval")),
+         list(se = .ask_num("Target standard error")))
+}
+
 .m_n_mean <- function() {
-  i <- .ask_choice("Target:", c("margin of error (half-width of the CI)", "standard error"))
-  s <- .ask_num("Population sigma (or a prior estimate)")
-  if (i == 1) .mk("n_mean", list(margin = .ask_num("Margin of error"), sigma = s, conf = .ask_prob("Confidence level", 0.95)))
-  else .mk("n_mean", list(se = .ask_num("Target standard error"), sigma = s))
+  tg <- .ask_target()
+  a <- list()
+  if (.ask_choice("Population SD:", c("sigma known (or assumed)", "unknown: use the sample SD s (approximate)")) == 1)
+    a$sigma <- .ask_num("Population sigma")
+  else {
+    a$s <- .ask_num("Sample standard deviation s")
+    if (is.null(tg$se)) a$n <- .ask_num("Current sample size n (for the t quantile; Enter = use z)", allow_empty = TRUE)
+  }
+  .mk("n_mean", c(tg, a, if (is.null(tg$se)) list(conf = .ask_prob("Confidence level", 0.95))))
 }
 .m_n_prop <- function() {
-  i <- .ask_choice("Target:", c("margin of error (half-width of the CI)", "standard error"))
+  tg <- .ask_target()
   p <- .ask_num("Prior estimate of p (Enter = 0.5, the conservative choice)", allow_empty = TRUE)
-  if (i == 1) .mk("n_prop", list(margin = .ask_num("Margin of error (e.g. 0.03)"), p = p, conf = .ask_prob("Confidence level", 0.95)))
-  else .mk("n_prop", list(se = .ask_num("Target standard error"), p = p))
+  .mk("n_prop", c(tg, list(p = p), if (is.null(tg$se)) list(conf = .ask_prob("Confidence level", 0.95))))
+}
+
+.m_n_2props <- function() {
+  tg <- .ask_target(se_ok = FALSE)
+  p1 <- .ask_num("Prior estimate of p1 (Enter = 0.5)", allow_empty = TRUE)
+  p2 <- .ask_num("Prior estimate of p2 (Enter = 0.5)", allow_empty = TRUE)
+  .mk("n_2props", c(tg, list(p1 = p1, p2 = p2, conf = .ask_prob("Confidence level", 0.95))))
 }
 
 # ---------- topic 6: chi-square ----------
@@ -685,12 +722,13 @@
     list("Joint distribution of two discrete r.v.s: marginals, conditionals, covariance, independence", .m_rv_joint),
     list("Sum or mean of n iid variables (CLT)", .m_rv_iid),
     list("Sampling distribution of a sample proportion", .m_rv_prop))),
-  list(title = "Confidence intervals", items = list(
+  list(title = "Estimation and confidence intervals", items = list(
     list("One mean", .m_ci_mean),
     list("One proportion", .m_ci_prop),
     list("Paired mean difference (same units twice)", .m_ci_paired),
     list("Two independent means", .m_ci_2means),
-    list("Two proportions", .m_ci_2props))),
+    list("Two proportions", .m_ci_2props),
+    list("Point estimate + standard error of a mean or a proportion", .m_est))),
   list(title = "Hypothesis tests", items = list(
     list("One mean", .m_test_mean),
     list("One proportion", .m_test_prop),
@@ -701,7 +739,8 @@
     list("Type II error (beta) and power: mean test, sigma known", .m_power_mean),
     list("Type II error (beta) and power: proportion test", .m_power_prop),
     list("Sample size for a mean", .m_n_mean),
-    list("Sample size for a proportion", .m_n_prop))),
+    list("Sample size for a proportion", .m_n_prop),
+    list("Sample size for the difference of two proportions", .m_n_2props))),
   list(title = "Chi-square tests", items = list(
     list("Goodness of fit (one variable vs stated shares)", .m_chisq_gof),
     list("Independence (are two categorical variables associated?)", .m_chisq_indep))),

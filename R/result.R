@@ -28,8 +28,10 @@
 #'
 #' Results print as: the hypotheses / inputs, each formula with the numbers
 #' plugged in, the decision, an exam-wording paragraph and the one-line call
-#' that re-runs the procedure. Turn parts off with
-#' `options(statcram.wording = FALSE)` or `options(statcram.plot = FALSE)`;
+#' that re-runs the procedure. Confidence intervals also show the matching
+#' call of the course package UBStats. Turn parts off with
+#' `options(statcram.wording = FALSE)`, `options(statcram.plot = FALSE)` or
+#' `options(statcram.ubstats = FALSE)`;
 #' change decimals with `options(statcram.digits = 6)`.
 #'
 #' @param x An `sc_result`.
@@ -47,6 +49,10 @@ print.sc_result <- function(x, ...) {
       if (i > 1) cat("\n")
       cat(strwrap(x$wording[i], width = w), sep = "\n")
     }
+  }
+  if (length(x$ubstats) && isTRUE(.opt("ubstats", TRUE))) {
+    cat(.rule("-- UBStats (course package) ", w), "\n", sep = "")
+    cat(x$ubstats, sep = "\n")
   }
   if (!is.null(x$call)) {
     cat(.rule("-- Re-run ", w), "\n", sep = "")

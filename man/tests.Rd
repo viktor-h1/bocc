@@ -18,7 +18,9 @@ test_mean(
   xbar = NULL,
   s = NULL,
   n = NULL,
-  sigma = NULL
+  sigma = NULL,
+  sum_x = NULL,
+  sum_x2 = NULL
 )
 
 test_paired(
@@ -103,6 +105,9 @@ Student t) or \code{"z"} (large sample, normal approximation).}
 
 \item{xbar, s, n, sigma}{Summary numbers for one mean (sigma = known
 population SD).}
+
+\item{sum_x, sum_x2}{\code{test_mean()}: sum of the observations and of their
+squares (with \code{n}), when the question gives the sums.}
 
 \item{y}{Second sample (paired: second measurement, D = x - y;
 two-sample: the second group).}

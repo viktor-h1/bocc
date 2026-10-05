@@ -11,15 +11,22 @@
 #' * `n_mean()`     sample size so that the margin of error (or the SE) of a
 #'   mean is at most a target. Always rounded UP.
 #' * `n_prop()`     the same for a proportion (p = 0.5 if no prior guess).
+#' * `n_2props()`   equal group sizes for the CI of p1 - p2 to have a given
+#'   margin of error / width.
 #'
 #' @param mu0,mu1 Mean under H0 and the true (alternative) mean.
-#' @param p0,p1 Proportion under H0 and the true (alternative) proportion.
+#' @param p0 Proportion under H0 (`power_prop()`).
 #' @param sigma Population standard deviation.
 #' @param n Sample size.
 #' @param alpha Significance level.
 #' @param alt Alternative of the test: `"<"`, `">"` or `"!="`.
 #' @param margin Target margin of error (half-width of the CI).
+#' @param width Target width of the CI (= 2 x margin), as many questions phrase it.
 #' @param se Target standard error (instead of `margin`).
+#' @param s Sample SD when sigma is unknown (`n_mean()`; approximate result).
+#'   With the current sample size `n` the t quantile with n - 1 df is used.
+#' @param p1,p2 `power_prop()`: `p1` is the true (alternative) proportion.
+#'   `n_2props()`: prior guesses of the two proportions (0.5 = conservative).
 #' @param conf Confidence level for `margin`.
 #' @param p Prior guess of the proportion (default 0.5, the conservative choice).
 #' @return An `sc_result` (prints itself).
@@ -27,6 +34,8 @@
 #' power_mean(mu0 = 2500, mu1 = 2400, sigma = 850, n = 100, alt = "<")
 #' n_mean(margin = 3, sigma = 12, conf = 0.95)
 #' n_prop(margin = 0.03)
+#' n_prop(width = 0.01)
+#' n_2props(width = 0.08)
 #' @name power
 NULL
 
@@ -113,36 +122,73 @@ power_prop <- function(p0, p1, n, alpha = 0.05, alt) {
 
 #' @rdname power
 #' @export
-n_mean <- function(margin = NULL, sigma, conf = 0.95, se = NULL) {
-  if (is.null(margin) && is.null(se)) stop("Give margin = (margin of error) or se = (target standard error).", call. = FALSE)
-  if (!is.null(se)) {
-    raw <- (sigma / se)^2
-    lines <- sprintf("n >= (sigma / SE)^2 = (%s / %s)^2 = %s", .f(sigma), .f(se), .f(raw))
+n_mean <- function(margin = NULL, sigma = NULL, conf = 0.95, se = NULL, width = NULL, s = NULL, n = NULL) {
+  M <- .margin_from(margin, width, se)
+  if (is.null(sigma) && is.null(s)) stop("Give sigma = (known population SD), or s = (sample SD, approximate result).", call. = FALSE)
+  lines <- M$lines; notes <- NULL
+  sd0 <- sigma %||% s; sname <- if (!is.null(sigma)) "sigma" else "s"
+  if (!is.null(M$se)) {
+    raw <- (sd0 / M$se)^2
+    lines <- c(lines, sprintf("SE = %s / sqrt(n) <= %s  ->  n >= (%s / SE*)^2 = (%s / %s)^2 = %s", sname, .f(M$se), sname, .f(sd0), .f(M$se), .f(raw)))
   } else {
-    conf <- .prob(conf, "conf"); z <- qnorm((1 + conf) / 2)
-    raw <- (z * sigma / margin)^2
-    lines <- sprintf("n >= (z x sigma / margin)^2 = (%s x %s / %s)^2 = %s", .f(z), .f(sigma), .f(margin), .f(raw))
+    conf <- .prob(conf, "conf")
+    if (is.null(sigma) && !is.null(n)) {
+      q <- qt((1 + conf) / 2, n - 1); qtxt <- sprintf("t(%s; df = %s)", .f((1 + conf) / 2), .f(n - 1))
+    } else {
+      q <- qnorm((1 + conf) / 2); qtxt <- sprintf("z(%s)", .f((1 + conf) / 2))
+    }
+    raw <- (q * sd0 / M$margin)^2
+    lines <- c(lines, sprintf("ME = %s x %s / sqrt(n) <= %s  ->  n >= (%s x %s / ME*)^2 = (%s x %s / %s)^2 = %s",
+                              qtxt, sname, .f(M$margin), qtxt, sname, .f(q), .f(sd0), .f(M$margin), .f(raw)))
   }
-  n <- ceiling(raw - 1e-9)
-  lines <- c(lines, sprintf("Required n = %s (always round UP)", n))
-  .result("Sample size for a mean", lines, NULL, NULL, match.call(), n = n)
+  if (is.null(sigma)) notes <- "sigma unknown: s replaces it, so the result is only approximate (the actual width depends on the s of the sample that will be drawn)."
+  nn <- ceiling(raw - 1e-9)
+  lines <- c(lines, sprintf("Required n = %s (always round UP to the next integer)", nn))
+  .result("Sample size for a mean", lines, NULL, notes, match.call(), n = nn)
+}
+
+# Target from margin of error, interval width (= 2 ME) or standard error.
+.margin_from <- function(margin, width, se) {
+  if (!is.null(se)) return(list(se = se, margin = NULL, lines = character()))
+  if (!is.null(width)) return(list(se = NULL, margin = width / 2,
+                                   lines = sprintf("Width = 2 x ME <= %s  ->  ME* = %s / 2 = %s", .f(width), .f(width), .f(width / 2))))
+  if (is.null(margin)) stop("Give margin = (margin of error), width = (width of the interval = 2 x margin) or se = (target SE).", call. = FALSE)
+  list(se = NULL, margin = margin, lines = character())
 }
 
 #' @rdname power
 #' @export
-n_prop <- function(margin = NULL, p = 0.5, conf = 0.95, se = NULL) {
-  if (is.null(margin) && is.null(se)) stop("Give margin = (margin of error) or se = (target standard error).", call. = FALSE)
+n_prop <- function(margin = NULL, p = 0.5, conf = 0.95, se = NULL, width = NULL) {
+  M <- .margin_from(margin, width, se)
   p <- .prob(p, "p")
-  if (!is.null(se)) {
-    raw <- p * (1 - p) / se^2
-    lines <- sprintf("n >= p (1 - p) / SE^2 = %s x %s / %s^2 = %s", .f(p), .f(1 - p), .f(se), .f(raw))
+  lines <- M$lines
+  if (!is.null(M$se)) {
+    raw <- p * (1 - p) / M$se^2
+    lines <- c(lines, sprintf("n >= p (1 - p) / SE*^2 = %s x %s / %s^2 = %s", .f(p), .f(1 - p), .f(M$se), .f(raw)))
   } else {
     conf <- .prob(conf, "conf"); z <- qnorm((1 + conf) / 2)
-    raw <- z^2 * p * (1 - p) / margin^2
-    lines <- sprintf("n >= z^2 p (1 - p) / margin^2 = %s^2 x %s x %s / %s^2 = %s", .f(z), .f(p), .f(1 - p), .f(margin), .f(raw))
+    raw <- z^2 * p * (1 - p) / M$margin^2
+    lines <- c(lines, sprintf("n >= z^2 p (1 - p) / ME*^2 = %s^2 x %s x %s / %s^2 = %s", .f(z), .f(p), .f(1 - p), .f(M$margin), .f(raw)))
   }
-  n <- ceiling(raw - 1e-9)
-  lines <- c(lines, sprintf("Required n = %s (always round UP)", n),
-             if (p == 0.5) "p = 0.5 used: the conservative choice when no prior estimate is available.")
-  .result("Sample size for a proportion", lines, NULL, NULL, match.call(), n = n)
+  nn <- ceiling(raw - 1e-9)
+  lines <- c(lines, sprintf("Required n = %s (always round UP to the next integer)", nn),
+             if (p == 0.5) "p = 0.5 used: p(1 - p) is largest there, so this n works whatever the true p (conservative choice).")
+  .result("Sample size for a proportion", lines, NULL, NULL, match.call(), n = nn)
+}
+
+#' @rdname power
+#' @export
+n_2props <- function(margin = NULL, p1 = 0.5, p2 = 0.5, conf = 0.95, width = NULL) {
+  M <- .margin_from(margin, width, NULL)
+  p1 <- .prob(p1, "p1"); p2 <- .prob(p2, "p2"); conf <- .prob(conf, "conf"); z <- qnorm((1 + conf) / 2)
+  v <- p1 * (1 - p1) + p2 * (1 - p2)
+  raw <- z^2 * v / M$margin^2
+  nn <- ceiling(raw - 1e-9)
+  lines <- c(M$lines,
+             sprintf("Equal sample sizes n in both groups:  ME = z sqrt(p1(1 - p1)/n + p2(1 - p2)/n) <= %s", .f(M$margin)),
+             sprintf("n >= z^2 [p1(1 - p1) + p2(1 - p2)] / ME*^2 = %s^2 x (%s + %s) / %s^2 = %s",
+                     .f(z), .f(p1 * (1 - p1)), .f(p2 * (1 - p2)), .f(M$margin), .f(raw)),
+             sprintf("Required n = %s in EACH group (round UP)", nn),
+             if (p1 == 0.5 && p2 == 0.5) "p1 = p2 = 0.5 used: the conservative choice.")
+  .result("Sample size for the difference of two proportions", lines, NULL, NULL, match.call(), n = nn)
 }
