@@ -1,5 +1,5 @@
 # PAST-PAPER PATTERNS -> WHAT TO RUN -> WHAT THE ANSWER MUST CONTAIN
-(from the 2025/26 midterm, partial and general exams with official solutions)
+(from the 2024/25 and 2025/26 midterm, partial and general exams with official solutions)
 
 General rule: short, focused answers in the space of each question. Give the NUMBER, the
 FORMULA / analytic expression with the numbers in it, and a one-line INTERPRETATION in context.
@@ -20,6 +20,16 @@ When asked, also the R function used (statcram prints it as "in R: ...").
      strength (r), LINEARITY (a high |r| is not reliable if the cloud is curved).
 "Percentage of A among B and C"  -> desc_crosstab(): CONDITIONAL percentages (row %), never
      joint counts or joint percentages ("it was wrong to answer based on joint counts").
+"Share with high OR very high effort, by group; compare" -> desc_crosstab(x, y, y_event = c("high",
+     "veryhigh")): Freq(Y = high or veryhigh | X = k) = 0.11 + 0.38 = 0.49 for each group, highest and
+     lowest groups, and the MARGINAL share (what every group would show under independence).
+"Are more than 5% of the values anomalous?" -> desc_summary(): share of outliers (beyond the fences)
+     and P95 vs the upper fence Q3 + 1.5 IQR (P95 above the fence -> more than 5% anomalously high).
+"Range of the top 15% earners" -> desc_summary(x, probs = 0.85): between P85 and the maximum.
+"Graph to show the tails in detail" -> HISTOGRAM (densities), not a boxplot: the boxplot shows
+     only the five numbers and the outliers.
+"Mode of a numerical variable with many distinct values" -> not useful (each value appears about
+     once); use the modal CLASS of a frequency distribution or the median/mean.
 
 ## Data in classes (no raw data -> everything is approximate, uniform within classes)
 "Frequency distribution, modal class" -> desc_classes(): modal class = highest DENSITY.
@@ -40,6 +50,12 @@ When asked, also the R function used (statcram prints it as "in R: ...").
      GENERIC estimate.
 "Estimator of a proportion, formula, value, SE" -> desc_prop(): P-hat = sum X_i / n (X_i Bernoulli),
      se = sqrt(p-hat (1 - p-hat) / n).
+"Properties of Xbar" -> est_mean(): unbiased, Var(Xbar) = sigma^2 / n -> 0 as n grows (consistent).
+"P(Xbar > 15) for n = 80, mu = 12, sigma^2 = 380, with the R function" -> rv_iid(12, sqrt(380), 80,
+     above = 15): CLT, Xbar ~ approx N(12, 380/80); in R: 1 - pnorm(15, mean = 12, sd = sqrt(380/80)).
+"P(P-hat >= 0.30) when p = 0.3397, n = 1200" -> rv_prop(0.3397, 1200, above = 0.30):
+     1 - pnorm(0.3, mean = 0.3397, sd = sqrt(0.3397*(1-0.3397)/1200)). Every prob_*() and rv_*()
+     result prints the matching pnorm / qnorm / pt / pchisq call.
 
 ## Confidence intervals
 "Report a 99% CI and interpret"  -> ci_*(): "With a level of confidence of 99% we can conclude that
@@ -53,6 +69,8 @@ When asked, also the R function used (statcram prints it as "in R: ...").
 "CI for mu_x - mu_y: check the variances first" -> ci_2means(raw data): Levene p-value
      (> 0.05 -> equal variances, pooled rows; < 0.05 -> different, Welch rows).
 "Analytical formula of the paired CI with its components" -> ci_paired(): dbar +/- t(n-1) s_D / sqrt(n).
+"The CI shows that each employee improved by 5 to 16" -> WRONG: a CI for mu_D (or mu_x - mu_y)
+     concerns the population AVERAGES, not the change of a specific unit (ci_paired / ci_2means say so).
 
 ## Tests
 "Specify H0 and H1"  -> H0 = status quo / "not effective" / "meets the target", ALWAYS with the
@@ -77,16 +95,26 @@ When asked, also the R function used (statcram prints it as "in R: ...").
 "Last year only summary numbers, this year raw data" -> test_2means(df$price1, xbar2 = 820,
      s2 = 550, n2 = 500, case = "pooled", alt = ">").
 "Are the variances equal?" -> test_levene() / Levene rows of test_2means: H0 sigma2_x = sigma2_y.
+"Before measured in the data, after given as mean / s / correlation" -> test_paired(df$before,
+     mean2 = 402.89, s2 = 45.61, r = 0.71): s_D^2 = s1^2 + s2^2 - 2 r s1 s2 (works for ci_paired too).
+"This year's raw data vs a share of 0.5 in a sample of 100 two years ago" -> test_2props(df$used,
+     event = "yes", phat2 = 0.5, n2 = 100, alt = "<"): pooled p-hat, z, p-value = pnorm(z).
+"What does the SE in the test output mean?" -> expected distance of a GENERIC estimate from the
+     parameter (property of the estimator), printed with every test.
 
 ## Chi-square
 "Associated? Specify H0/H1, statistic, p-value, conclusion" -> chisq_indep(): H0 independent,
-     H1 dependent; p-value = P(chi2_((r-1)(c-1)) > X2_obs); interpretation under independence.
+     H1 dependent; p-value = P(chi2_((r-1)(c-1)) > X2_obs); interpretation under independence
+     ("a value at least this large would occur in about x% of all possible samples").
 "Do the shares match 40/30/30?" -> chisq_gof(x, p = c(0.4, 0.3, 0.3)): expected counts n p_k
      (441 x 0.4 = 176.4 ...), df = K - 1.
 
 ## Regression
 "Report / interpret the coefficients of a factor"  -> reg_fit(): each dummy = average difference
      from the BASELINE level, holding the other variables constant. Equation with I(X = level).
+"Interpret the intercept (only categorical predictors)" -> estimated mean of Y for the BASELINE
+     combination (e.g. Branch = A and AgeC = adult). The baseline is the FIRST level: alphabetical
+     for a character variable unless set with factor(x, levels = ...) or relevel().
 "Difference between two non-baseline levels" -> b_A - b_B (other variables fixed); its significance
      is not in the output (refit with relevel()).
 "Is the model globally significant?" -> F test: H0 beta_1 = ... = beta_k = 0;
@@ -97,11 +125,18 @@ When asked, also the R function used (statcram prints it as "in R: ...").
      variables (close to multicollinearity); in mod1 it also captured their effect.
 "Goodness of fit" -> R2 = share of the variability of Y explained by the model with ... ;
      different numbers of predictors -> adjusted R2 (an R2 of 0.75 alone is not enough).
+"Use the model for prediction?" -> with a low R2 (e.g. 0.12) NO: high residual variability, wide
+     prediction intervals; the significant coefficients still describe AVERAGE effects.
+"Region dummies significant in mod1, not in mod2" -> the groups differ in the added variables
+     (reg_compare prints r(dummy, added)): part of the difference was due to them.
 "Add variable Z?" -> adjusted R2 increase + p-value of Z (reg_compare: partial F = t^2).
-"CI for the coefficient / for a 10-unit change" -> reg_effect(mod, "Age", change = 10, conf = 0.99).
+"CI for the coefficient / for a 10-unit change" -> reg_effect(mod, "Age", change = 10, conf = 0.99);
+     "10 years younger" -> change = -10 ("a decrease of 10 units": the interval changes sign).
 "Point and interval estimate for a client with ..." -> reg_predict(): CI = AVERAGE response,
      PI = ONE individual (wider: adds individual variability). "Is 70 anomalous?" -> value = 70:
      judge with the PI. Values outside the observed range -> extrapolation, unreliable.
+"Strong assumptions of the model" -> reg_check(): E(eps_i) = 0, Var(eps_i) = sigma^2,
+     Cor(eps_i, eps_j) = 0 (i != j), normal errors; i.e. eps_i iid N(0, sigma^2).
 "Homoscedasticity / normality" -> reg_check(): Var(eps_i) = sigma^2, plot(mod, which = 1) or
      which = 3; normality: Q-Q plot (which = 2) and histogram of standardised residuals.
 "A NorthWest client spends more" -> wrong: conclusions are on AVERAGES, relative to the baseline

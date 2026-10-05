@@ -236,13 +236,30 @@
   }
 }
 
+# Optional event made of one or more categories of Y (conditional shares by group).
+.ask_y_event <- function(lv) {
+  if (is.null(lv) || length(lv) < 2 || length(lv) > 15) return(NULL)
+  cat("Categories of Y:", paste(sprintf("%d %s", seq_along(lv), lv), collapse = "   "), "\n")
+  repeat {
+    o <- .mq("Share of a group of Y categories in each X group (e.g. 'high veryhigh' or their numbers; Enter = skip)", "")
+    if (!nzchar(o)) return(NULL)
+    tok <- .split_values(o)
+    idx <- suppressWarnings(as.integer(tok))
+    ev <- if (!anyNA(idx) && all(idx %in% seq_along(lv))) lv[idx] else tok
+    if (all(ev %in% lv)) return(unique(ev))
+    cat("  Use categories of Y (names or numbers).\n")
+  }
+}
+
 .m_desc_crosstab <- function() {
+  ylv <- NULL
   i <- .ask_choice("What do you have?", c("two variables (raw data: categorical or with few values)", "a count table (entered or typed)"))
   if (i == 2) {
     d <- .ask_data("the count table", "table")
     m <- .as_count_table(.eval_expr(d$expr))
     a <- list(x = .code(d$expr))
     if (!is.null(m) && ncol(m) <= 15) a$order_y <- .ask_order(colnames(m), "the column variable")
+    if (!is.null(m)) ylv <- colnames(m)
   } else {
     dx <- .ask_data("the ROW variable X (e.g. the grouping / explanatory one)", "vector")
     dy <- .ask_data("the COLUMN variable Y (e.g. the response)", "vector")
@@ -258,9 +275,11 @@
     if (is.null(a$breaks_y) && !is.numeric(vy) && !is.factor(vy)) {
       lv <- .cats(vy[!is.na(vy)])
       if (length(lv) <= 15) a$order_y <- .ask_order(lv, dy$expr)
-    }
+      ylv <- lv
+    } else if (is.null(a$breaks_y)) ylv <- if (is.factor(vy)) levels(vy) else .cats(vy[!is.na(vy)])
   }
   if (.ask_choice("Bar chart:", c("stacked: conditional distributions of Y | X", "side by side: joint proportions")) == 2) a$plot <- "beside"
+  a$y_event <- .ask_y_event(ylv)
   .mk("desc_crosstab", a)
 }
 

@@ -114,13 +114,23 @@ ci_prop <- function(x = NULL, event = NULL, conf = 0.95, count = NULL, n = NULL,
       sp <- .split2(xx[ok], g[ok], levels)
       e1 <- .event(sp$x1, event, xlab); e2 <- .event(sp$x2, event, xlab)
       labs <- sp$levels
+    } else if (is.null(y) && !is.null(n2)) {
+      # group 1 from the data, group 2 from the numbers in the question
+      e1 <- .event(x, event, xlab); labs <- c(xlab, "group 2 (summary numbers)")
+      if (is.null(count2)) { .need(phat2, msg = "Give count2 = or phat2 = (with n2 =) for group 2."); count2 <- .prob_or_01(phat2, "phat2") * n2 }
+      note <- c(.dropped_note(e1), sprintf("Group 1 (%s) from the data: %s successes out of %d (p-hat = %s); group 2 from the summary numbers.",
+                                           xlab, .f(sum(e1)), length(e1), .f(mean(e1))))
+      ev <- if (is.null(event)) "the event" else sprintf("%s = %s", xlab, attr(e1, "event"))
+      n1 <- length(e1); count1 <- sum(e1); e2 <- NULL
     } else {
-      if (is.null(y)) stop("Give the second sample y = ..., or the grouping variable group = ...", call. = FALSE)
+      if (is.null(y)) stop("Give the second sample y = ..., the grouping variable group = ..., or group 2's numbers (count2 or phat2, n2).", call. = FALSE)
       e1 <- .event(x, event, xlab); e2 <- .event(y, event, ylab); labs <- c(xlab, ylab)
     }
-    note <- .dropped_note(e1, e2)
-    ev <- if (is.null(event)) "the event" else sprintf("%s = %s", xlab, attr(e1, "event"))
-    n1 <- length(e1); n2 <- length(e2); count1 <- sum(e1); count2 <- sum(e2)
+    if (!is.null(e2)) {
+      note <- .dropped_note(e1, e2)
+      ev <- if (is.null(event)) "the event" else sprintf("%s = %s", xlab, attr(e1, "event"))
+      n1 <- length(e1); n2 <- length(e2); count1 <- sum(e1); count2 <- sum(e2)
+    }
   } else {
     if (is.null(n1) || is.null(n2)) stop("Give data, or n1 = and n2 = with count1/count2 (or phat1/phat2).", call. = FALSE)
     if (is.null(count1)) { .need(phat1, msg = "Give count1 = or phat1 =."); count1 <- .prob_or_01(phat1, "phat1") * n1 }
@@ -189,7 +199,7 @@ test_2props <- function(x = NULL, y = NULL, event = NULL, alt = "two.sided", alp
   wording <- c(wording, .p_meaning(p, "Z", stat, alt, sprintf("p_x - p_y = %s", .f(d0))))
   succ <- if (!is.null(event) && length(event) == 1) event else NULL
   pd <- if (d0 != 0) d0
-  ub <- if (is.null(x)) .ub_raw_note
+  ub <- if (is.null(x) || (is.null(y) && is.null(group))) .ub_raw_note
         else if (!is.null(event) && length(event) > 1) "UBStats needs a single success category: build a TRUE/FALSE vector first, e.g. x %in% c(...)."
         else if (!is.null(group)) {
           if (.ub_by_ok(group, levels)) .ub_call("TEST.diffprop", x = sx, by = sg, success.x = succ, pdiff0 = pd, alternative = .ub_alt(alt))
@@ -225,7 +235,7 @@ ci_2props <- function(x = NULL, y = NULL, event = NULL, conf = 0.95, group = NUL
                if (b$ci[1] > 0 || b$ci[2] < 0) "The interval does not contain 0, so the data indicate a difference between the two population proportions."
                else "The interval contains 0, so equal population proportions are plausible: the data are compatible both with no difference and with a difference in either direction.")
   succ <- if (!is.null(event) && length(event) == 1) event else NULL
-  ub <- if (is.null(x)) .ub_raw_note
+  ub <- if (is.null(x) || (is.null(y) && is.null(group))) .ub_raw_note
         else if (!is.null(event) && length(event) > 1) "UBStats needs a single success category: build a TRUE/FALSE vector first, e.g. x %in% c(...)."
         else if (!is.null(group)) {
           if (.ub_by_ok(group, levels)) .ub_call("CI.diffprop", x = sx, by = sg, success.x = succ, conf.level = conf)

@@ -1,4 +1,4 @@
-# statcram 0.8.8
+# statcram 0.8.9
 
 An offline statistics exam toolkit for R / RStudio. One numbered menu, plus plain functions
 with consistent names. Every procedure works with **raw data** (including data frames and
@@ -12,7 +12,7 @@ Pure R, no compilation, no internet needed after installing.
 
 ```r
 # from the built file
-install.packages("statcram_0.8.8.tar.gz", repos = NULL, type = "source")
+install.packages("statcram_0.8.9.tar.gz", repos = NULL, type = "source")
 # or from GitHub
 remotes::install_github("viktor-h1/bocc", ref = "claude/quirky-gates-9i7hvr")
 
@@ -128,7 +128,7 @@ true value inside H0 is reported as P(reject) = alpha(mu1), not as beta. Chi-squ
 the residuals (O - E) / sqrt(E), Cramer's V, the E >= 5 rule and the base R call (2 x 2:
 `chisq.test(..., correct = FALSE)`).
 
-The exam wording follows the official solutions of the 2025/26 past papers. Each p-value and each
+The exam wording follows the official solutions of the 2024/25 and 2025/26 past papers. Each p-value and each
 power / beta probability comes with its analytical expression and the R call that gives it
 (`in R: 1 - pt(1.58, df = 99)`, `pnorm(616.7066, mean = 635, sd = 120/sqrt(441))`). Tests explain
 what the p-value means and that no probability can be attached to the decision taken. Intervals
@@ -141,6 +141,22 @@ coefficient's significance is stated at the usual levels, and the F formula is s
 `reg_effect()` gives the CI for a change of c units. `reg_predict(value =)` judges an observed
 value and flags extrapolation, `reg_check()` states the assumptions with `plot(mod, which = )`,
 and `reg_compare()` explains coefficients that lose significance.
+
+The 2024/25 papers added the following:
+- Every `prob_*()` / `rv_*()` probability prints its R call, e.g.
+  `1 - pnorm(15, mean = 12, sd = sqrt(380/80))`.
+- `desc_crosstab(y_event = c("high", "veryhigh"))` gives the share of a group of categories in
+  each group against the marginal share.
+- `test_paired()` / `ci_paired()` take one measurement as raw data and the other as mean, s and r.
+  `test_2props()` / `ci_2props()` take this sample raw and the other as `phat2 =, n2 =`.
+- New wording:
+  - the share of outliers and P95 vs the fence;
+  - the meaning of the SE in tests;
+  - "a CI for averages, not for one unit";
+  - the intercept as the baseline combination;
+  - the low-R² warning;
+  - the four strong assumptions;
+  - `reg_effect(change = -10)` read as a decrease.
 
 Descriptive results also print the matching UBStats call (book sections 2.6, 3.5 and 4.5):
 `distr.table.x()` / `distr.plot.x()` for frequency tables, classes (`breaks =`, `interval = TRUE`)

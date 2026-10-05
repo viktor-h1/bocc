@@ -92,7 +92,7 @@ test_that("menu: crosstab with ordinal column, two-variable correlation", {
   df4 <- data.frame(g = rep(c("Old", "Young"), each = 20), t = rep(c("Low", "High", "Med", "High"), 10),
                     u = 1:40, v = (1:40) * 2 + rep(c(-1, 1), 20))
   in_global(list(df4 = df4), {
-    s <- scripted(c("1", "7", "1", "1", "2", "2 3 1", "1", "q"), sc())
+    s <- scripted(c("1", "7", "1", "1", "2", "2 3 1", "1", "", "q"), sc())
     expect_true(any(grepl("desc_crosstab\\(x = df4\\$g, y = df4\\$t, order_y = c\\(\"Low\", \"Med\", \"High\"\\)\\)", s$out)))
     s2 <- scripted(c("1", "8", "1", "3", "4", "n", "q"), sc())
     expect_true(any(grepl("desc_cor\\(x = df4\\$u, y = df4\\$v\\)", s2$out)))

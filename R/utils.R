@@ -295,3 +295,9 @@
     two.sided = c(reject = sprintf("pnorm(%s, %s, %s) + 1 - pnorm(%s, %s, %s)", .f(cut[1], 6), m, se_txt, .f(cut[2], 6), m, se_txt),
                   accept = sprintf("pnorm(%s, %s, %s) - pnorm(%s, %s, %s)", .f(cut[2], 6), m, se_txt, .f(cut[1], 6), m, se_txt)))
 }
+
+# Meaning of an (estimated) standard error, as in the official solutions.
+.se_meaning <- function(se, est) {
+  sprintf("The standard error (%s) estimates the expected distance of a GENERIC estimate (%s computed on a random sample of this size) from the parameter: it describes the estimator, not how far this particular estimate is from the true value.",
+          .f(se), est)
+}

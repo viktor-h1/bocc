@@ -19,7 +19,8 @@ desc_crosstab(
   order_y = NULL,
   breaks_x = NULL,
   breaks_y = NULL,
-  plot = c("stacked", "beside")
+  plot = c("stacked", "beside"),
+  y_event = NULL
 )
 
 desc_compare(
@@ -90,6 +91,10 @@ spikes for numbers), \code{"bars"}, \code{"pie"}, \code{"spike"}, \code{"cum"}.
 \code{desc_classes()}: \code{"both"} (histogram + ogive), \code{"hist"}, \code{"ogive"}.
 \code{desc_crosstab()}: \code{"stacked"} (conditional Y|X) or \code{"beside"} (joint).
 \code{desc_compare()}: \code{"boxplot"} or \code{"hist"}.}
+
+\item{y_event}{\code{desc_crosstab()}: one or more categories of \code{y} to combine
+(e.g. \code{c("high", "veryhigh")}): their share within each level of \code{x},
+compared with the marginal share expected under independence.}
 
 \item{group, group2}{Grouping variable(s) for \code{desc_compare()} (with
 \code{group2} the groups are the combinations of the two).}

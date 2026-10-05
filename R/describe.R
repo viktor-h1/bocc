@@ -76,6 +76,9 @@
 #' @param se `desc_freq()`: also show the estimated SE of each proportion.
 #' @param y Second variable: column variable for `desc_crosstab()`, vertical
 #'   axis for `desc_cor()`.
+#' @param y_event `desc_crosstab()`: one or more categories of `y` to combine
+#'   (e.g. `c("high", "veryhigh")`): their share within each level of `x`,
+#'   compared with the marginal share expected under independence.
 #' @param order_x,order_y `desc_crosstab()`: level order of ordinal row /
 #'   column variables.
 #' @param breaks_x,breaks_y `desc_crosstab()`: classify a numerical row /
@@ -146,8 +149,19 @@ NULL
 }
 
 # Reading of percentiles: P_low / P_high pairs give the central share.
-.pct_reading <- function(probs, pr, xlab) {
+.pct_reading <- function(probs, pr, xlab, mx = NULL, mn = NULL) {
   out <- character()
+  for (a in probs) {
+    b <- 1 - a
+    if (any(abs(probs - b) < 1e-9)) next
+    pa <- pr[which.min(abs(probs - a))]
+    if (a >= 0.5 && !is.null(mx))
+      out <- c(out, sprintf("P%s = %s: the top %s%% of the units have %s above %s (between P%s and the maximum %s).",
+                            round(100 * a), .f(pa), round(100 * b), xlab, .f(pa), round(100 * a), .f(mx)))
+    else if (a < 0.5 && !is.null(mn))
+      out <- c(out, sprintf("P%s = %s: the bottom %s%% of the units have %s at most %s (between the minimum %s and P%s).",
+                            round(100 * a), .f(pa), round(100 * a), xlab, .f(pa), .f(mn), round(100 * a)))
+  }
   for (a in probs[probs < 0.5]) {
     b <- 1 - a
     if (any(abs(probs - b) < 1e-9)) {
@@ -214,7 +228,9 @@ desc_summary <- function(x, probs = c(0.05, 0.10, 0.90, 0.95, 0.99), population 
     sprintf("  1.5 x IQR = %s  ->  regular values lie in [Q1 - 1.5 IQR, Q3 + 1.5 IQR] = [%s, %s]",
             .f(1.5 * (q[2] - q[1])), .f(fe[1]), .f(fe[2])),
     sprintf("  Whiskers end at the min / max regular values: %s and %s", .f(wlo), .f(whi)),
-    sprintf("  Extreme values (outliers): %s", if (length(outl)) paste(.f(outl), collapse = ", ") else "none"), "",
+    sprintf("  Extreme values (outliers): %s", if (length(outl)) paste(.f(outl), collapse = ", ") else "none"),
+    sprintf("  Share of outliers: %d low (%s) and %d high (%s) out of n = %s", sum(v < fe[1]), .pct(mean(v < fe[1]), 1),
+            sum(v > fe[2]), .pct(mean(v > fe[2]), 1), n), "",
     sprintf("Shape: Q2 - Q1 = %s vs Q3 - Q2 = %s;  lower whisker %s vs upper whisker %s",
             .f(md - q[1]), .f(q[2] - md), .f(q[1] - wlo), .f(whi - q[2])),
     sprintf("  -> %s; %s", shape, mm),
@@ -232,7 +248,13 @@ desc_summary <- function(x, probs = c(0.05, 0.10, 0.90, 0.95, 0.99), population 
     sprintf("The standard deviation is %s, i.e. on average the values deviate from the mean by about %s (CV = %s of the mean). The boxplot suggests a %s distribution.%s",
             .f(s), .f(s), .pct(s / abs(m)), sub(" \\(.*", "", shape),
             if (length(outl)) sprintf(" %d value(s) lie more than 1.5 IQR beyond the box and are flagged as extreme: %s.", length(outl), paste(.f(outl), collapse = ", ")) else " No value is flagged as extreme."),
-    .pct_reading(probs, pr, xlab),
+    .pct_reading(probs, pr, xlab, max(v), min(v)),
+    if (any(abs(probs - 0.95) < 1e-9)) {
+      p95 <- pr[which.min(abs(probs - 0.95))]
+      sprintf("Upper fence Q3 + 1.5 IQR = %s vs P95 = %s: %s", .f(fe[2]), .f(p95),
+              if (p95 > fe[2]) "P95 is above the fence, so MORE than 5% of the values are anomalously high (upper outliers)."
+              else "P95 is not above the fence, so at most 5% of the values are anomalously high.")
+    },
     if (length(value)) .value_check_words(value, q, xlab))
   .result("Descriptive summary", lines, wording,
           c(.dropped_note(v), if (population) "Population formulas used (divisor N)."), match.call(),
@@ -300,6 +322,7 @@ desc_prop <- function(x = NULL, event = NULL, count = NULL, n = NULL) {
   wording <- sprintf(
     "Estimator: let X_i = 1 if the i-th unit has the characteristic (%s) and 0 otherwise (Bernoulli, P(X_i = 1) = p); the estimator of p is the sample proportion P-hat = (X_1 + ... + X_n) / n, an unbiased estimator (E(P-hat) = p) with standard error sqrt(p(1 - p)/n). The estimate of the population proportion of %s is the sample proportion p-hat = %s/%s = %s. The true standard error sqrt[p(1 - p)/n] depends on the unknown population proportion p, so it is estimated by substituting p-hat for p: SE(p-hat) = sqrt[%s(1 - %s)/%s] = %s.",
     P$ev, P$ev, .f(P$count), .f(P$n), .f(P$phat), .f(P$phat), .f(P$phat), .f(P$n), .f(se))
+  wording <- c(wording, "The (estimated) standard error is the expected distance of a GENERIC estimate from the unknown p: a smaller SE means the ESTIMATOR's estimates are more concentrated around p, but nothing can be concluded about how close this specific estimate is to its parameter.")
   ub <- if (!raw) .ub_raw_note
         else paste(if (is.null(event)) .ub_call("CI.prop", x = sx)
                    else if (length(event) == 1) .ub_call("CI.prop", x = sx, success = event)

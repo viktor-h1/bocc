@@ -85,20 +85,26 @@ NULL
 
 # ---------- distributions as objects for the shared engine ----------
 
-.D_normal <- function(mean, sd) {
+.D_normal <- function(mean, sd, sd_txt = NULL) {
   std <- !(mean == 0 && sd == 1)
+  args <- if (std) sprintf(", mean = %s, sd = %s", .f(mean, 6), sd_txt %||% .f(sd, 6)) else ""
   list(cdf = function(q) pnorm(q, mean, sd), qf = function(p) qnorm(p, mean, sd), dens = function(x) dnorm(x, mean, sd),
+       rp = function(q) sprintf("pnorm(%s%s)", .f(q, 6), args), rq = function(p) sprintf("qnorm(%s%s)", .f(p, 6), args),
        label = sprintf("N(%s, %s^2)", .f(mean), .f(sd)), xr = mean + c(-4, 4) * sd,
        std = if (std) function(a) sprintf("   [z = (%s - %s) / %s = %s]", .f(a), .f(mean), .f(sd), .f((a - mean) / sd)),
        qstd = if (std) function(p) sprintf("   [= mu + z x sigma = %s + %s x %s]", .f(mean), .f(qnorm(p)), .f(sd)))
 }
 .D_t <- function(df) list(cdf = function(q) pt(q, df), qf = function(p) qt(p, df), dens = function(x) dt(x, df),
+                          rp = function(q) sprintf("pt(%s, df = %s)", .f(q, 6), .f(df)), rq = function(p) sprintf("qt(%s, df = %s)", .f(p, 6), .f(df)),
                           label = sprintf("t(%s)", .f(df)), xr = c(-1, 1) * max(4, qt(0.995, df)))
 .D_chisq <- function(df) list(cdf = function(q) pchisq(q, df), qf = function(p) qchisq(p, df), dens = function(x) dchisq(x, df),
+                              rp = function(q) sprintf("pchisq(%s, df = %s)", .f(q, 6), .f(df)), rq = function(p) sprintf("qchisq(%s, df = %s)", .f(p, 6), .f(df)),
                               label = sprintf("chi-square(%s)", .f(df)), xr = c(0, qchisq(0.999, df)))
 .D_unif <- function(a, b) {
   w <- b - a
   list(cdf = function(q) punif(q, a, b), qf = function(p) qunif(p, a, b), dens = function(x) dunif(x, a, b),
+       rp = function(q) sprintf("punif(%s, min = %s, max = %s)", .f(q, 6), .f(a), .f(b)),
+       rq = function(p) sprintf("qunif(%s, min = %s, max = %s)", .f(p, 6), .f(a), .f(b)),
        label = sprintf("Uniform(%s, %s)", .f(a), .f(b)), xr = c(a - 0.15 * w, b + 0.15 * w),
        std = function(x) sprintf("   [= (%s - %s) / (%s - %s), clipped to [0, 1]]", .f(x), .f(a), .f(b), .f(a)),
        qstd = function(p) sprintf("   [= a + (b - a) x alpha = %s + %s x %s]", .f(a), .f(w), .f(p)))
@@ -112,11 +118,13 @@ NULL
   out <- list(); lo <- numeric(); hi <- numeric()
   for (a in below) {
     v <- D$cdf(a); out[[sprintf("P(%s < %s)", xname, .f(a))]] <- v
-    lines <- c(lines, sprintf("P(%s < %s) = F(%s) = %s%s", xname, .f(a), .f(a), .f(v, 6), s1(D$std, a))); lo <- c(lo, -Inf); hi <- c(hi, a)
+    lines <- c(lines, sprintf("P(%s < %s) = F(%s) = %s%s", xname, .f(a), .f(a), .f(v, 6), s1(D$std, a)),
+               sprintf("  in R: %s", D$rp(a))); lo <- c(lo, -Inf); hi <- c(hi, a)
   }
   for (a in above) {
     v <- 1 - D$cdf(a); out[[sprintf("P(%s > %s)", xname, .f(a))]] <- v
-    lines <- c(lines, sprintf("P(%s > %s) = 1 - F(%s) = 1 - %s = %s%s", xname, .f(a), .f(a), .f(D$cdf(a), 6), .f(v, 6), s1(D$std, a)))
+    lines <- c(lines, sprintf("P(%s > %s) = 1 - F(%s) = 1 - %s = %s%s", xname, .f(a), .f(a), .f(D$cdf(a), 6), .f(v, 6), s1(D$std, a)),
+               sprintf("  in R: 1 - %s", D$rp(a)))
     lo <- c(lo, a); hi <- c(hi, Inf)
   }
   if (!is.null(between)) {
@@ -125,21 +133,24 @@ NULL
     out[[sprintf("P(%s < %s < %s)", .f(a), xname, .f(b))]] <- v
     lines <- c(lines, sprintf("P(%s < %s < %s) = F(%s) - F(%s) = %s - %s = %s", .f(a), xname, .f(b),
                               .f(b), .f(a), .f(D$cdf(b), 6), .f(D$cdf(a), 6), .f(v, 6)),
-               if (!is.null(D$std)) paste0("   ", trimws(D$std(a)), "  and  ", trimws(D$std(b))))
+               if (!is.null(D$std)) paste0("   ", trimws(D$std(a)), "  and  ", trimws(D$std(b))),
+               sprintf("  in R: %s - %s", D$rp(b), D$rp(a)))
     lo <- c(lo, a); hi <- c(hi, b)
   }
   for (p in quantile) {
     p <- .prob(p, "quantile")
     v <- D$qf(p); out[[sprintf("q_%s", .f(p))]] <- v
     lines <- c(lines, sprintf("q_%s = x_%s (value with P(%s <= x) = %s; %s above it) = %s%s", .f(p), .f(1 - p), xname, .f(p),
-                              .pct(1 - p, 1), .f(v, 6), s1(D$qstd, p)))
+                              .pct(1 - p, 1), .f(v, 6), s1(D$qstd, p)),
+               sprintf("  in R: %s", D$rq(p)))
     lo <- c(lo, -Inf); hi <- c(hi, v)
   }
   if (!is.null(middle)) {
     m <- .prob(middle, "middle"); l <- D$qf((1 - m) / 2); u <- D$qf((1 + m) / 2)
     out[["middle_lower"]] <- l; out[["middle_upper"]] <- u
     lines <- c(lines, sprintf("Central %s interval (the %s most typical values): [q_%s, q_%s] = [%s, %s]",
-                              .pct(m, 1), .pct(m, 1), .f((1 - m) / 2), .f((1 + m) / 2), .f(l, 6), .f(u, 6)))
+                              .pct(m, 1), .pct(m, 1), .f((1 - m) / 2), .f((1 + m) / 2), .f(l, 6), .f(u, 6)),
+               sprintf("  in R: %s and %s", D$rq((1 - m) / 2), D$rq((1 + m) / 2)))
     lo <- c(lo, l); hi <- c(hi, u)
   }
   if (!length(out)) stop("Say what you need: below = , above = , between = c(a, b), quantile = or middle = .", call. = FALSE)
@@ -486,7 +497,8 @@ rv_iid <- function(mu, sigma = NULL, n, stat = c("mean", "sum"), var = NULL,
   }
   vals <- NULL; notes <- NULL
   if (.has_query(below, above, between, quantile, middle)) {
-    E <- .prob_engine(.D_normal(m, sqrt(v)), below, above, between, quantile, middle, nm, paste(nm, "~"))
+    sdt <- if (stat == "mean") sprintf("sqrt(%s/%s)", .f(v1, 6), n) else sprintf("sqrt(%s*%s)", n, .f(v1, 6))
+    E <- .prob_engine(.D_normal(m, sqrt(v), sdt), below, above, between, quantile, middle, nm, paste(nm, "~"))
     lines <- c(lines, "", sprintf("%s is normal if the X_i are normal (exact); otherwise, for n large (typically n > 30), approximately normal by the Central Limit Theorem:", nm),
                E$lines[-1]); vals <- E$values
     if (n <= 30) notes <- sprintf("n = %d is not large: the probabilities are exact only if the population is normal (the CLT approximation may be poor).", n)
@@ -506,7 +518,7 @@ rv_prop <- function(p, n, below = NULL, above = NULL, between = NULL, quantile =
              sprintf("Check: n p = %s, n (1 - p) = %s (both should be large enough, e.g. >= 5-10, for the normal approximation)", .f(n * p), .f(n * (1 - p))))
   vals <- NULL
   if (.has_query(below, above, between, quantile, middle)) {
-    E <- .prob_engine(.D_normal(p, se), below, above, between, quantile, middle, "p-hat", "p-hat ~")
+    E <- .prob_engine(.D_normal(p, se, sprintf("sqrt(%s*(1-%s)/%s)", .f(p, 6), .f(p, 6), .f(n))), below, above, between, quantile, middle, "p-hat", "p-hat ~")
     lines <- c(lines, "", "Normal approximation (CLT): p-hat ~ approx. N(p, p(1 - p)/n)", E$lines[-1]); vals <- E$values
   }
   .result("Sampling distribution of a sample proportion", lines, NULL, NULL, match.call(),

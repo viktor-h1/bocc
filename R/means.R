@@ -182,7 +182,8 @@ test_mean <- function(x = NULL, mu0, alt = "two.sided", alpha = 0.05, method = c
     if (!is.null(m$df)) sprintf(" with %s degrees of freedom", .f(m$df)) else "",
     .decision_words(p, alpha), xlab, .alt_words(alt), .f(mu0)),
     .zt_disagree(p_z, p_t, alpha),
-    .p_meaning(p, sname, stat, alt, sprintf("mu = %s", .f(mu0))))
+    .p_meaning(p, sname, stat, alt, sprintf("mu = %s", .f(mu0))),
+    if (m$case != "known") .se_meaning(m$se, "the sample mean"))
   ub <- if (!is.null(x)) .ub_call("TEST.mean", x = sx, sigma = sigma, mu0 = mu0, alternative = .ub_alt(alt)) else .ub_raw_note
   .plot_test(stat, alt, alpha, m$dist, m$df, main = "One-mean test")
   .result("One-mean test", lines, wording, m$note, match.call(),
@@ -318,7 +319,7 @@ est_mean <- function(x = NULL, xbar = NULL, s = NULL, n = NULL, sigma = NULL, su
     sprintf("The estimate of the population mean of %s is the sample mean, %s. Its %sstandard error, %s, is the expected deviation of a GENERIC estimate (over all possible samples of size %s) from mu: it does not tell how far this particular xbar is from mu, which remains unknown.",
             xlab, .f(m$xbar), if (known) "" else "estimated ", .f(m$se), .f(m$n)),
     "A smaller standard error means estimates more concentrated around mu: larger samples give more precise estimates. Comparing two standard errors says which ESTIMATOR is more reliable (its estimates more tightly clustered around the parameter), not how close each specific realised estimate is to its parameter.",
-    "Unbiasedness: an estimator T of a parameter theta is unbiased if E(T) = theta for every possible value of theta. The sample mean Xbar is an unbiased estimator of mu, E(Xbar) = mu.")
+    "Unbiasedness: an estimator T of a parameter theta is unbiased if E(T) = theta for every possible value of theta. The sample mean Xbar is an unbiased estimator of mu, E(Xbar) = mu, and Var(Xbar) = sigma^2 / n: proportional to the population variance, inversely proportional to n, and tending to 0 as n grows (consistency).")
   ub <- if (!is.null(x)) paste(.ub_call("CI.mean", x = sx, sigma = sigma), " # also prints xbar and its SE") else .ub_raw_note
   .result("Point estimate of a mean and its standard error", lines, wording, m$note, match.call(),
           estimate = m$xbar, se = m$se, n = m$n, n_needed = n_need, ubstats = ub)
@@ -328,6 +329,21 @@ est_mean <- function(x = NULL, xbar = NULL, s = NULL, n = NULL, sigma = NULL, su
 
 .paired <- function(x, y, dbar, sd_d, n, mean1, mean2, s1, s2, cov, r, xlab, ylab, sigma_d = NULL) {
   steps <- character(); mx <- my <- NULL
+  # one measurement as raw data, the other (and the correlation / covariance) from the question
+  mixed_txt <- NULL
+  if (!is.null(x) && is.null(y) && !is.null(mean2)) {
+    v <- .num(x, xlab); v <- v[!is.na(v)]
+    mean1 <- mean(v); s1 <- sd(v); n <- n %||% length(v)
+    mixed_txt <- sprintf("First measurement (%s) from the data: n = %d, mean1 = %s, s1 = %s; second measurement, correlation / covariance from the question.",
+                         xlab, length(v), .f(mean1), .f(s1))
+    x <- NULL
+  } else if (is.null(x) && !is.null(y) && !is.null(mean1)) {
+    v <- .num(y, ylab); v <- v[!is.na(v)]
+    mean2 <- mean(v); s2 <- sd(v); n <- n %||% length(v)
+    mixed_txt <- sprintf("Second measurement (%s) from the data: n = %d, mean2 = %s, s2 = %s; first measurement, correlation / covariance from the question.",
+                         ylab, length(v), .f(mean2), .f(s2))
+    y <- NULL
+  }
   if (!is.null(x)) {
     if (!is.null(y)) {
       a <- .one_column(x, xlab); b <- .one_column(y, ylab)
@@ -361,7 +377,7 @@ est_mean <- function(x = NULL, xbar = NULL, s = NULL, n = NULL, sigma = NULL, su
     steps <- c(steps,
       sprintf("Dbar = mean1 - mean2 = %s - %s = %s", .f(mean1), .f(mean2), .f(dbar)),
       sprintf("s_D = sqrt(s1^2 + s2^2 - 2 Cov) = sqrt(%s^2 + %s^2 - 2 x %s) = %s", .f(s1), .f(s2), .f(cov), .f(sd_d)))
-    def <- "D = first - second measurement"; note <- NULL; mx <- mean1; my <- mean2
+    def <- "D = first - second measurement"; note <- mixed_txt; mx <- mean1; my <- mean2
     inputs <- sprintf("Summary numbers   n = %s   mean1 = %s   mean2 = %s", .f(n), .f(mean1), .f(mean2))
   }
   if (n < 2) stop("At least two pairs are needed.", call. = FALSE)
@@ -426,11 +442,12 @@ test_paired <- function(x = NULL, y = NULL, d0 = 0, alt = "two.sided", alpha = 0
     if (!is.null(df)) sprintf(" with %s degrees of freedom", .f(df)) else "",
     .decision_words(p, alpha), .alt_words(alt), .f(d0)),
     .zt_disagree(p_z, p_t, alpha),
-    .p_meaning(p, sname, stat, alt, sprintf("mu_D = %s", .f(d0))))
+    .p_meaning(p, sname, stat, alt, sprintf("mu_D = %s", .f(d0))),
+    if (!known) .se_meaning(P$se, "the mean of the differences"))
   mdiff <- if (d0 != 0) d0
   ub <- if (!is.null(x) && !is.null(y))
           .ub_call("TEST.diffmean", x = sx, y = sy, type = "paired", sigma.d = sigma_d, mdiff0 = mdiff, alternative = .ub_alt(alt))
-        else if (!is.null(x)) paste(.ub_call("TEST.mean", x = sx, sigma = sigma_d, mu0 = d0, alternative = .ub_alt(alt)), " # on the differences")
+        else if (!is.null(x) && is.null(mean2)) paste(.ub_call("TEST.mean", x = sx, sigma = sigma_d, mu0 = d0, alternative = .ub_alt(alt)), " # on the differences")
         else .ub_raw_note
   .plot_test(stat, alt, alpha, dist, df, main = "Paired test")
   .result("Paired test (mean difference)", lines, wording, P$note, match.call(),
@@ -470,9 +487,10 @@ ci_paired <- function(x = NULL, y = NULL, conf = 0.95, method = c("t", "z"),
              "", b$lines)
   wording <- c("The samples are paired (two measurements on the same units), so the interval is built on the differences D: mu_x - mu_y = mu_D.",
                if (!known) "The t interval is exact if the two populations are jointly normal; for a large sample the normal approximation is also valid (both are shown, as in UBStats).",
-               .ci_wording(conf, sprintf("population mean difference (%s)", P$def), b$ci))
+               .ci_wording(conf, sprintf("population mean difference (%s)", P$def), b$ci),
+               "The interval concerns the population MEAN of the differences: it does not say, with any confidence, how much a specific unit changes.")
   ub <- if (!is.null(x) && !is.null(y)) .ub_call("CI.diffmean", x = sx, y = sy, type = "paired", sigma.d = sigma_d, conf.level = conf)
-        else if (!is.null(x)) paste(.ub_call("CI.mean", x = sx, sigma = sigma_d, conf.level = conf), " # the differences: same interval")
+        else if (!is.null(x) && is.null(mean2)) paste(.ub_call("CI.mean", x = sx, sigma = sigma_d, conf.level = conf), " # the differences: same interval")
         else .ub_raw_note
   .result("Confidence interval for a paired mean difference", lines, wording, P$note, match.call(),
           estimate = P$dbar, se = P$se, critical = cr$v, margin = b$me, ci = b$ci, df = df,
@@ -598,7 +616,8 @@ test_2means <- function(x = NULL, y = NULL, case, d0 = 0, alt = "two.sided", alp
       if (!is.null(M$df)) sprintf(" with %s degrees of freedom", .f(M$df, 2)) else "",
       .decision_words(p, alpha), M$vlab, M$labs[1],
       if (d0 == 0) .alt_words(alt) else sprintf("%s (by %s)", .alt_words(alt), .f(d0)), M$labs[2])
-    wording <- c(wording, .p_meaning(p, sname, stat, alt, sprintf("mu_x - mu_y = %s", .f(d0))))
+    wording <- c(wording, .p_meaning(p, sname, stat, alt, sprintf("mu_x - mu_y = %s", .f(d0))),
+                 if (M$case != "known") .se_meaning(M$se, "the difference between the sample means"))
   }
   if (M$case == "known") {
     tab <- data.frame(row.names = "Normal", n_x = M$n1, n_y = M$n2, xbar = M$xbar1, ybar = M$xbar2, `xbar-ybar` = M$diff,
@@ -826,7 +845,8 @@ ci_2means <- function(x = NULL, y = NULL, case, conf = 0.95, group = NULL, level
     else "Some intervals contain 0 and some do not: the conclusion depends on the assumptions."
   } else if (zero_txt[1] > 0 || zero_txt[2] < 0) "The interval does not contain 0, so the data indicate a difference between the two population means."
     else "The interval contains 0, so a zero difference between the population means is plausible."
-  wording <- c(wording, zero)
+  wording <- c(wording, zero,
+               "The interval concerns the difference between the population AVERAGES of the two groups: it is not a statement about the difference (or the change) for a specific unit.")
   L <- .levene_block(M, var_test)
   if (!is.null(L)) { lines <- c(lines, "", L$lines); wording <- c(wording, L$wording) }
   vt <- if (!is.null(L)) TRUE

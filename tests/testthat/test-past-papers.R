@@ -1,4 +1,4 @@
-# Questions from the 2025/26 past papers (official solutions), reproduced from the numbers
+# Questions from the 2024/25 and 2025/26 past papers (official solutions), reproduced from the numbers
 # given in the solutions. Where the solution used a rounded printed table, statcram uses the
 # exact values, so those checks use a tolerance or the exact value (commented).
 
@@ -54,7 +54,7 @@ test_that("General Jan 30 2026: in-store proportion, test, beta; classes; mixed 
   e <- q(desc_prop(count = 188, n = 950))
   expect_equal(round(e$estimate, 4), 0.1979)
   expect_equal(round(e$se, 5), 0.01293)
-  expect_true(grepl("X_i = 1 if the i-th unit", e$wording))
+  expect_true(any(grepl("X_i = 1 if the i-th unit", e$wording)))
   t <- q(test_prop(count = 188, n = 950, p0 = 0.23, alt = "<"))
   expect_equal(round(t$cutoff, 7), 0.2075418)
   expect_equal(t$decision, "reject H0")
@@ -185,5 +185,172 @@ test_that("menu: value check in the summary and in the group comparison", {
     s2 <- scripted(c("hb$t", "hb$tier", "n", "", "q"), sc(1, 4))
     expect_length(s2$left, 0)
     expect_true(any(grepl("^desc_compare\\(x = hb\\$t, group = hb\\$tier\\)$", s2$out)))
+  })
+})
+
+# ---- 2024/25 papers ---------------------------------------------------------------------------
+
+test_that("First partial Oct 2024: CLT probability with its R call, classes, two proportions' SEs", {
+  r <- q(rv_iid(12, sqrt(380), 80, above = 15))
+  expect_equal(round(r$values[[1]], 4), 0.0843)              # solution rounds to 0.08
+  expect_true(any(grepl("in R: 1 - pnorm(15, mean = 12, sd = sqrt(380/80))", r$lines, fixed = TRUE)))
+  cl <- q(desc_classes(prop = c(0.20, 0.42, 0.16, 0.20, 0.02), breaks = c(0, 1, 5, 10, 50, 200), n = 550))
+  expect_equal(cl$mean, 11.06)
+  ex2 <- sum(c(0.5, 3, 7.5, 30, 125)^2 * c(0.20, 0.42, 0.16, 0.20, 0.02))
+  expect_equal(round(ex2, 2), 505.33)
+  expect_equal(cl$variance, 550 / 549 * (ex2 - 11.06^2))
+  a <- q(desc_prop(count = 176, n = 550)); b <- q(desc_prop(count = 95, n = 550))
+  expect_equal(round(c(a$se, b$se), 3), c(0.020, 0.016))
+  expect_true(any(grepl("nothing can be concluded about how close this specific estimate", a$wording, fixed = TRUE)))
+})
+
+test_that("Second partial Jan 8 2025: sleep test cut-off, beta, effect of 10 years less", {
+  t <- q(test_mean(xbar = 7.05, sigma = 0.5, n = 374, mu0 = 7, alt = ">", alpha = 0.01))
+  expect_equal(round(t$cutoff, 2), 7.06)
+  p <- q(power_mean(7, 7.1, 0.5, 374, alpha = 0.01, alt = ">"))
+  near(p$beta, 0.0609, 0.001)                                # 0.0609 with the cut-off rounded to 7.06
+  set.seed(8); d <- data.frame(age = runif(120, 20, 70)); d$sleep <- 8 - 0.02 * d$age + rnorm(120, 0, 0.6)
+  m <- q(reg_fit(sleep ~ age, data = d))
+  e <- q(reg_effect(m, "age", change = -10))
+  expect_true(grepl("a decrease of 10 units in age", e$wording[1], fixed = TRUE))
+  expect_false(grepl("increase of -10", e$wording[1], fixed = TRUE))
+  expect_true(any(grepl("(a decrease of 10 units)", e$lines, fixed = TRUE)))
+  expect_equal(e$effect_ci, sort(-10 * as.numeric(confint(m$model, "age"))))
+})
+
+test_that("General Jan 8 2025: power of a proportion test; paired test from summaries and mixed input", {
+  t <- q(test_prop(count = 150, n = 400, p0 = 0.35, alt = ">", alpha = 0.01))
+  expect_equal(round(t$cutoff, 4), 0.4055)
+  pw <- q(power_prop(0.35, 0.38, 400, alpha = 0.01, alt = ">"))
+  expect_equal(round(pw$power, 3), 0.147)
+  pd <- q(test_paired(mean1 = 414, mean2 = 402.89, s1 = 48, s2 = 45.61, r = 0.71, n = 161, alt = ">"))
+  expect_equal(round(pd$statistic, 3), 3.947)
+  near(pd$p_value, 5.9e-05, 1e-06)
+  expect_true(any(grepl("in R: 1 - pt(3.9472, df = 160)", pd$lines, fixed = TRUE)))
+  expect_true(any(grepl("GENERIC estimate", pd$wording, fixed = TRUE)))
+  # "before" as raw data in the data frame, "after" mean, s and r from the text
+  set.seed(4); before <- as.numeric(scale(rnorm(161)) * 48 + 414)
+  mx <- q(test_paired(before, mean2 = 402.89, s2 = 45.61, r = 0.71, alt = ">"))
+  expect_equal(mx$statistic, pd$statistic)
+  expect_true(any(grepl("First measurement (before) from the data", mx$notes, fixed = TRUE)))
+  ci <- q(ci_paired(before, mean2 = 402.89, s2 = 45.61, r = 0.71))
+  expect_true(any(grepl("how much a specific unit changes", ci$wording, fixed = TRUE)))
+})
+
+test_that("Second partial Jan 28 2025: cut-off on the p-hat scale; P(reject) for a value in H0", {
+  pw <- q(power_prop(0.2, 0.18, 500, alpha = 0.05, alt = ">"))
+  expect_equal(round(pw$cutoff, 4), round(0.2 + qnorm(0.95) * sqrt(0.16 / 500), 4))
+  expect_equal(round(pw$cutoff, 4), 0.2294)
+  expect_true(pw$in_h0)
+  expect_equal(round(pw$p_reject, 5), 0.00201)               # solution: 0.00202
+  c2 <- q(chisq_indep(matrix(c(30, 20, 25, 25), 2)))
+  expect_true(any(grepl("% of all possible samples", c2$wording, fixed = TRUE)))
+})
+
+test_that("General Jan 29 2025: salary test beta, GOF, two proportions with the old sample", {
+  p <- q(power_mean(2500, 2400, 850, 87, alpha = 0.05, alt = "<"))
+  expect_equal(round(p$cutoff, 1), 2350.1)
+  expect_equal(round(p$beta, 3), 0.708)
+  expect_true(any(grepl("in R: 1 - pnorm(2350.105204, mean = 2400, sd = 850/sqrt(87))", p$lines, fixed = TRUE)))
+  g <- q(chisq_gof(c(262, 168, 70), p = c(0.5, 0.4, 0.1)))
+  expect_equal(unname(g$expected), c(250, 200, 50))
+  expect_equal(round(g$statistic, 3), 13.696)
+  expect_equal(round(g$p_value, 5), 0.00106)
+  t <- q(test_2props(count1 = 206, n1 = 500, phat2 = 0.5, n2 = 100, alt = "<"))
+  expect_equal(round(t$pooled, 4), 0.4267)
+  expect_equal(round(t$statistic, 3), -1.624)
+  expect_equal(round(t$p_value, 4), 0.0522)
+  expect_true(any(grepl("in R: pnorm(-1.6242)", t$lines, fixed = TRUE)))
+  used <- rep(c("yes", "no"), c(206, 294))
+  tm <- q(test_2props(used, event = "yes", phat2 = 0.5, n2 = 100, alt = "<"))
+  expect_equal(tm$statistic, t$statistic)
+  cm <- q(ci_2props(used, event = "yes", phat2 = 0.5, n2 = 100))
+  expect_equal(length(cm$ci), 2)
+})
+
+test_that("General Jul 2025: CI with sigma known; P(P-hat >= 0.30) with its R call", {
+  ci <- q(ci_mean(xbar = 275.3343, sigma = 500, n = 390, conf = 0.90))
+  expect_equal(round(ci$ci, 2), c(233.69, 316.98), tolerance = 0.011)   # solution (233.68, 316.99)
+  r <- q(rv_prop(0.3397, 1200, above = 0.30))
+  expect_equal(round(r$values[[1]], 3), 0.998)
+  expect_true(any(grepl("in R: 1 - pnorm(0.3, mean = 0.3397, sd = sqrt(0.3397*(1-0.3397)/1200))", r$lines, fixed = TRUE)))
+  e <- q(est_mean(c(3, 5, 7, 9, 11)))
+  expect_true(any(grepl("tending to 0 as n grows (consistency)", e$wording, fixed = TRUE)))
+})
+
+test_that("General Sep 2025: cut-off and beta for a proportion test", {
+  pw <- q(power_prop(0.25, 0.3, 500, alpha = 0.01, alt = ">"))
+  expect_equal(round(pw$cutoff, 3), 0.295)
+  expect_equal(round(pw$beta, 3), 0.405)                     # solution: 0.404 with the cut-off rounded
+})
+
+test_that("probability engine: every probability and quantile prints its R call", {
+  n1 <- q(prob_normal(mean = 10, sd = 2, between = c(8, 12), quantile = 0.9))
+  expect_true(any(grepl("in R: pnorm(12, mean = 10, sd = 2) - pnorm(8, mean = 10, sd = 2)", n1$lines, fixed = TRUE)))
+  expect_true(any(grepl("in R: qnorm(0.9, mean = 10, sd = 2)", n1$lines, fixed = TRUE)))
+  t1 <- q(prob_t(df = 12, above = 2))
+  expect_true(any(grepl("in R: 1 - pt(2, df = 12)", t1$lines, fixed = TRUE)))
+  c1 <- q(prob_chisq(df = 3, below = 7.81))
+  expect_true(any(grepl("in R: pchisq(7.81, df = 3)", c1$lines, fixed = TRUE)))
+})
+
+test_that("grouped conditional shares in a crosstab (Freq(high or very high | group))", {
+  d <- data.frame(Content = rep(c("news", "offers", "video"), c(40, 50, 30)),
+                  Shares = c(rep(c("low", "medium", "high", "veryhigh"), c(10, 14, 10, 6)),
+                             rep(c("low", "medium", "high", "veryhigh"), c(5, 7, 19, 19)),
+                             rep(c("low", "medium", "high", "veryhigh"), c(12, 9, 6, 3))))
+  r <- q(desc_crosstab(d$Content, d$Shares, order_y = c("low", "medium", "high", "veryhigh"), y_event = c("high", "veryhigh")))
+  rp <- prop.table(table(d$Content, d$Shares), 1)
+  expect_equal(unname(r$event_share), unname(rp[, "high"] + rp[, "veryhigh"]))
+  expect_true(any(grepl("Freq(Shares = high or veryhigh | Content = offers) = 0.38 + 0.38 = 0.76   (38 of 50)", r$lines, fixed = TRUE)))
+  expect_true(any(grepl("Marginal (all units): Freq(Shares = high or veryhigh) = 63 / 120 = 0.525", r$lines, fixed = TRUE)))
+  expect_true(any(grepl("equal to the marginal share 0.525", r$wording, fixed = TRUE)))
+  expect_true(any(grepl("with Content = offers, the share with Shares = high or veryhigh is 76%", r$wording, fixed = TRUE)))
+  expect_error(desc_crosstab(d$Content, d$Shares, y_event = "huge"), "y_event not found")
+})
+
+test_that("outlier shares, P95 vs the fence, top-15% reading, outlier % by group", {
+  x <- c(1:18, 60, 80)                                       # Q1 5.75, Q3 15.25, upper fence 29.5
+  s <- q(desc_summary(x, probs = c(0.05, 0.85, 0.95)))
+  expect_true(any(grepl("Share of outliers: 0 low (0%) and 2 high (10%) out of n = 20", s$lines, fixed = TRUE)))
+  expect_true(any(grepl("P95 is above the fence", s$wording, fixed = TRUE)))
+  expect_true(any(grepl("the top 15% of the units have x above", s$wording, fixed = TRUE)))
+  g <- q(desc_compare(c(x, 1:20), rep(c("A", "B"), each = 20)))
+  expect_true(any(grepl("outliers", g$wording)))
+})
+
+test_that("SE meaning in tests and 'averages, not one unit' in difference intervals", {
+  t <- q(test_mean(xbar = 10, s = 2, n = 50, mu0 = 9))
+  expect_true(any(grepl("expected distance of a GENERIC estimate", t$wording, fixed = TRUE)))
+  c2 <- q(ci_2means(xbar1 = 10, s1 = 2, n1 = 40, xbar2 = 9, s2 = 2.5, n2 = 45, case = "pooled"))
+  expect_true(any(grepl("specific unit", c2$wording, fixed = TRUE)))
+})
+
+test_that("regression: baseline intercept, baseline order, low R2, strong assumptions, dummies in reg_compare", {
+  set.seed(3); n <- 150
+  d <- data.frame(Branch = sample(c("B", "A", "C"), n, TRUE), AgeC = sample(c("young", "adult"), n, TRUE))
+  d$Age <- 35 + 12 * (d$Branch == "C") + rnorm(n, 0, 6)
+  d$y <- 5 + 0.8 * d$Age + rnorm(n, 0, 6)
+  m <- q(reg_fit(y ~ Branch + AgeC, data = d))
+  expect_true(any(grepl("estimated mean of y for units with Branch = A and AgeC = adult", m$wording, fixed = TRUE)))
+  expect_true(any(grepl("The baseline of each factor is its FIRST level (Branch = A, AgeC = adult)", m$wording, fixed = TRUE)))
+  lo <- q(reg_fit(y ~ AgeC, data = d))
+  expect_true(lo$r_squared < 0.3)
+  expect_true(any(grepl("not advisable for predicting individual values", lo$wording, fixed = TRUE)))
+  m1 <- q(reg_fit(y ~ Branch, data = d)); m2 <- q(reg_fit(y ~ Branch + Age, data = d))
+  cmp <- q(reg_compare(m1, m2))
+  expect_true(any(grepl("The groups Branch = C and Branch = A (baseline) differ in the added variable(s)", cmp$wording, fixed = TRUE)))
+  ck <- q(reg_check(m2))
+  expect_true(any(grepl("Cor(eps_i, eps_j) = 0", ck$lines, fixed = TRUE)))
+  expect_true(any(grepl("iid N(0, sigma^2)", ck$wording, fixed = TRUE)))
+})
+
+test_that("menu: crosstab asks for a group of Y categories", {
+  dc <- data.frame(g = rep(c("Old", "Young"), each = 20), t = rep(c("Low", "High", "Med", "High"), 10))
+  in_global(list(dc = dc), {
+    s <- scripted(c("1", "dc$g", "dc$t", "", "1", "Med High", "q"), sc(1, 7))
+    expect_length(s$left, 0)
+    expect_true(any(grepl("y_event = c(\"Med\", \"High\")", s$out, fixed = TRUE)))
+    expect_true(any(grepl("Freq(t = Med or High | g = Old)", s$out, fixed = TRUE)))
   })
 })

@@ -87,8 +87,13 @@ NULL
   for (nm in nms) {
     b <- co[[nm]]
     if (nm == "(Intercept)") {
-      out <- c(out, sprintf("Intercept %s: estimated mean of %s when all explanatory variables are 0%s (meaningful only if 0 is a sensible value).",
-                            .f(b), y, if (length(xl)) " and every factor is at its baseline level" else ""))
+      num <- setdiff(attr(terms(m), "term.labels"), names(xl))
+      base <- if (length(xl)) paste(sprintf("%s = %s", names(xl), vapply(xl, `[`, "", 1)), collapse = " and ") else ""
+      out <- c(out, if (!length(xl)) sprintf("Intercept %s: estimated mean of %s when all explanatory variables are 0 (meaningful only if 0 is a sensible value).", .f(b), y)
+               else if (!length(num)) sprintf("Intercept %s: estimated mean of %s for units with %s (the baseline level%s, which have all dummies equal to 0).",
+                                               .f(b), y, base, if (length(xl) > 1) "s" else "")
+               else sprintf("Intercept %s: estimated mean of %s for units with %s (the baseline level%s) when %s %s 0 (meaningful only if 0 is a sensible value).",
+                            .f(b), y, base, if (length(xl) > 1) "s" else "", paste(num, collapse = ", "), if (length(num) > 1) "are all" else "is"))
       next
     }
     fac <- NULL
@@ -168,7 +173,11 @@ reg_fit <- function(formula, data, alpha = 0.05) {
                                          else "there is insufficient evidence that any explanatory variable helps explain the response."),
                sprintf("R-squared = %s: %s of the sample variability of %s is explained by the linear model with %s as explanatory variables.",
                        .f(s$r.squared), .pct(s$r.squared), y, paste(attr(terms(m), "term.labels"), collapse = ", ")),
-               .dummy_pairs(m))
+               if (s$r.squared < 0.3) sprintf("Only %s of the variability is explained: the residual variability is high, so prediction intervals are wide and the model is not advisable for predicting individual values of %s (it can still describe significant average effects).",
+                                              .pct(s$r.squared), y),
+               .dummy_pairs(m),
+               if (length(m$xlevels)) sprintf("The baseline of each factor is its FIRST level (%s): alphabetical order for a character variable unless the order is set with factor(x, levels = ...) or changed with relevel(factor(x), ref = ...).",
+                                              paste(sprintf("%s = %s", names(m$xlevels), vapply(m$xlevels, `[`, "", 1)), collapse = ", ")))
   mf <- model.frame(m)
   .with_plot(function() {
     if (ncol(mf) == 2 && is.numeric(mf[[2]])) {
@@ -284,13 +293,15 @@ reg_effect <- function(model, term, change = 1, conf = 0.95) {
              sprintf("%s%% CI for beta: b +/- t(%s; %s) x SE = %s +/- %s x %s = [%s, %s]",
                      .f(100 * conf, 2), .f((1 + conf) / 2), df, .f(b), .f(tq), .f(se), .f(ci[1]), .f(ci[2])),
              sprintf("  in R: confint(mod, \"%s\", level = %s)", term, .f(conf)))
+  chg_txt <- if (change < 0) sprintf("a decrease of %s unit%s", .f(-change), if (change == -1) "" else "s")
+             else sprintf("an increase of %s unit%s", .f(change), if (change == 1) "" else "s")
   if (change != 1) lines <- c(lines, "",
-             sprintf("Change of %s units in %s: expected change in %s = %s x b = %s", .f(change), term, y, .f(change), .f(eff)),
+             sprintf("Change of %s units in %s (%s): expected change in %s = %s x b = %s", .f(change), term, chg_txt, y, .f(change), .f(eff)),
              sprintf("%s%% CI = %s x [%s, %s] = [%s, %s]", .f(100 * conf, 2), .f(change), .f(ci[1]), .f(ci[2]), .f(eci[1]), .f(eci[2])))
   wording <- if (!is.null(di)) sprintf("We are %s%% confident that, on average%s, %s for units with %s = %s differs from that of the baseline %s = %s by a value between %s and %s.",
                                          .f(100 * conf, 2), hold, y, di[1], di[2], di[1], di[3], .f(ci[1]), .f(ci[2]))
-             else sprintf("We are %s%% confident that%s, an increase of %s unit%s in %s is associated with an average change in %s between %s and %s%s.",
-                          .f(100 * conf, 2), hold, .f(change), if (change == 1) "" else "s", term, y, .f(eci[1]), .f(eci[2]),
+             else sprintf("We are %s%% confident that%s, %s in %s is associated with an average change in %s between %s and %s%s.",
+                          .f(100 * conf, 2), hold, chg_txt, term, y, .f(eci[1]), .f(eci[2]),
                           if (eci[2] < 0) sprintf(" (an average decrease between %s and %s)", .f(-eci[2]), .f(-eci[1]))
                           else if (eci[1] > 0) sprintf(" (an average increase between %s and %s)", .f(eci[1]), .f(eci[2])) else "")
   wording <- c(wording, if (ci[1] > 0 || ci[2] < 0) sprintf("The interval does not contain 0, so the coefficient is significantly different from 0 at alpha = %s.", .f(1 - conf))
@@ -339,7 +350,12 @@ reg_check <- function(model) {
   fit <- fitted(m); thirds <- cut(rank(fit, ties.method = "first"), 3, labels = FALSE)
   sds <- tapply(rs, thirds, sd)
   lines <- c(lines, "",
-    "Assumptions (errors eps_i):",
+    "Strong assumptions of the linear model Y_i = beta_0 + beta_1 x_1i + ... + beta_k x_ki + eps_i:",
+    "  1. E(eps_i) = 0                 (the model is correctly specified: linear in the betas)",
+    "  2. Var(eps_i) = sigma^2         (homoscedasticity)",
+    "  3. Cor(eps_i, eps_j) = 0, i != j (uncorrelated errors)",
+    "  4. eps_i ~ Normal               (together: eps_i iid N(0, sigma^2))", "",
+    "How to check them on the residuals:",
     "  Homoscedasticity: Var(eps_i) = sigma^2 for every i (constant, not depending on the explanatory variables)",
     "    tools: residuals vs fitted  plot(mod, which = 1);  sqrt(|standardised residuals|) vs fitted  plot(mod, which = 3)",
     sprintf("    rough check: SD of standardised residuals in the lower / middle / upper third of fitted values = %s",
@@ -355,6 +371,7 @@ reg_check <- function(model) {
     hist(rs, main = "Histogram of standardised residuals", xlab = "standardised residuals", col = "grey85", border = "white", freq = FALSE)
   })
   wording <- c(
+    "The strong assumptions of the linear regression model concern the errors: (1) E(eps_i) = 0, (2) Var(eps_i) = sigma^2 (homoscedasticity), (3) Cor(eps_i, eps_j) = 0 for i != j, (4) normally distributed errors; together, the eps_i are iid N(0, sigma^2). They are checked on the residuals, the observable counterpart of the errors.",
     sprintf("Homoscedasticity (constant error variance, Var(eps_i) = sigma^2) is assessed with the residuals-vs-fitted plot, plot(mod, which = 1), or the scale-location plot, plot(mod, which = 3): a random band of constant width around 0 supports it, a funnel shape (spread growing with the fitted values) indicates a violation. Here the spread of the standardised residuals across low / middle / high fitted values is %s.",
             paste(.f(sds, 2), collapse = " / ")),
     sprintf("Normality of the errors is assessed with the normal Q-Q plot, plot(mod, which = 2) (points close to the line; deviations in the tails indicate heavier or lighter tails), and the histogram of the standardised residuals (approximately symmetric and bell-shaped). Here the skewness of the standardised residuals is %s (%s).",
@@ -404,14 +421,18 @@ reg_compare <- function(model1, model2, alpha = 0.05) {
       big <- if (nrow(c2) >= nrow(c1)) m2 else m1
       X <- model.matrix(big)[, -1, drop = FALSE]
       added <- setdiff(colnames(X), if (identical(big, m2)) rownames(c1) else rownames(c2))
+      dib <- .dummy_info(big)
       for (tm in ch) {
         cors <- if (length(added) && tm %in% colnames(X)) sapply(added, function(a) stats::cor(X[, tm], X[, a])) else numeric()
+        rtxt <- paste(sprintf("r(%s, %s) = %s", tm, names(cors), .f(cors, 2)), collapse = ", ")
+        why <- if (!length(cors)) "Its estimated contribution depends on which other explanatory variables are held constant."
+               else if (!is.null(dib[[tm]])) sprintf("The groups %s = %s and %s = %s (baseline) differ in the added variable(s) (%s): part of the average difference seen in the smaller model is due to them; for given values of them the difference between the groups is smaller.",
+                                                    dib[[tm]][1], dib[[tm]][2], dib[[tm]][1], dib[[tm]][3], rtxt)
+               else sprintf("It is correlated with the added variable(s) (%s): in the smaller model %s also captured part of their effect; once they are included its own contribution, for given values of them, is smaller (a situation close to multicollinearity).",
+                            rtxt, tm)
         wording <- c(wording, sprintf("%s is %s in model 1 (p = %s) but %s in model 2 (p = %s). %s",
           tm, if (c1[tm, 4] < alpha) "significant" else "not significant", .fp(c1[tm, 4]),
-          if (c2[tm, 4] < alpha) "significant" else "not significant", .fp(c2[tm, 4]),
-          if (length(cors)) sprintf("It is correlated with the added variable(s) (%s): in the smaller model %s also captured part of their effect; once they are included its own contribution, for given values of them, is smaller (a situation close to multicollinearity).",
-                                    paste(sprintf("r(%s, %s) = %s", tm, names(cors), .f(cors, 2)), collapse = ", "), tm)
-          else "Its estimated contribution depends on which other explanatory variables are held constant."))
+          if (c2[tm, 4] < alpha) "significant" else "not significant", .fp(c2[tm, 4]), why))
       }
     }
   }

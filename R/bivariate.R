@@ -37,7 +37,7 @@
 #' @rdname describe
 #' @export
 desc_crosstab <- function(x, y = NULL, order_x = NULL, order_y = NULL, breaks_x = NULL, breaks_y = NULL,
-                          plot = c("stacked", "beside")) {
+                          plot = c("stacked", "beside"), y_event = NULL) {
   plot <- match.arg(plot)
   qx <- substitute(x); qy <- substitute(y); sbx <- substitute(breaks_x); sby <- substitute(breaks_y)
   xlab <- .label(qx); ylab <- .label(qy)
@@ -130,7 +130,30 @@ desc_crosstab <- function(x, y = NULL, order_x = NULL, order_y = NULL, breaks_x 
                                freq.type = if (plot == "stacked") "y|x" else "joint",
                                bar.type = if (plot == "beside") "beside"), ab), quote = TRUE))
   }
-  .result("Joint and conditional distributions", lines, wording, notes, match.call(),
+  share <- NULL
+  if (length(y_event)) {
+    y_event <- as.character(y_event)
+    bad <- setdiff(y_event, colnames(m))
+    if (length(bad)) stop("y_event not found among the categories of ", ylab, ": ", paste(bad, collapse = ", "),
+                          ". Categories: ", paste(colnames(m), collapse = ", "), call. = FALSE)
+    ev <- paste(y_event, collapse = " or ")
+    share <- rowSums(rowp[, y_event, drop = FALSE]); marg <- sum(C[y_event]) / n
+    sl <- vapply(seq_len(K), function(k) sprintf("  Freq(%s = %s | %s = %s) = %s = %s   (%s of %s)",
+      ylab, ev, xlab, rownames(m)[k], paste(.f(rowp[k, y_event], 3), collapse = " + "), .f(share[k], 3),
+      .f(sum(m[k, y_event])), .f(R[k])), character(1))
+    lines <- c(lines, "", sprintf("Share of %s = %s within each level of %s (conditional on %s):", ylab, ev, xlab, xlab), sl,
+               sprintf("  Marginal (all units): Freq(%s = %s) = %s / %s = %s", ylab, ev, .f(sum(C[y_event])), .f(n), .f(marg, 3)))
+    hi <- rownames(m)[which.max(share)]; lo <- rownames(m)[which.min(share)]
+    wording <- c(sprintf("Among the units with %s = %s, the share with %s = %s is %s; among those with %s = %s it is %s (conditional relative frequencies: %s). Comparing the joint counts or joint percentages instead would be wrong, because the groups have different sizes.",
+                         xlab, hi, ylab, ev, .pct(max(share), 1), xlab, lo, .pct(min(share), 1),
+                         paste(sprintf("%s %s", rownames(m), .f(share, 3)), collapse = ", ")),
+                 sprintf("If %s and %s were independent, all these conditional shares would be equal to the marginal share %s; here they %s.",
+                         xlab, ylab, .f(marg, 3), if (max(share) - min(share) < 0.05) "are close to it, consistent with weak or no association"
+                         else "differ markedly, so the two variables appear to be associated"),
+                 wording)
+    names(share) <- rownames(m)
+  }
+  .result("Joint and conditional distributions", lines, wording, notes, match.call(), event_share = share,
           counts = m, joint = m / n, row_cond = rowp, col_cond = colp, expected = ex,
           chisq = chi, cramer_v = V, cond_summary = summ, ubstats = ub)
 }
@@ -191,7 +214,7 @@ desc_compare <- function(x, group, group2 = NULL, probs = c(0.05, 0.10, 0.90, 0.
     sprintf("%s: %s; mean %s vs median %s%s", grp$group[i],
             sub(" \\(.*", "", .box_shape(min(reg), grp$Q1[i], grp$median[i], grp$Q3[i], max(reg))),
             .f(grp$mean[i]), .f(grp$median[i]),
-            if (nl + nu) sprintf("; outliers: %d low, %d high", nl, nu) else "; no outliers")
+            if (nl + nu) sprintf("; outliers: %d low (%s), %d high (%s)", nl, .pct(nl / length(a), 1), nu, .pct(nu / length(a), 1)) else "; no outliers")
   }, character(1))
   # non-overlapping central halves: Q3 of one group below Q1 of another
   sep <- character()
