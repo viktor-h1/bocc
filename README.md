@@ -1,4 +1,4 @@
-# statcram 0.8.1
+# statcram 0.8.2
 
 An offline statistics exam toolkit for R / RStudio. One numbered menu, plus plain functions
 with consistent names. Every procedure works with **raw data** (including data frames and
@@ -12,7 +12,7 @@ Pure R, no compilation, no internet needed after installing.
 
 ```r
 # from the built file
-install.packages("statcram_0.8.1.tar.gz", repos = NULL, type = "source")
+install.packages("statcram_0.8.2.tar.gz", repos = NULL, type = "source")
 # or from GitHub
 remotes::install_github("viktor-h1/bocc", ref = "claude/quirky-gates-9i7hvr")
 
@@ -83,6 +83,14 @@ desc_classes(df$TotVisits, breaks = 10)                 # 10 equal-width classes
 desc_classes(df$TotVisits, breaks = c(0, 5, 10, 15, 25, 45, 60, 100, 150, 220))
 desc_classes(df$MonthExp, at_most = 250)                # variable measured in classes "[0,50)", ...
 ```
+
+Summaries follow chapter 3: `desc_summary()` gives the mode(s), median, mean, five-number summary
+(R's quartiles and the book's hand rule "smallest value with F >= 0.25"), percentiles, range, IQR,
+s^2 with n - 1, SD, CV, Tukey whiskers and extreme values, and the shape read from the box.
+`desc_freq()` adds mode / median / quartiles (cumulative rule, also for ordinal data) and
+mean / variance from the frequencies. `desc_classes()` handles open-ended classes
+(`breaks = c(0, 300, 500, 1000, Inf)`, labels such as "1000 or more"), gives the median and
+quartiles as l_k + (p - F_(k-1)) / c_k, and the grouped variance with the n / (n - 1) correction.
 
 Classes are `[a, b)` with the last one closed, densities are c_k = p_k / w_k, histograms use
 densities, and proportions inside a class are approximated assuming values are spread uniformly

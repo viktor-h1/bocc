@@ -39,8 +39,43 @@
 - Pictograms / word clouds exaggerate (area grows faster than the frequency).
 - Bar plots for unequal classes ignore widths: use a density histogram.
 
-## Location and dispersion (ch. 3: to be aligned with the book)
-- mean, median, mode, quartiles, percentiles; mean vs median and quartile asymmetry -> skewness.
-- range, IQR, variance, SD, coefficient of variation CV = s / |mean| (unit-free: use it to compare
-  dispersion across different units / very different means).
-- Grouped data: mean ~ sum(m_k p_k) with midpoints m_k; quantiles by interpolation within classes.
+## Central tendency (ch. 3.2)                                       desc_summary()  sc(1,3)
+- Mode: most frequent value, for ANY type of variable; can be multimodal; no mode (useless)
+  when all values have the same frequency; weak for continuous data -> modal class (highest density).
+- Median: middle value of the ordered data (n odd) or average of the two middle values (n even);
+  equivalently the smallest value with F >= 0.5, and for NUMBERS the midpoint with the next value
+  when F is exactly 0.5. For ORDINAL data: smallest level with F >= 0.5 (no averaging).
+  Not defined for nominal variables.
+- Mean: xbar = sum(x_i) / n; from a frequency distribution xbar = sum(x*_k p_k). Centre of gravity:
+  sum(x_i - xbar) = 0. Sensitive to extreme values (non-robust); the median is robust.
+- Right-skewed: mean > median; left-skewed: mean < median (only an indication).
+- Binary 0/1 or logical variable: the mean is the proportion of 1s / TRUEs.
+- Grouped / classes (approximations, uniform within classes):
+     median = l_k + (0.5 - F_(k-1)) / c_k   in the first class with F_k >= 0.5
+     mean   ~ sum(m_k p_k) with midpoints m_k   (NOT computable with an open-ended class;
+     the median still is, if it does not fall in the open class)
+
+## Quartiles, percentiles, boxplot (ch. 3.3)
+- Q1, Q2 = median, Q3 split the ordered data into 4 blocks of about 25%.
+- Several rules exist. R's quantile() default (used by R / UBStats output) interpolates.
+  The book's HAND rule: Q_p = smallest value with cumulative frequency >= p (0.25, 0.75);
+  the only rule for ordinal data and grouped data. desc_summary() shows both when they differ.
+- Grouped / classes: Q_p = l_k + (p - F_(k-1)) / c_k  (e.g. Q1 = 20 + (0.25 - 0.2315)/0.05754).
+- Five-number summary: Min, Q1, Q2, Q3, Max -> boxplot (numerical variables only, not ordinal).
+- Shape from the boxplot: (Q2 - Q1) vs (Q3 - Q2) and (Q1 - Min) vs (Max - Q3):
+  similar -> symmetric; upper parts longer -> right-skewed; lower parts longer -> left-skewed.
+- Enhanced boxplot (Tukey): values beyond 1.5 x IQR from the box are EXTREME (outliers);
+  whiskers end at the smallest / largest REGULAR values inside [Q1 - 1.5 IQR, Q3 + 1.5 IQR].
+- Percentiles P_q: q% of the data below; useful for long tails (P90, P95, P99), P90/P10 ratios.
+
+## Dispersion (ch. 3.4)                                              desc_summary(), desc_cv()
+- Range = Max - Min (non-robust). IQR = Q3 - Q1 (robust; width of the box).
+- Variance: population sigma^2 = sum(x_i - mu)^2 / N; sample s^2 = sum(x_i - xbar)^2 / (n - 1).
+  Short-cut: s^2 = n/(n-1) [ sum(x_i^2)/n - xbar^2 ]. Unit: squared unit of the data.
+- SD s = sqrt(s^2): average distance from the mean, same unit as the data.
+- Grouped data / classes: s^2 = n/(n-1) [ sum(x*_k^2 p_k) - xbar^2 ]  (midpoints m_k for classes);
+  if n is unknown use sum(x*_k^2 p_k) - xbar^2 (n/(n-1) ~ 1 for large n).
+- Coefficient of variation CV = s / |xbar| (often as %): unit-free; use it to compare dispersion of
+  variables in different units or with very different means. It has no fixed range, so it does not
+  say whether ONE distribution is "highly dispersed".
+- Changing the unit (minutes -> seconds x 60): mean x 60, SD x 60, variance x 60^2, CV unchanged.

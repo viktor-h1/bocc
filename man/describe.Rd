@@ -11,7 +11,7 @@
 \alias{desc_classes}
 \title{Descriptive statistics}
 \usage{
-desc_summary(x, probs = c(0.1, 0.25, 0.5, 0.75, 0.9, 0.95))
+desc_summary(x, probs = c(0.1, 0.9, 0.95, 0.99), population = FALSE)
 
 desc_compare(x, group)
 
@@ -29,7 +29,8 @@ desc_freq(
   at_least = NULL,
   between = NULL,
   plot = c("auto", "bars", "pie", "spike", "cum"),
-  se = FALSE
+  se = FALSE,
+  n = NULL
 )
 
 desc_classes(
@@ -39,6 +40,7 @@ desc_classes(
   upper = NULL,
   freq = NULL,
   prop = NULL,
+  n = NULL,
   at_most = NULL,
   at_least = NULL,
   between = NULL,
@@ -53,6 +55,9 @@ desc_classes(
 
 \item{probs}{Percentiles to report.}
 
+\item{population}{\code{desc_summary()}: TRUE when the data are the whole
+population (variance with divisor N instead of n - 1).}
+
 \item{group}{Grouping variable for \code{desc_compare()}.}
 
 \item{...}{Numeric vectors to compare (\code{desc_cv}), named or not.}
@@ -61,7 +66,11 @@ desc_classes(
 
 \item{event}{Category of interest for \code{desc_prop()}.}
 
-\item{count, n}{Summary numbers for \code{desc_prop()}.}
+\item{count}{Number of successes for \code{desc_prop()} (with \code{n}).}
+
+\item{n}{Sample size: for \code{desc_prop()} with \code{count}; for \code{desc_classes()}
+and \code{desc_freq()} when only proportions are given (enables the
+n / (n - 1) correction of the variance).}
 
 \item{y}{Second categorical variable for \code{desc_crosstab()}.}
 
@@ -90,16 +99,18 @@ width w = (Max - Min) / K, starting at the minimum) or the class limits
 \item{lower, upper}{Class limits as two vectors (alternative to \code{breaks}).}
 
 \item{freq, prop}{Frequencies or proportions / percentages per class
-(typed class table).}
+(typed class table). Open classes: use \code{Inf} / \code{-Inf} as the outer limit,
+e.g. \code{breaks = c(0, 300, 500, 1000, Inf)} for a last class "1000 or more".}
 }
 \value{
 An \code{sc_result} (prints itself).
 }
 \description{
 \itemize{
-\item \code{desc_summary()}  one numeric variable: mean, median, quartiles,
-percentiles, SD, variance, CV, IQR, outlier fences, skewness hint;
-boxplot + histogram.
+\item \code{desc_summary()}  one numeric variable (book ch. 3): mode(s), median,
+mean; five-number summary (R quartiles + the book's hand rule);
+percentiles; range, IQR, variance s^2 (n - 1), SD, CV; Tukey fences,
+whiskers and extreme values; shape read from the boxplot.
 \item \code{desc_compare()}  a numeric variable by group (table + side-by-side boxplots).
 \item \code{desc_cv()}       compare dispersion of variables (SD vs coefficient of variation).
 \item \code{desc_freq()}     frequency distribution of a variable with few distinct

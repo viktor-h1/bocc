@@ -191,10 +191,11 @@
   } else if (i == 3) {
     a <- list(x = .code(.ask_data("the class table", "table")$expr))
   } else {
-    b <- .ask_nums("Class limits in order (k + 1 numbers), e.g. 0 50 100 150 200 300")
+    b <- .ask_nums("Class limits in order (k + 1 numbers), e.g. 0 50 100 150 200 300   (open last class '1000 or more': end with Inf)")
     vt <- .ask_choice("The values are:", c("frequencies (counts)", "percentages / proportions"))
     v <- .ask_nums("Values for each class, in order", length(b) - 1)
     a <- if (vt == 1) list(breaks = b, freq = v) else list(breaks = b, prop = v)
+    if (vt == 2) a$n <- .ask_num("Sample size n, if the question gives it (Enter = unknown)", allow_empty = TRUE)
   }
   .mk("desc_classes", c(a, .ask_cum_query(NULL, approx = i != 1)))
 }

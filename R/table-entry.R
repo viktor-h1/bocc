@@ -55,6 +55,15 @@
 
 .fmt_bound <- function(x) as.character(signif(x, 10))
 
+# Class labels for sc_table(): "10-25", last open class "1000 or more", first open "less than 10".
+.bound_labels <- function(b) {
+  lo <- head(b, -1); hi <- tail(b, -1)
+  out <- paste0(.fmt_bound(lo), "-", .fmt_bound(hi))
+  out[is.infinite(hi)] <- paste(.fmt_bound(lo[is.infinite(hi)]), "or more")
+  out[is.infinite(lo)] <- paste("less than", .fmt_bound(hi[is.infinite(lo)]))
+  out
+}
+
 # Labels: Enter = defaults; k labels typed; or "c" -> class boundaries.
 .tq_labels <- function(what, k, prefix, allow_classes = TRUE) {
   def <- paste0(prefix, seq_len(k))
@@ -64,8 +73,7 @@
     if (!nzchar(a)) return(list(labels = def))
     if (allow_classes && tolower(a) == "c") {
       b <- .tq_bounds(k)
-      return(list(labels = paste0(.fmt_bound(head(b, -1)), "-", .fmt_bound(tail(b, -1))),
-                  lower = head(b, -1), upper = tail(b, -1)))
+      return(list(labels = .bound_labels(b), lower = head(b, -1), upper = tail(b, -1)))
     }
     lab <- .split_values(a)
     if (length(lab) == k) return(list(labels = lab))
@@ -75,7 +83,7 @@
 
 .tq_bounds <- function(k) {
   repeat {
-    a <- .tq(sprintf("Type the %d class boundaries in order, e.g. 10 25 30 ... (open last class: type an assumed upper limit)", k + 1))
+    a <- .tq(sprintf("Type the %d class boundaries in order, e.g. 10 25 30 ... (open last class such as '1000 or more': end with Inf)", k + 1))
     b <- suppressWarnings(as.numeric(vapply(.split_values(a), .clean_value, "")))
     if (length(b) == k + 1 && !anyNA(b) && all(diff(b) > 0)) return(b)
     cat(sprintf("  Need %d increasing numbers (got %d).\n", k + 1, length(b)))
@@ -180,7 +188,7 @@
   } else if (T$kind == "classes") {
     if (length(T$cols) > 1) T$cols <- .tq_labels("Value column", length(T$cols), "v", FALSE)$labels
     b <- .tq_bounds(length(T$rows)); T$lower <- head(b, -1); T$upper <- tail(b, -1)
-    T$rows <- paste0(.fmt_bound(T$lower), "-", .fmt_bound(T$upper))
+    T$rows <- .bound_labels(c(T$lower, T$upper[length(T$upper)]))
   } else {
     T$rowvar <- .tq("Row variable name", T$rowvar)
     T$rows <- .tq_labels("Row", length(T$rows), "r")$labels
@@ -228,7 +236,7 @@
     T$vals <- matrix(vapply(df, function(v) ifelse(is.na(v), NA_character_, as.character(v)), character(nrow(df))), nrow(df))
   } else if (kind == "classes") {
     vc <- setdiff(names(df), c("class", "lower", "upper"))
-    T <- .tbl_new("classes", paste0(.fmt_bound(df$lower), "-", .fmt_bound(df$upper)), vc)
+    T <- .tbl_new("classes", .bound_labels(c(df$lower, df$upper[nrow(df)])), vc)
     T$lower <- df$lower; T$upper <- df$upper; T$value_type <- attr(df, "statcram_values") %||% "freq"
     T$vals <- matrix(as.character(unlist(df[vc])), nrow(df))
   } else {
@@ -415,7 +423,7 @@ sc_table <- function(edit = NULL) {
   vt <- if (.tq("Values are: 1 = frequencies (counts), 2 = percentages / proportions", "1") == "2") "percent" else "freq"
   nv <- .tq_int("How many value columns (e.g. 2 for men and women)?", 1)
   cols <- if (nv == 1) vt else make.unique(.tq_labels("Value column", nv, "v", FALSE)$labels)
-  T <- .tbl_new("classes", paste0(.fmt_bound(head(b, -1)), "-", .fmt_bound(tail(b, -1))), cols)
+  T <- .tbl_new("classes", .bound_labels(b), cols)
   T$lower <- head(b, -1); T$upper <- tail(b, -1); T$value_type <- vt
   T
 }

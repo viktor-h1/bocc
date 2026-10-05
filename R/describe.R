@@ -5,9 +5,10 @@
 
 #' Descriptive statistics
 #'
-#' * `desc_summary()`  one numeric variable: mean, median, quartiles,
-#'   percentiles, SD, variance, CV, IQR, outlier fences, skewness hint;
-#'   boxplot + histogram.
+#' * `desc_summary()`  one numeric variable (book ch. 3): mode(s), median,
+#'   mean; five-number summary (R quartiles + the book's hand rule);
+#'   percentiles; range, IQR, variance s^2 (n - 1), SD, CV; Tukey fences,
+#'   whiskers and extreme values; shape read from the boxplot.
 #' * `desc_compare()`  a numeric variable by group (table + side-by-side boxplots).
 #' * `desc_cv()`       compare dispersion of variables (SD vs coefficient of variation).
 #' * `desc_freq()`     frequency distribution of a variable with few distinct
@@ -33,12 +34,18 @@
 #' @param ... Numeric vectors to compare (`desc_cv`), named or not.
 #' @param mean,sd Summary numbers for `desc_cv()` when raw data are not given.
 #' @param probs Percentiles to report.
+#' @param population `desc_summary()`: TRUE when the data are the whole
+#'   population (variance with divisor N instead of n - 1).
 #' @param breaks `desc_classes()`: a single number K (K classes of equal
 #'   width w = (Max - Min) / K, starting at the minimum) or the class limits
 #'   `c(10, 20, 30, ...)`. Without raw data: the limits of a typed class table.
 #' @param lower,upper Class limits as two vectors (alternative to `breaks`).
 #' @param freq,prop Frequencies or proportions / percentages per class
-#'   (typed class table).
+#'   (typed class table). Open classes: use `Inf` / `-Inf` as the outer limit,
+#'   e.g. `breaks = c(0, 300, 500, 1000, Inf)` for a last class "1000 or more".
+#' @param n Sample size: for `desc_prop()` with `count`; for `desc_classes()`
+#'   and `desc_freq()` when only proportions are given (enables the
+#'   n / (n - 1) correction of the variance).
 #' @param at_most,at_least,between Optional: proportion of values
 #'   `<= at_most`, `>= at_least`, or within `between = c(a, b)`. Exact for
 #'   raw values (`desc_freq`), approximate for classes (`desc_classes`).
@@ -54,7 +61,7 @@
 #' @param se `desc_freq()`: also show the estimated SE of each proportion.
 #' @param y Second categorical variable for `desc_crosstab()`.
 #' @param event Category of interest for `desc_prop()`.
-#' @param count,n Summary numbers for `desc_prop()`.
+#' @param count Number of successes for `desc_prop()` (with `n`).
 #' @return An `sc_result` (prints itself).
 #' @examples
 #' x <- c(12, 15, 9, 22, 14, 18, 30, 11)
@@ -69,54 +76,107 @@ NULL
 
 .fences <- function(q1, q3) c(q1 - 1.5 * (q3 - q1), q3 + 1.5 * (q3 - q1))
 
-.mode_values <- function(v) {
-  tab <- table(v)
-  if (length(tab) == length(v) || max(tab) == 1) return(NULL)
-  as.numeric(names(tab)[tab == max(tab)])
+# Modes of any vector (book 3.2): most frequent value(s). "No mode" when all
+# values have the same frequency (e.g. all distinct).
+.modes <- function(v) {
+  tab <- table(factor(as.character(v), levels = .cats(v)))
+  if (length(tab) > 1 && length(unique(as.numeric(tab))) == 1) return(list(values = character(), count = tab[[1]], n = length(v)))
+  list(values = names(tab)[tab == max(tab)], count = max(tab), n = length(v))
+}
+
+.mode_line <- function(mo) {
+  if (!length(mo$values)) return("Mode     = none: all values have the same frequency (equi-frequent), so the mode is useless here")
+  sprintf("Mode     = %s   (%s; frequency %d = %s)%s", paste(mo$values, collapse = ", "),
+          if (length(mo$values) > 1) sprintf("%d modes", length(mo$values)) else "1 mode",
+          as.integer(mo$count), .pct(mo$count / mo$n),
+          if (mo$count / mo$n < 0.05) "  - weak mode, not representative" else "")
+}
+
+# The book's hand rule (3.3.1): smallest value with cumulative frequency >= p
+# (R's quantile type 1). The median uses the midpoint rule when F = 0.5 exactly.
+.hand_quantile <- function(v, p) {
+  v <- sort(v); n <- length(v)
+  vapply(p, function(pp) v[max(1, ceiling(n * pp - 1e-9))], numeric(1))
+}
+
+# Book 3.3.2: compare the lower and upper parts of the box and the whiskers.
+.box_shape <- function(lo, q1, q2, q3, hi) {
+  near <- function(a, b) abs(a - b) <= 0.1 * max(a, b, 1e-12)
+  box <- if (near(q2 - q1, q3 - q2)) "sym" else if (q3 - q2 > q2 - q1) "right" else "left"
+  wh <- if (near(q1 - lo, hi - q3)) "sym" else if (hi - q3 > q1 - lo) "right" else "left"
+  if (box == "sym" && wh == "sym") return("likely symmetric (median centred in the box, whiskers of similar length)")
+  if (box != "left" && wh != "left") return("right-skewed (longer upper part of the box and/or longer upper whisker)")
+  if (box != "right" && wh != "right") return("left-skewed (longer lower part of the box and/or longer lower whisker)")
+  "no clear skewness (the box and the whiskers point in different directions)"
 }
 
 #' @rdname describe
 #' @export
-desc_summary <- function(x, probs = c(0.10, 0.25, 0.5, 0.75, 0.90, 0.95)) {
+desc_summary <- function(x, probs = c(0.10, 0.90, 0.95, 0.99), population = FALSE) {
   xlab <- .label(substitute(x))
   v <- .num(x, xlab)
-  n <- length(v); m <- mean(v); md <- median(v); s <- if (n > 1) sd(v) else NA
+  n <- length(v); m <- mean(v); md <- median(v)
+  dev2 <- sum((v - m)^2)
+  if (population) { s2 <- dev2 / n; s2_txt <- sprintf("sigma^2 = sum(x_i - mu)^2 / N = %s / %s = %s", .f(dev2), n, .f(s2)) }
+  else { s2 <- if (n > 1) dev2 / (n - 1) else NA; s2_txt <- sprintf("s^2 = sum(x_i - xbar)^2 / (n - 1) = %s / %s = %s", .f(dev2), n - 1, .f(s2)) }
+  s <- sqrt(s2); sname <- if (population) "sigma" else "s"
   q <- quantile(v, c(.25, .75), names = FALSE)
+  hq <- .hand_quantile(v, c(.25, .75))
   fe <- .fences(q[1], q[2])
-  outl <- v[v < fe[1] | v > fe[2]]
+  regular <- v[v >= fe[1] & v <= fe[2]]
+  outl <- sort(v[v < fe[1] | v > fe[2]])
+  wlo <- min(regular); whi <- max(regular)
   pr <- quantile(v, probs, names = FALSE)
-  mo <- .mode_values(v)
-  skew <- if (is.na(s) || s == 0) "no spread" else if (abs(m - md) < 0.05 * s) "roughly symmetric (mean close to median)"
-          else if (m > md) "right / positively skewed (mean > median)" else "left / negatively skewed (mean < median)"
+  mo <- .modes(v)
+  shape <- .box_shape(wlo, q[1], md, q[2], whi)
+  mm <- if (abs(m - md) <= 0.05 * (if (is.na(s) || s == 0) 1 else s)) "mean close to the median"
+        else if (m > md) "mean > median, pulled toward the upper tail" else "mean < median, pulled toward the lower tail"
   lines <- c(
-    sprintf("Variable: %s   n = %s", xlab, n),
-    "",
-    sprintf("Mean      = %s", .f(m)),
-    sprintf("Median    = %s", .f(md)),
-    if (!is.null(mo) && length(mo) <= 3) sprintf("Mode      = %s", paste(.f(mo), collapse = ", ")),
-    sprintf("SD (s)    = %s      Variance (s^2) = %s   (divisor n - 1)", .f(s), .f(s^2)),
-    sprintf("Min = %s   Q1 = %s   Q3 = %s   Max = %s", .f(min(v)), .f(q[1]), .f(q[2]), .f(max(v))),
-    sprintf("Range = %s   IQR = Q3 - Q1 = %s", .f(diff(range(v))), .f(q[2] - q[1])),
-    sprintf("CV = s / |mean| = %s / %s = %s (%s)", .f(s), .f(abs(m)), .f(s / abs(m)), .pct(s / abs(m))),
-    sprintf("Percentiles: %s", paste(sprintf("p%s = %s", round(100 * probs), .f(pr)), collapse = "   ")),
-    sprintf("Outlier fences: Q1 - 1.5 IQR = %s,  Q3 + 1.5 IQR = %s", .f(fe[1]), .f(fe[2])),
-    sprintf("Outliers: %s", if (length(outl)) paste(.f(sort(outl)), collapse = ", ") else "none"),
-    sprintf("Shape: %s", skew))
+    sprintf("Variable: %s   n = %s", xlab, n), "",
+    "Central tendency",
+    paste0("  ", .mode_line(mo)),
+    sprintf("  Median   = %s   (%s)", .f(md), if (n %% 2) sprintf("middle value: position %d of %d", (n + 1) / 2, n)
+            else sprintf("average of the two middle values, positions %d and %d", n / 2, n / 2 + 1)),
+    sprintf("  Mean     = sum(x_i) / n = %s / %s = %s", .f(sum(v)), n, .f(m)), "",
+    "Five-number summary (boxplot)",
+    sprintf("  Min = %s   Q1 = %s   Q2 = median = %s   Q3 = %s   Max = %s", .f(min(v)), .f(q[1]), .f(md), .f(q[2]), .f(max(v))),
+    if (isTRUE(all.equal(q, hq))) "  (quartiles from R's quantile(), the same as the book's hand rule: smallest value with F >= 0.25 / 0.75)"
+    else c("  Quartiles above come from R's quantile() default, as in R/UBStats output.",
+           sprintf("  Book's hand rule (smallest value with cumulative frequency >= 0.25 / 0.75): Q1 = %s, Q3 = %s", .f(hq[1]), .f(hq[2]))),
+    sprintf("  Percentiles: %s", paste(sprintf("p%s = %s", round(100 * probs), .f(pr)), collapse = "   ")), "",
+    "Dispersion",
+    sprintf("  Range    = Max - Min = %s - %s = %s", .f(max(v)), .f(min(v)), .f(max(v) - min(v))),
+    sprintf("  IQR      = Q3 - Q1 = %s - %s = %s", .f(q[2]), .f(q[1]), .f(q[2] - q[1])),
+    sprintf("  Variance %s", s2_txt),
+    sprintf("  SD       %s = sqrt(%s) = %s", sname, .f(s2), .f(s)),
+    sprintf("  CV       = %s / |mean| = %s / %s = %s  (%s of the mean)", sname, .f(s), .f(abs(m)), .f(s / abs(m)), .pct(s / abs(m))), "",
+    "Enhanced boxplot (Tukey's rule)",
+    sprintf("  1.5 x IQR = %s  ->  regular values lie in [Q1 - 1.5 IQR, Q3 + 1.5 IQR] = [%s, %s]",
+            .f(1.5 * (q[2] - q[1])), .f(fe[1]), .f(fe[2])),
+    sprintf("  Whiskers end at the min / max regular values: %s and %s", .f(wlo), .f(whi)),
+    sprintf("  Extreme values (outliers): %s", if (length(outl)) paste(.f(outl), collapse = ", ") else "none"), "",
+    sprintf("Shape: Q2 - Q1 = %s vs Q3 - Q2 = %s;  lower whisker %s vs upper whisker %s",
+            .f(md - q[1]), .f(q[2] - md), .f(q[1] - wlo), .f(whi - q[2])),
+    sprintf("  -> %s; %s", shape, mm))
   .with_plot(function() {
     op <- par(mfrow = c(1, 2)); on.exit(par(op))
-    boxplot(v, main = paste("Boxplot of", xlab), ylab = xlab, col = "grey90")
-    hist(v, main = paste("Histogram of", xlab), xlab = xlab, col = "grey85", border = "white")
+    boxplot(v, main = paste("Boxplot:", xlab), ylab = xlab, col = "grey90")
+    hist(v, main = paste("Histogram:", xlab), xlab = xlab, col = "grey85", border = "white", freq = FALSE)
     abline(v = c(m, md), col = c("firebrick", "navy"), lwd = 2, lty = c(1, 2))
     legend("topright", c("mean", "median"), col = c("firebrick", "navy"), lty = c(1, 2), bty = "n", cex = 0.8)
   })
-  wording <- sprintf(
-    "The distribution of %s (n = %s) has mean %s and median %s; it is %s. The middle 50%% of the observations lie between Q1 = %s and Q3 = %s (IQR = %s), and the standard deviation is %s (CV = %s). %s",
-    xlab, n, .f(m), .f(md), skew, .f(q[1]), .f(q[2]), .f(q[2] - q[1]), .f(s), .pct(s / abs(m)),
-    if (length(outl)) sprintf("There are %d observation(s) outside the 1.5 IQR fences (potential outliers).", length(outl))
-    else "No observation lies outside the 1.5 IQR fences.")
-  .result("Descriptive summary", lines, wording, c(.dropped_note(v),
-          "Quartiles/percentiles use R's default definition (type 7)."), match.call(),
-          n = n, mean = m, median = md, sd = s, quartiles = q, cv = s / abs(m), outliers = outl)
+  wording <- c(
+    sprintf("The distribution of %s (n = %s) has median %s and mean %s (%s). Half of the observations lie between Q1 = %s and Q3 = %s (IQR = %s); the values range from %s to %s.",
+            xlab, n, .f(md), .f(m), mm, .f(q[1]), .f(q[2]), .f(q[2] - q[1]), .f(min(v)), .f(max(v))),
+    sprintf("The standard deviation is %s, i.e. on average the values deviate from the mean by about %s (CV = %s of the mean). The boxplot suggests a %s distribution.%s",
+            .f(s), .f(s), .pct(s / abs(m)), sub(" \\(.*", "", shape),
+            if (length(outl)) sprintf(" %d value(s) lie more than 1.5 IQR beyond the box and are flagged as extreme: %s.", length(outl), paste(.f(outl), collapse = ", ")) else " No value is flagged as extreme."))
+  .result("Descriptive summary", lines, wording,
+          c(.dropped_note(v), if (population) "Population formulas used (divisor N)."), match.call(),
+          n = n, mean = m, median = md, mode = mo$values, variance = s2, sd = s, quartiles = q, hand_quartiles = hq,
+          fivenum = c(min = min(v), q1 = q[1], median = md, q3 = q[2], max = max(v)),
+          range = max(v) - min(v), iqr = q[2] - q[1], cv = s / abs(m), whiskers = c(wlo, whi), outliers = outl,
+          percentiles = stats::setNames(pr, paste0("p", round(100 * probs))))
 }
 
 #' @rdname describe

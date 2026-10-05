@@ -55,7 +55,29 @@
   sort(u)
 }
 
-# Parse class labels such as "[0,50)", "[10, 20]", "(5;10]" or "10-20".
+# Open-ended labels: "1000 or more", "3+", ">= 7", "over 60" (upper open);
+# "less than 10", "< 5", "up to 600", "10 or less" (lower open).
+# Returns list(value, open = "upper" / "lower" / NA).
+.open_value <- function(label) {
+  num <- "(-?[0-9]+(?:[.][0-9]+)?)"
+  l <- tolower(trimws(label))
+  pats <- list(
+    upper = c(paste0("^", num, "\\s*(\\+|or more|and more|and over|or over|or above|and above|plus)$"),
+              paste0("^(>=?|more than|over|above|at least|from)\\s*", num, "$")),
+    lower = c(paste0("^(<=?|less than|under|below|up to|at most)\\s*", num, "$"),
+              paste0("^", num, "\\s*(or less|or fewer|and less|and under|or under|or below)$")))
+  for (dir in names(pats)) for (pt in pats[[dir]]) {
+    m <- regmatches(l, regexec(pt, l, perl = TRUE))[[1]]
+    if (length(m)) {
+      v <- suppressWarnings(as.numeric(m[-1])); v <- v[!is.na(v)]
+      if (length(v)) return(list(value = v[1], open = dir))
+    }
+  }
+  list(value = suppressWarnings(as.numeric(label)), open = NA_character_)
+}
+
+# Parse class labels such as "[0,50)", "[10, 20]", "(5;10]", "10-20" or an
+# open-ended first / last class ("less than 10", "1000 or more").
 # Returns data.frame(label, lower, upper) sorted by lower limit, or NULL if
 # any label is not an interval.
 .parse_intervals <- function(labels) {
@@ -67,10 +89,13 @@
   lo <- hi <- rep(NA_real_, length(labels))
   for (i in seq_along(labels)) {
     m <- if (length(br[[i]]) == 3) br[[i]] else if (length(dash[[i]]) == 3) dash[[i]] else NULL
-    if (is.null(m)) return(NULL)
-    lo[i] <- as.numeric(m[2]); hi[i] <- as.numeric(m[3])
+    if (!is.null(m)) { lo[i] <- as.numeric(m[2]); hi[i] <- as.numeric(m[3]); next }
+    ov <- .open_value(labels[i])
+    if (is.na(ov$open)) return(NULL)
+    if (ov$open == "upper") { lo[i] <- ov$value; hi[i] <- Inf } else { lo[i] <- -Inf; hi[i] <- ov$value }
   }
   if (any(hi <= lo)) return(NULL)
+  if (sum(is.infinite(c(lo, hi))) == length(labels)) return(NULL)
   o <- order(lo, hi)
   data.frame(label = labels[o], lower = lo[o], upper = hi[o], stringsAsFactors = FALSE)
 }
