@@ -9,7 +9,9 @@
 #'   mean; five-number summary (R quartiles + the book's hand rule);
 #'   percentiles; range, IQR, variance s^2 (n - 1), SD, CV; Tukey fences,
 #'   whiskers and extreme values; shape read from the boxplot.
-#' * `desc_compare()`  a numeric variable by group (table + side-by-side boxplots).
+#' * `desc_compare()`  a numeric variable across groups (book 4.3): conditional
+#'   summaries (n, n.a, min, Q1, median, mean, Q3, max, sd, CV, percentiles)
+#'   and side-by-side boxplots (or histograms); optional second grouping variable.
 #' * `desc_cv()`       compare dispersion of variables (SD vs coefficient of variation).
 #' * `desc_freq()`     frequency distribution of a variable with few distinct
 #'   values: counts f_k, proportions p_k, percentages, cumulative F_k;
@@ -22,7 +24,13 @@
 #'   F_k, approximate Freq(X <= x) etc. (uniform within classes), modal
 #'   class, approximate mean / quantiles; histogram + ogive.
 #' * `desc_prop()`     sample proportion of one category and its estimated SE.
-#' * `desc_crosstab()` two-way table with row / column / total percentages.
+#' * `desc_crosstab()` two variables with few values (book 4.2): joint counts and
+#'   proportions with marginals, conditional distributions Y|X and X|Y,
+#'   conditional summaries (mode, quartiles), expected counts under
+#'   independence, chi-square and Cramer's V; stacked / side-by-side bars.
+#' * `desc_cor()`      two numerical variables (book 4.4): scatterplot,
+#'   covariance, Pearson correlation, regression line b0 + b1 x; correlation
+#'   matrices; covariance from a joint frequency table.
 #'
 #' Data can be any vector or expression (`df$spend`, `c(...)`,
 #' `subset(df, g == "A")$y`), or a table typed in with [sc_table()].
@@ -30,12 +38,13 @@
 #' @param x Data (numeric for `desc_summary`/`desc_compare`; categorical for
 #'   `desc_freq`/`desc_prop`/`desc_crosstab`). `desc_crosstab()` and
 #'   `desc_freq()` also accept a typed table.
-#' @param group Grouping variable for `desc_compare()`.
+#' @param group,group2 Grouping variable(s) for `desc_compare()` (with
+#'   `group2` the groups are the combinations of the two).
 #' @param ... Numeric vectors to compare (`desc_cv`), named or not.
 #' @param mean,sd Summary numbers for `desc_cv()` when raw data are not given.
 #' @param probs Percentiles to report.
-#' @param population `desc_summary()`: TRUE when the data are the whole
-#'   population (variance with divisor N instead of n - 1).
+#' @param population `desc_summary()`, `desc_cor()`: TRUE when the data are
+#'   the whole population (divisor N instead of n - 1).
 #' @param breaks `desc_classes()`: a single number K (K classes of equal
 #'   width w = (Max - Min) / K, starting at the minimum) or the class limits
 #'   `c(10, 20, 30, ...)`. Without raw data: the limits of a typed class table.
@@ -58,8 +67,17 @@
 #' @param plot Plot type. `desc_freq()`: `"auto"` (bars for categories,
 #'   spikes for numbers), `"bars"`, `"pie"`, `"spike"`, `"cum"`.
 #'   `desc_classes()`: `"both"` (histogram + ogive), `"hist"`, `"ogive"`.
+#'   `desc_crosstab()`: `"stacked"` (conditional Y|X) or `"beside"` (joint).
+#'   `desc_compare()`: `"boxplot"` or `"hist"`.
 #' @param se `desc_freq()`: also show the estimated SE of each proportion.
-#' @param y Second categorical variable for `desc_crosstab()`.
+#' @param y Second variable: column variable for `desc_crosstab()`, vertical
+#'   axis for `desc_cor()`.
+#' @param order_x,order_y `desc_crosstab()`: level order of ordinal row /
+#'   column variables.
+#' @param breaks_x,breaks_y `desc_crosstab()`: classify a numerical row /
+#'   column variable into intervals first (K or the class limits).
+#' @param line `desc_cor()`: add the regression line to the scatterplot.
+#' @param color `desc_cor()`: a third variable used to colour the points.
 #' @param event Category of interest for `desc_prop()`.
 #' @param count Number of successes for `desc_prop()` (with `n`).
 #' @return An `sc_result` (prints itself).
@@ -181,41 +199,6 @@ desc_summary <- function(x, probs = c(0.10, 0.90, 0.95, 0.99), population = FALS
 
 #' @rdname describe
 #' @export
-desc_compare <- function(x, group) {
-  xlab <- .label(substitute(x)); glab <- .label(substitute(group))
-  xx <- .one_column(x, xlab); g <- .one_column(group, glab)
-  if (length(xx) != length(g)) stop("x and group must have the same length.", call. = FALSE)
-  xx <- suppressWarnings(as.numeric(xx))
-  ok <- !is.na(xx) & !is.na(g)
-  lv <- .cats(g[ok])
-  rows <- lapply(lv, function(z) {
-    a <- xx[ok & as.character(g) == z]
-    q <- quantile(a, c(.25, .5, .75), names = FALSE)
-    data.frame(group = z, n = length(a), mean = mean(a), median = q[2], sd = if (length(a) > 1) sd(a) else NA,
-               Q1 = q[1], Q3 = q[3], IQR = q[3] - q[1], min = min(a), max = max(a),
-               CV = if (length(a) > 1) sd(a) / abs(mean(a)) else NA)
-  })
-  tab <- do.call(rbind, rows)
-  .with_plot(function() {
-    boxplot(xx[ok] ~ factor(as.character(g[ok]), levels = lv), xlab = glab, ylab = xlab,
-            main = paste(xlab, "by", glab), col = "grey90")
-    points(seq_along(lv), tab$mean, pch = 18, col = "firebrick", cex = 1.4)
-  })
-  hi_med <- tab$group[which.max(tab$median)]; hi_iqr <- tab$group[which.max(tab$IQR)]
-  lines <- c(sprintf("Variable: %s   by   %s", xlab, glab), "", .table_lines(.round_df(tab)))
-  wording <- c(
-    sprintf("Central tendency: the median of %s is highest for %s (%s) and lowest for %s (%s).",
-            xlab, hi_med, .f(max(tab$median)), tab$group[which.min(tab$median)], .f(min(tab$median))),
-    sprintf("Variability: the IQR (box width, the spread of the middle 50%%) is largest for %s (%s); compare also the whisker lengths and any outliers for the tails.",
-            hi_iqr, .f(max(tab$IQR))),
-    "Shape: in each group compare mean vs median and the position of the median inside the box to describe skewness. State every comparison in the context of the variable.")
-  .result("Comparison across groups", lines, wording,
-          if (sum(!ok)) sprintf("%d row(s) with a missing value were removed.", sum(!ok)), match.call(),
-          table = tab)
-}
-
-#' @rdname describe
-#' @export
 desc_cv <- function(..., mean = NULL, sd = NULL) {
   dots <- list(...)
   if (length(dots)) {
@@ -270,27 +253,3 @@ desc_prop <- function(x = NULL, event = NULL, count = NULL, n = NULL) {
           estimate = P$phat, se = se, count = P$count, n = P$n)
 }
 
-#' @rdname describe
-#' @export
-desc_crosstab <- function(x, y = NULL) {
-  xlab <- .label(substitute(x)); ylab <- .label(substitute(y))
-  m <- .as_count_table(x)
-  if (is.null(m)) {
-    if (is.null(y)) stop("Give two categorical variables (x, y) or a count table.", call. = FALSE)
-    a <- .one_column(x, xlab); b <- .one_column(y, ylab)
-    ok <- !is.na(a) & !is.na(b)
-    m <- unclass(table(a[ok], b[ok])) + 0
-    names(dimnames(m)) <- c(xlab, ylab)
-  }
-  tot <- sum(m)
-  with_m <- rbind(cbind(m, Total = rowSums(m)), Total = c(colSums(m), tot))
-  rowp <- 100 * m / rowSums(m); colp <- 100 * t(t(m) / colSums(m))
-  lines <- c("Counts (with totals):", .table_lines(with_m, row.names = TRUE), "",
-             "Row percentages (each row sums to 100%):", .table_lines(round(rowp, 2), row.names = TRUE), "",
-             "Column percentages (each column sums to 100%):", .table_lines(round(colp, 2), row.names = TRUE), "",
-             "Percent of grand total:", .table_lines(round(100 * m / tot, 2), row.names = TRUE))
-  .with_plot(function() mosaicplot(m, main = "Mosaic plot", color = TRUE, las = 1))
-  .result("Two-way table", lines,
-          "Compare the row (or column) percentages across categories: if the conditional distributions are very different, the two variables appear associated in the sample. Use chisq_indep() to test whether the association holds in the population.",
-          NULL, match.call(), counts = m, row_percent = rowp, col_percent = colp)
-}

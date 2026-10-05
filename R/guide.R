@@ -36,10 +36,12 @@ sc_guide <- function() {
     "  numbers grouped into intervals, or measured in classes ... desc_classes()   sc(1,2)",
     "     ([0,50), 10-20 ...): densities, histogram, ogive, approx. Freq(X <= x)",
     "  one numeric variable: centre, spread, quartiles .......... desc_summary()   sc(1,3)",
-    "  numeric variable by groups / boxplots ..................... desc_compare()   sc(1,4)",
+    "  numerical variable across groups: summaries | boxplots .... desc_compare()   sc(1,4)",
     "  dispersion of variables in different units ............... desc_cv()        sc(1,5)",
     "  'report the proportion ... and how its SE is estimated' .. desc_prop()      sc(1,6)",
-    "  two categorical variables: joint table, row / col % ...... desc_crosstab()  sc(1,7)",
+    "  two variables with few values: joint / conditional ........ desc_crosstab()  sc(1,7)",
+    "     distributions, conditional summaries, chi-square, Cramer's V",
+    "  two numerical variables: scatter, cov, r, regression line .. desc_cor()       sc(1,8)",
     "",
     "NUMERIC outcome (means)",
     "  one sample ................ CI: ci_mean()     test: test_mean()     sc(3,1) / sc(4,1)",
@@ -75,13 +77,13 @@ sc_guide <- function() {
 }
 
 .index <- data.frame(
-  topic = c(rep("1 Describe", 7), rep("2 Probability", 7), rep("3 Confidence intervals", 5),
+  topic = c(rep("1 Describe", 8), rep("2 Probability", 7), rep("3 Confidence intervals", 5),
             rep("4 Hypothesis tests", 5), rep("5 Power / sample size", 4), rep("6 Chi-square", 2),
             rep("7 Regression", 5), rep("8 Data tools", 3), rep("9 Guide", 5)),
-  menu = c(paste0("sc(1,", 1:7, ")"), paste0("sc(2,", 1:7, ")"), paste0("sc(3,", 1:5, ")"), paste0("sc(4,", 1:5, ")"),
+  menu = c(paste0("sc(1,", 1:8, ")"), paste0("sc(2,", 1:7, ")"), paste0("sc(3,", 1:5, ")"), paste0("sc(4,", 1:5, ")"),
            paste0("sc(5,", 1:4, ")"), paste0("sc(6,", 1:2, ")"), paste0("sc(7,", 1:5, ")"),
            "sc(8,1)", "sc(8,3)", "sc(8,6)", "sc(9,1)", "sc(9,2)", "sc(9,3)", "", ""),
-  fun = c("desc_freq", "desc_classes", "desc_summary", "desc_compare", "desc_cv", "desc_prop", "desc_crosstab",
+  fun = c("desc_freq", "desc_classes", "desc_summary", "desc_compare", "desc_cv", "desc_prop", "desc_crosstab", "desc_cor",
           "prob_normal", "prob_t", "prob_chisq", "rv_discrete", "rv_linear", "rv_iid", "rv_prop",
           "ci_mean", "ci_prop", "ci_paired", "ci_2means", "ci_2props",
           "test_mean", "test_prop", "test_paired", "test_2means", "test_2props",
@@ -93,10 +95,11 @@ sc_guide <- function() {
   what = c("frequency table: f_k, p_k, F_k; Freq(X <= x); bars / spikes / cumulative",
            "intervals / classes: w_k, c_k = p_k / w_k, F_k; histogram, ogive; approx. Freq(X <= x)",
            "one numeric variable: centre, spread, quartiles, outliers, plots",
-           "numeric variable by group + boxplots",
+           "numerical variable across groups: conditional summaries + boxplots",
            "SD vs CV across variables",
            "p-hat of one category + estimated SE",
-           "two-way table with row/column %",
+           "joint / conditional distributions, chi-square, Cramer's V",
+           "scatter, covariance, correlation, regression line",
            "P(X<a), P(X>a), P(a<X<b), quantiles of N(mean, sd)",
            "same for Student t", "same for chi-square",
            "E(X), Var(X) of a discrete RV", "aX + bY + c with covariance", "sum/mean of n iid (CLT)",
@@ -165,10 +168,10 @@ sc_recipes <- function() {
   invisible(txt)
 }
 
-.notes_files <- c(rules = "exam-rules.md", descriptive = "descriptive.md", estimation = "point-estimation.md",
+.notes_files <- c(rules = "exam-rules.md", descriptive = "descriptive.md", bivariate = "bivariate.md", estimation = "point-estimation.md",
                   inference = "inference.md", random = "random-variables.md", chisq = "chi-square.md",
                   regression = "regression.md", patterns = "past-paper-patterns.md")
-.notes_titles <- c("absolute exam rules", "descriptive & grouped data", "point estimation & standard errors",
+.notes_titles <- c("absolute exam rules", "descriptive & grouped data", "two variables (ch. 4)", "point estimation & standard errors",
                    "confidence intervals & tests", "random variables & sampling", "chi-square tests",
                    "regression", "past-paper wording patterns")
 

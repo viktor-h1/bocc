@@ -122,9 +122,13 @@
 # ---------- topic 1: describe ----------
 
 .m_desc_summary <- function() .mk("desc_summary", list(x = .code(.ask_data("a numeric variable", "vector")$expr)))
-.m_desc_compare <- function() .mk("desc_compare", list(
-  x = .code(.ask_data("the numeric variable", "vector")$expr),
-  group = .code(.ask_data("the grouping variable", "vector")$expr)))
+.m_desc_compare <- function() {
+  a <- list(x = .code(.ask_data("the numerical variable", "vector")$expr),
+            group = .code(.ask_data("the grouping variable", "vector")$expr))
+  if (.ask_yes("Condition on a second grouping variable too (combinations of the two)?", FALSE))
+    a$group2 <- .code(.ask_data("the second grouping variable", "vector")$expr)
+  .mk("desc_compare", a)
+}
 .m_desc_cv <- function() {
   i <- .ask_choice("What do you have?", c("raw data for each variable", "means and SDs from the question"))
   if (i == 2) {
@@ -204,11 +208,71 @@
   if (!is.null(a$phat)) { a$count <- a$phat * a$n; a$phat <- NULL }
   .mk("desc_prop", a)
 }
+# Ask for the order of an ordinal variable's levels (NULL = keep).
+.ask_order <- function(lv, what) {
+  cat(sprintf("Levels of %s now:\n", what))
+  for (k in seq_along(lv)) cat(sprintf(" %2d  %s\n", k, lv[k]))
+  repeat {
+    o <- .mq("Ordinal? Type the levels (or their numbers) from lowest to highest; Enter = keep", "")
+    if (!nzchar(o)) return(NULL)
+    tok <- .split_values(o)
+    idx <- suppressWarnings(as.integer(tok))
+    ord <- if (!anyNA(idx) && all(idx %in% seq_along(lv))) lv[idx] else tok
+    if (setequal(ord, lv) && length(ord) == length(lv)) return(ord)
+    cat("  Give every level exactly once (", length(lv), " levels).\n", sep = "")
+  }
+}
+
 .m_desc_crosstab <- function() {
-  i <- .ask_choice("What do you have?", c("two categorical columns / vectors", "a count table (entered or typed)"))
-  if (i == 2) return(.mk("desc_crosstab", list(x = .code(.ask_data("the count table", "table")$expr))))
-  .mk("desc_crosstab", list(x = .code(.ask_data("the row variable", "vector")$expr),
-                            y = .code(.ask_data("the column variable", "vector")$expr)))
+  i <- .ask_choice("What do you have?", c("two variables (raw data: categorical or with few values)", "a count table (entered or typed)"))
+  if (i == 2) {
+    d <- .ask_data("the count table", "table")
+    m <- .as_count_table(.eval_expr(d$expr))
+    a <- list(x = .code(d$expr))
+    if (!is.null(m) && ncol(m) <= 15) a$order_y <- .ask_order(colnames(m), "the column variable")
+  } else {
+    dx <- .ask_data("the ROW variable X (e.g. the grouping / explanatory one)", "vector")
+    dy <- .ask_data("the COLUMN variable Y (e.g. the response)", "vector")
+    a <- list(x = .code(dx$expr), y = .code(dy$expr))
+    for (w in c("x", "y")) {
+      v <- .eval_expr(if (w == "x") dx$expr else dy$expr)
+      if (is.numeric(v) && length(unique(v[!is.na(v)])) > 12) {
+        cat(sprintf("%s takes many values.\n", if (w == "x") dx$expr else dy$expr))
+        a[[paste0("breaks_", w)]] <- .ask_nums("Classify it: K = number of equal-width classes, or the class limits")
+      }
+    }
+    vy <- .eval_expr(dy$expr)
+    if (is.null(a$breaks_y) && !is.numeric(vy) && !is.factor(vy)) {
+      lv <- .cats(vy[!is.na(vy)])
+      if (length(lv) <= 15) a$order_y <- .ask_order(lv, dy$expr)
+    }
+  }
+  if (.ask_choice("Bar chart:", c("stacked: conditional distributions of Y | X", "side by side: joint proportions")) == 2) a$plot <- "beside"
+  .mk("desc_crosstab", a)
+}
+
+.m_desc_cor <- function() {
+  i <- .ask_choice("What do you have?", c("two numerical variables (scatterplot, covariance, correlation, regression line)",
+                                          "several numerical variables (covariance / correlation matrices)",
+                                          "a joint frequency table of two discrete numerical variables"))
+  if (i == 2) {
+    dfn <- .ask_df(); df <- get(dfn, envir = .GlobalEnv)
+    nums <- names(df)[vapply(df, is.numeric, logical(1))]
+    cat("Numerical columns:\n"); for (k in seq_along(nums)) cat(sprintf(" %2d  %s\n", k, nums[k]))
+    repeat {
+      a <- .mq("Numbers separated by spaces, or all", "all")
+      idx <- if (tolower(a) == "all") seq_along(nums) else suppressWarnings(as.integer(.split_values(a)))
+      if (length(idx) >= 2 && !anyNA(idx) && all(idx %in% seq_along(nums))) break
+      cat("  Choose at least two numbers from the list.\n")
+    }
+    cols <- paste0("c(", paste(sprintf("\"%s\"", nums[idx]), collapse = ", "), ")")
+    return(.mk("desc_cor", list(x = .code(sprintf("%s[, %s]", dfn, cols)))))
+  }
+  if (i == 3) return(.mk("desc_cor", list(x = .code(.ask_data("the joint frequency table", "table")$expr))))
+  a <- list(x = .code(.ask_data("X (horizontal axis, e.g. the explanatory variable)", "vector")$expr),
+            y = .code(.ask_data("Y (vertical axis, e.g. the response)", "vector")$expr))
+  if (.ask_yes("Colour the points by a third variable?", FALSE)) a$color <- .code(.ask_data("the colouring variable", "vector")$expr)
+  .mk("desc_cor", a)
 }
 
 # ---------- topic 2: probability ----------
@@ -519,10 +583,11 @@
     list("Frequency table: counts, proportions, cumulative, Freq(X <= x) (+ bar / spike plot)", .m_desc_freq),
     list("Group numbers into intervals / variable measured in classes (densities, histogram, ogive)", .m_desc_classes),
     list("Summary of one numeric variable (mean, median, quartiles, SD, CV, outliers + plots)", .m_desc_summary),
-    list("Compare a numeric variable across groups (table + side-by-side boxplots)", .m_desc_compare),
+    list("Numerical variable across groups: conditional summaries + side-by-side boxplots", .m_desc_compare),
     list("Compare dispersion of variables (SD vs coefficient of variation)", .m_desc_cv),
     list("Sample proportion of one category + its estimated standard error", .m_desc_prop),
-    list("Two-way table with row / column percentages", .m_desc_crosstab))),
+    list("Two variables with few values: joint / conditional distributions, chi-square, Cramer's V", .m_desc_crosstab),
+    list("Two numerical variables: scatterplot, covariance, correlation, regression line", .m_desc_cor))),
   list(title = "Probability & random variables", items = list(
     list("Normal probability or quantile", .m_prob_normal),
     list("Student t probability or quantile", .m_prob_t),

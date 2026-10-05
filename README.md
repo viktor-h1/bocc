@@ -1,4 +1,4 @@
-# statcram 0.8.2
+# statcram 0.8.3
 
 An offline statistics exam toolkit for R / RStudio. One numbered menu, plus plain functions
 with consistent names. Every procedure works with **raw data** (including data frames and
@@ -12,7 +12,7 @@ Pure R, no compilation, no internet needed after installing.
 
 ```r
 # from the built file
-install.packages("statcram_0.8.2.tar.gz", repos = NULL, type = "source")
+install.packages("statcram_0.8.3.tar.gz", repos = NULL, type = "source")
 # or from GitHub
 remotes::install_github("viktor-h1/bocc", ref = "claude/quirky-gates-9i7hvr")
 
@@ -45,7 +45,7 @@ table from paper first.
 
 | # | Topic | Functions |
 |---|---|---|
-| 1 | Describe data | `desc_freq` `desc_classes` `desc_summary` `desc_compare` `desc_cv` `desc_prop` `desc_crosstab` |
+| 1 | Describe data | `desc_freq` `desc_classes` `desc_summary` `desc_compare` `desc_cv` `desc_prop` `desc_crosstab` `desc_cor` |
 | 2 | Probability & random variables | `prob_normal` `prob_t` `prob_chisq` `rv_discrete` `rv_linear` `rv_iid` `rv_prop` |
 | 3 | Confidence intervals | `ci_mean` `ci_prop` `ci_paired` `ci_2means` `ci_2props` |
 | 4 | Hypothesis tests | `test_mean` `test_prop` `test_paired` `test_2means` `test_2props` |
@@ -91,6 +91,12 @@ s^2 with n - 1, SD, CV, Tukey whiskers and extreme values, and the shape read fr
 mean / variance from the frequencies. `desc_classes()` handles open-ended classes
 (`breaks = c(0, 300, 500, 1000, Inf)`, labels such as "1000 or more"), gives the median and
 quartiles as l_k + (p - F_(k-1)) / c_k, and the grouped variance with the n / (n - 1) correction.
+
+Two variables follow chapter 4: `desc_crosstab()` (joint and conditional distributions,
+conditional modes / quartiles, expected counts, chi-square and Cramer's V, stacked or side-by-side
+bars), `desc_compare()` (conditional summaries and side-by-side boxplots, optional second grouping
+variable) and `desc_cor()` (scatterplot, covariance, correlation, regression line b0 + b1 x;
+matrices; covariance from a joint frequency table).
 
 Classes are `[a, b)` with the last one closed, densities are c_k = p_k / w_k, histograms use
 densities, and proportions inside a class are approximated assuming values are spread uniformly
