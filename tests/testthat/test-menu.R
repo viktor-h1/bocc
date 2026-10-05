@@ -52,6 +52,21 @@ test_that("menu: regression fit (saved as a model), prediction and table entry f
   })
 })
 
+test_that("menu: frequency table with ordinal order, classes from raw data and measured in classes", {
+  gro <- data.frame(Satisf = rep(c("VLow", "Low", "Med", "High"), c(5, 10, 20, 15)), TotVisits = 3:52,
+                    MonthExp = rep(c("[0,50)", "[50,100)", "[100,200]"), c(20, 20, 10)))
+  in_global(list(gro = gro), {
+    s1 <- scripted(c("1", "1", "1", "4 2 3 1", "3", "3", "q"), sc())
+    expect_true(any(grepl("desc_freq\\(x = gro\\$Satisf, order = c\\(\"VLow\", \"Low\", \"Med\", \"High\"\\), at_least = \"Med\"\\)", s1$out)))
+    expect_true(any(grepl("Freq\\(X >= Med\\) = .* = 0.7", s1$out)))
+    s2 <- scripted(c("1", "2", "1", "2", "5", "2", "30", "q"), sc())
+    expect_true(any(grepl("desc_classes\\(x = gro\\$TotVisits, breaks = 5, at_most = 30\\)", s2$out)))
+    s3 <- scripted(c("1", "2", "2", "3", "3", "75", "q"), sc())
+    expect_true(any(grepl("Freq\\(X >= 75\\) = 1 - Freq\\(X < 75\\) = 1 - 0.6 = 0.4", s3$out)))
+    expect_true(any(grepl("Modal classes \\(tie\\)", s3$out)))
+  })
+})
+
 test_that("guide, index, recipes and notes print", {
   expect_output(sc_guide(), "WHICH TEST")
   expect_output(sc_index(), "test_2means")

@@ -106,7 +106,7 @@ test_that("grouped (class-interval) data reproduce the 0.7.2 values", {
   expect_equal(g$mean, 36.6)
   expect_equal(g$modal_class, c(35, 40))
   expect_equal(unname(g$quantiles["p50"]), 35 + (0.5 - 0.42) / (0.28 / 5))
-  expect_equal(desc_classes(lower = c(0, 10), upper = c(10, 30), freq = c(5, 5), below = 20)$share_below, 0.75)
+  expect_equal(desc_classes(lower = c(0, 10), upper = c(10, 30), freq = c(5, 5), at_most = 20)$values$at_most, 0.75)
 })
 
 test_that("regression matches lm / predict", {

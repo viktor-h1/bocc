@@ -1,4 +1,4 @@
-# statcram 0.8.0
+# statcram 0.8.1
 
 An offline statistics exam toolkit for R / RStudio. One numbered menu, plus plain functions
 with consistent names. Every procedure works with **raw data** (including data frames and
@@ -12,7 +12,7 @@ Pure R, no compilation, no internet needed after installing.
 
 ```r
 # from the built file
-install.packages("statcram_0.8.0.tar.gz", repos = NULL, type = "source")
+install.packages("statcram_0.8.1.tar.gz", repos = NULL, type = "source")
 # or from GitHub
 remotes::install_github("viktor-h1/bocc", ref = "claude/quirky-gates-9i7hvr")
 
@@ -45,7 +45,7 @@ table from paper first.
 
 | # | Topic | Functions |
 |---|---|---|
-| 1 | Describe data | `desc_summary` `desc_compare` `desc_cv` `desc_classes` `desc_freq` `desc_prop` `desc_crosstab` |
+| 1 | Describe data | `desc_freq` `desc_classes` `desc_summary` `desc_compare` `desc_cv` `desc_prop` `desc_crosstab` |
 | 2 | Probability & random variables | `prob_normal` `prob_t` `prob_chisq` `rv_discrete` `rv_linear` `rv_iid` `rv_prop` |
 | 3 | Confidence intervals | `ci_mean` `ci_prop` `ci_paired` `ci_2means` `ci_2props` |
 | 4 | Hypothesis tests | `test_mean` `test_prop` `test_paired` `test_2means` `test_2props` |
@@ -73,6 +73,21 @@ chisq_gof(c(A = 151, B = 117, C = 140, D = 162))               # equal shares if
 fit <- reg_fit(spend ~ age + premium, data = df)
 reg_predict(fit, age = 40, premium = "Yes")
 ```
+
+Frequency distributions follow the course book (Applied Statistical Methods, ch. 2):
+
+```r
+desc_freq(df$Satisf, order = c("VLow", "Low", "QLow", "Med", "QHigh", "High", "VHigh"))  # f_k, p_k, F_k
+desc_freq(df$NMonths, at_least = 10)                    # Freq(X >= 10), exact
+desc_classes(df$TotVisits, breaks = 10)                 # 10 equal-width classes, w = (Max - Min) / 10
+desc_classes(df$TotVisits, breaks = c(0, 5, 10, 15, 25, 45, 60, 100, 150, 220))
+desc_classes(df$MonthExp, at_most = 250)                # variable measured in classes "[0,50)", ...
+```
+
+Classes are `[a, b)` with the last one closed, densities are c_k = p_k / w_k, histograms use
+densities, and proportions inside a class are approximated assuming values are spread uniformly
+(Freq(X <= 250) = Freq(X < 200) + c_k x 50). Columns holding interval labels such as `"[0,50)"` are
+recognised and sorted by their limits, not alphabetically.
 
 `alt` takes `"<"`, `">"`, `"!="` (or less / greater / two.sided). `alpha` and `conf` take
 `0.05` or `5`, `0.95` or `95`. Two independent means require `case =` `"pooled"`, `"welch"`,

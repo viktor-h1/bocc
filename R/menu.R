@@ -142,25 +142,62 @@
   }
   as.call(c(as.name("desc_cv"), lapply(ex, str2lang)))
 }
+# Optional Freq(X <= x) / Freq(X >= x) / Freq(a <= X <= b); levels = ordered categories (NULL for numbers).
+.ask_cum_query <- function(levels = NULL, approx = FALSE) {
+  i <- .ask_choice(sprintf("Also a%s proportion?", if (approx) "n (approximate)" else " cumulative"),
+                   c("no", "Freq(X <= x)  (at most x)", "Freq(X >= x)  (at least x)", "Freq(a <= X <= b)  (between)"))
+  if (i == 1) return(list())
+  pick <- function(what) if (is.null(levels)) .ask_num(what) else levels[.ask_choice(paste0(what, ":"), levels)]
+  switch(i, NULL, list(at_most = pick("x")), list(at_least = pick("x")),
+         list(between = c(pick("a (lower)"), pick("b (upper)"))))
+}
+
+.m_desc_freq <- function() {
+  d <- .ask_data("the variable (or a frequency list)", "both")
+  x <- .eval_expr(d$expr)
+  a <- list(x = .code(d$expr))
+  v <- if (is.data.frame(x)) x[[1]] else x
+  lv <- if (is.data.frame(x)) as.character(x[[1]]) else .cats(v[!is.na(v)])
+  if (!is.numeric(v) && !is.factor(v) && is.null(.parse_intervals(lv)) && length(lv) <= 20) {
+    cat("Levels now (alphabetical):\n")
+    for (k in seq_along(lv)) cat(sprintf(" %2d  %s\n", k, lv[k]))
+    repeat {
+      o <- .mq("Ordinal? Type the levels (or their numbers) from lowest to highest; Enter = keep", "")
+      if (!nzchar(o)) break
+      tok <- .split_values(o)
+      idx <- suppressWarnings(as.integer(tok))
+      ord <- if (!anyNA(idx) && all(idx %in% seq_along(lv))) lv[idx] else tok
+      if (setequal(ord, lv) && length(ord) == length(lv)) { a$order <- ord; lv <- ord; break }
+      cat("  Give every level exactly once (", length(lv), " levels).\n", sep = "")
+    }
+  } else if (is.factor(v)) lv <- levels(droplevels(v))
+  c(a, .ask_cum_query(if (is.numeric(v)) NULL else lv)) -> a
+  .mk("desc_freq", a)
+}
+
 .m_desc_classes <- function() {
-  i <- .ask_choice("Where is the class table?", c("a class table already entered (sc_table) / loaded",
-                                                   "type the class boundaries and frequencies now",
-                                                   "enter it with the table wizard first (sc_table)"))
-  if (i == 3) { sc_table(); i <- 1 }
-  below <- NULL
+  i <- .ask_choice("What do you have?", c(
+    "raw numeric data to group into intervals (you choose the classes)",
+    "a variable measured in classes (values like [0,50) or 10-20)",
+    "a class table entered with sc_table() / already loaded",
+    "type the class limits and frequencies now",
+    "enter the class table with the table wizard first (sc_table)"))
+  if (i == 5) { sc_table(); i <- 3 }
   if (i == 1) {
-    d <- .ask_data("the class table", "table")
-    a <- list(x = .code(d$expr))
+    a <- list(x = .code(.ask_data("the numeric variable", "vector")$expr))
+    a$breaks <- .ask_nums("Classes: K = number of equal-width classes (e.g. 5), or the class limits (e.g. 10 20 30 40 50 60)")
+  } else if (i == 2) {
+    a <- list(x = .code(.ask_data("the variable measured in classes", "vector")$expr))
+  } else if (i == 3) {
+    a <- list(x = .code(.ask_data("the class table", "table")$expr))
   } else {
-    b <- .ask_nums("Class boundaries in order (k + 1 numbers), e.g. 10 25 30 35")
+    b <- .ask_nums("Class limits in order (k + 1 numbers), e.g. 0 50 100 150 200 300")
     vt <- .ask_choice("The values are:", c("frequencies (counts)", "percentages / proportions"))
     v <- .ask_nums("Values for each class, in order", length(b) - 1)
     a <- if (vt == 1) list(breaks = b, freq = v) else list(breaks = b, prop = v)
   }
-  a$below <- .ask_num("Share below a value? Type the value (Enter = skip)", allow_empty = TRUE)
-  .mk("desc_classes", a)
+  .mk("desc_classes", c(a, .ask_cum_query(NULL, approx = i != 1)))
 }
-.m_desc_freq <- function() .mk("desc_freq", list(x = .code(.ask_data("a categorical variable (or a frequency list)", "both")$expr)))
 .m_desc_prop <- function() {
   a <- .one_prop_args()
   if (!is.null(a$phat)) { a$count <- a$phat * a$n; a$phat <- NULL }
@@ -478,11 +515,11 @@
 
 .menu <- list(
   list(title = "Describe data", items = list(
+    list("Frequency table: counts, proportions, cumulative, Freq(X <= x) (+ bar / spike plot)", .m_desc_freq),
+    list("Group numbers into intervals / variable measured in classes (densities, histogram, ogive)", .m_desc_classes),
     list("Summary of one numeric variable (mean, median, quartiles, SD, CV, outliers + plots)", .m_desc_summary),
     list("Compare a numeric variable across groups (table + side-by-side boxplots)", .m_desc_compare),
     list("Compare dispersion of variables (SD vs coefficient of variation)", .m_desc_cv),
-    list("Class-interval / grouped table (density, modal class, approx. mean & quantiles)", .m_desc_classes),
-    list("Frequency table of a categorical variable", .m_desc_freq),
     list("Sample proportion of one category + its estimated standard error", .m_desc_prop),
     list("Two-way table with row / column percentages", .m_desc_crosstab))),
   list(title = "Probability & random variables", items = list(

@@ -10,9 +10,16 @@
 #'   boxplot + histogram.
 #' * `desc_compare()`  a numeric variable by group (table + side-by-side boxplots).
 #' * `desc_cv()`       compare dispersion of variables (SD vs coefficient of variation).
-#' * `desc_classes()`  class-interval (grouped) table: density, modal class,
-#'   approximate mean / SD / quantiles, share below a value; histogram.
-#' * `desc_freq()`     frequency table of a categorical variable.
+#' * `desc_freq()`     frequency distribution of a variable with few distinct
+#'   values: counts f_k, proportions p_k, percentages, cumulative F_k;
+#'   Freq(X <= x), Freq(X >= x), Freq(a <= X <= b); bar / pie / spike /
+#'   cumulative plot. Ordinal variables: give the level order with `order`.
+#' * `desc_classes()`  numerical data grouped into intervals [a, b) (last
+#'   one closed): from raw data + `breaks` (K equal-width classes or the
+#'   class limits), from a variable measured in classes ("[0,50)", "10-20"),
+#'   or from a class table. Width w_k, density c_k = p_k / w_k, cumulative
+#'   F_k, approximate Freq(X <= x) etc. (uniform within classes), modal
+#'   class, approximate mean / quantiles; histogram + ogive.
 #' * `desc_prop()`     sample proportion of one category and its estimated SE.
 #' * `desc_crosstab()` two-way table with row / column / total percentages.
 #'
@@ -26,11 +33,25 @@
 #' @param ... Numeric vectors to compare (`desc_cv`), named or not.
 #' @param mean,sd Summary numbers for `desc_cv()` when raw data are not given.
 #' @param probs Percentiles to report.
-#' @param lower,upper,breaks Class limits for `desc_classes()` (give
-#'   `breaks` OR `lower` and `upper`), or pass a class table from
-#'   [sc_table()] as the first argument.
-#' @param freq,prop Frequencies or proportions/percentages per class.
-#' @param below Optional value: approximate share of units below it.
+#' @param breaks `desc_classes()`: a single number K (K classes of equal
+#'   width w = (Max - Min) / K, starting at the minimum) or the class limits
+#'   `c(10, 20, 30, ...)`. Without raw data: the limits of a typed class table.
+#' @param lower,upper Class limits as two vectors (alternative to `breaks`).
+#' @param freq,prop Frequencies or proportions / percentages per class
+#'   (typed class table).
+#' @param at_most,at_least,between Optional: proportion of values
+#'   `<= at_most`, `>= at_least`, or within `between = c(a, b)`. Exact for
+#'   raw values (`desc_freq`), approximate for classes (`desc_classes`).
+#'   For ordered categories give level names, e.g. `at_least = "High"`.
+#' @param order `desc_freq()`: the levels in their substantive order, e.g.
+#'   `c("VLow", "Low", "Med", "High")` (needed for cumulative frequencies of
+#'   an ordinal character variable).
+#' @param sort `desc_freq()`: `"none"` (standard order), `"decreasing"` or
+#'   `"increasing"` frequency (Pareto-style).
+#' @param plot Plot type. `desc_freq()`: `"auto"` (bars for categories,
+#'   spikes for numbers), `"bars"`, `"pie"`, `"spike"`, `"cum"`.
+#'   `desc_classes()`: `"both"` (histogram + ogive), `"hist"`, `"ogive"`.
+#' @param se `desc_freq()`: also show the estimated SE of each proportion.
 #' @param y Second categorical variable for `desc_crosstab()`.
 #' @param event Category of interest for `desc_prop()`.
 #' @param count,n Summary numbers for `desc_prop()`.
@@ -38,8 +59,11 @@
 #' @examples
 #' x <- c(12, 15, 9, 22, 14, 18, 30, 11)
 #' desc_summary(x)
+#' desc_freq(c("H", "M", "VH", "VH", "H", "M", "VH"), order = c("M", "H", "VH"))
+#' tickets <- c(25, 35, 13, 21, 24, 37, 26, 46, 58, 30, 32, 13, 12, 38, 41, 43, 44, 27, 53, 27)
+#' desc_classes(tickets, breaks = c(10, 20, 30, 40, 50, 60))
 #' desc_classes(breaks = c(10, 25, 30, 35, 40, 45, 60),
-#'              prop = c(6, 12, 24, 28, 18, 12))
+#'              prop = c(6, 12, 24, 28, 18, 12), at_most = 37)
 #' @name describe
 NULL
 
@@ -160,116 +184,6 @@ desc_cv <- function(..., mean = NULL, sd = NULL) {
     sprintf("%s has the largest SD, but relative to its mean the most dispersed variable is %s (CV = %s).",
             big_sd, big_cv, .pct(max(tab$CV))))
   .result("Comparing dispersion (SD vs CV)", lines, wording, NULL, match.call(), table = tab)
-}
-
-.classes_from <- function(x, lower, upper, breaks, freq, prop) {
-  value_type <- NULL
-  if (is.data.frame(x)) {
-    if (!all(c("lower", "upper") %in% names(x)))
-      stop("A class table needs columns lower and upper (as made by sc_table()).", call. = FALSE)
-    lower <- x$lower; upper <- x$upper
-    vcols <- setdiff(names(x)[vapply(x, is.numeric, logical(1))], c("lower", "upper"))
-    if (!length(vcols)) stop("The class table has no frequency column.", call. = FALSE)
-    if (length(vcols) > 1) message("Using the first value column: ", vcols[1])
-    vals <- x[[vcols[1]]]
-    value_type <- attr(x, "statcram_values") %||% if (vcols[1] %in% c("percent", "prop", "proportion")) "percent" else "freq"
-    if (value_type == "percent") prop <- vals else freq <- vals
-  } else if (!is.null(breaks)) {
-    if (length(breaks) < 2) stop("breaks needs at least two numbers.", call. = FALSE)
-    lower <- head(breaks, -1); upper <- tail(breaks, -1)
-  }
-  if (is.null(lower) || is.null(upper)) stop("Give breaks = c(...) or lower = and upper =, or a class table.", call. = FALSE)
-  list(lower = lower, upper = upper, freq = freq, prop = prop)
-}
-
-#' @rdname describe
-#' @export
-desc_classes <- function(x = NULL, lower = NULL, upper = NULL, breaks = NULL, freq = NULL, prop = NULL,
-                         probs = c(0.25, 0.5, 0.75, 0.9, 0.95), below = NULL) {
-  C <- .classes_from(x, lower, upper, breaks, freq, prop)
-  lower <- C$lower; upper <- C$upper; freq <- C$freq; prop <- C$prop
-  k <- length(lower)
-  if (length(upper) != k) stop("lower and upper must have the same length.", call. = FALSE)
-  if (any(upper <= lower)) stop("Each upper limit must be larger than its lower limit.", call. = FALSE)
-  if (is.null(prop)) {
-    if (is.null(freq) || length(freq) != k) stop("Give freq = (counts) or prop = (proportions / %), one per class.", call. = FALSE)
-    total <- sum(freq); prop <- freq / total
-  } else {
-    if (length(prop) != k) stop("prop must have one value per class.", call. = FALSE)
-    if (abs(sum(prop) - 1) > 1e-6) prop <- prop / sum(prop)
-    total <- NULL
-  }
-  width <- upper - lower; mid <- (lower + upper) / 2
-  dens <- prop / width; cum <- cumsum(prop)
-  modal <- which.max(dens)
-  amean <- sum(mid * prop)
-  avar <- sum(prop * (mid - amean)^2)
-  qfun <- function(q) {
-    j <- which(cum >= q - 1e-12)[1]
-    prev <- if (j == 1) 0 else cum[j - 1]
-    lower[j] + (q - prev) / dens[j]
-  }
-  qs <- vapply(probs, qfun, numeric(1))
-  tab <- data.frame(class = paste0("[", .f(lower), ", ", .f(upper), ")"), width = width, midpoint = mid)
-  if (!is.null(freq)) tab$freq <- freq
-  tab$rel_freq <- prop; tab$density <- dens; tab$cum_rel <- cum
-  lines <- c(
-    .table_lines(.round_df(tab)),
-    "",
-    "density = relative frequency / class width;  midpoint = (lower + upper) / 2",
-    sprintf("Approx. mean = sum(midpoint x rel_freq) = %s", .f(amean)),
-    sprintf("Approx. variance = sum(rel_freq x (midpoint - mean)^2) = %s   SD = %s%s", .f(avar), .f(sqrt(avar)),
-            if (!is.null(total) && total > 1) sprintf("   (with n - 1 divisor: variance = %s, SD = %s)",
-                                                       .f(avar * total / (total - 1)), .f(sqrt(avar * total / (total - 1)))) else ""),
-    sprintf("Modal class (highest DENSITY, not highest frequency) = [%s, %s)", .f(lower[modal]), .f(upper[modal])),
-    "Approx. quantiles (values spread uniformly inside each class):",
-    sprintf("  %s", paste(sprintf("p%s = %s", round(100 * probs), .f(qs)), collapse = "   ")),
-    sprintf("  e.g. median: class [%s, %s) -> %s + (0.5 - %s) / %s = %s",
-            .f(lower[which(cum >= 0.5 - 1e-12)[1]]), .f(upper[which(cum >= 0.5 - 1e-12)[1]]),
-            .f(lower[which(cum >= 0.5 - 1e-12)[1]]),
-            .f(if (which(cum >= 0.5 - 1e-12)[1] == 1) 0 else cum[which(cum >= 0.5 - 1e-12)[1] - 1]),
-            .f(dens[which(cum >= 0.5 - 1e-12)[1]]), .f(qfun(0.5))))
-  share_below <- NULL
-  if (!is.null(below)) {
-    share_below <- if (below <= lower[1]) 0 else if (below >= upper[k]) 1 else {
-      j <- max(which(lower <= below)); (if (j == 1) 0 else cum[j - 1]) + (below - lower[j]) * dens[j]
-    }
-    lines <- c(lines, sprintf("Approx. share below %s = %s (%s)", .f(below), .f(share_below), .pct(share_below)))
-  }
-  .with_plot(function() {
-    plot(NA, xlim = range(c(lower, upper)), ylim = c(0, max(dens) * 1.1), xlab = "value", ylab = "density",
-         main = "Histogram (density scale)", las = 1)
-    rect(lower, 0, upper, dens, col = "grey85", border = "grey30")
-    abline(v = amean, col = "firebrick", lwd = 2); abline(v = qfun(0.5), col = "navy", lwd = 2, lty = 2)
-    legend("topright", c("approx. mean", "approx. median"), col = c("firebrick", "navy"), lty = c(1, 2), bty = "n", cex = 0.8)
-  })
-  wording <- c(
-    "Because only the class-interval table is available (not the raw values), these location and dispersion measures are approximations: the mean uses class midpoints and the quantiles assume values are spread uniformly within each class.",
-    sprintf("The approximate mean is %s and the approximate median is %s. With unequal class widths the modal class is the one with the highest density: [%s, %s).",
-            .f(amean), .f(qfun(0.5)), .f(lower[modal]), .f(upper[modal])))
-  .result("Class-interval (grouped) data", lines, wording, NULL, match.call(),
-          table = tab, mean = amean, variance = avar, quantiles = stats::setNames(qs, paste0("p", round(100 * probs))),
-          modal_class = c(lower[modal], upper[modal]), share_below = share_below)
-}
-
-#' @rdname describe
-#' @export
-desc_freq <- function(x) {
-  xlab <- .label(substitute(x))
-  fr <- .as_freq(x)
-  if (is.null(fr)) {
-    v <- .one_column(x, xlab)
-    v <- v[!is.na(v)]
-    lv <- .cats(v)
-    fr <- stats::setNames(as.numeric(table(factor(as.character(v), levels = lv))), lv)
-  }
-  n <- sum(fr); p <- fr / n
-  tab <- data.frame(category = names(fr), count = fr, proportion = p, percent = 100 * p,
-                    cum_percent = 100 * cumsum(p), se_phat = sqrt(p * (1 - p) / n))
-  lines <- c(sprintf("Variable: %s   n = %s", xlab, .f(n)), "", .table_lines(.round_df(tab)), "",
-             "se_phat = sqrt(p-hat (1 - p-hat) / n): the estimated standard error of each sample proportion")
-  .with_plot(function() barplot(p, main = paste("Relative frequencies of", xlab), ylab = "proportion", col = "grey80", las = 1))
-  .result("Frequency table", lines, NULL, NULL, match.call(), table = tab)
 }
 
 #' @rdname describe

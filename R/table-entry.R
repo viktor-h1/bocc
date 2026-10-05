@@ -303,14 +303,14 @@
     data = c(sprintf("use %s$<column> in any function, e.g. desc_summary(%s$%s)", name, name, if (.syntactic(T$cols[1])) T$cols[1] else paste0("`", T$cols[1], "`")),
              "sc() lists every column; sc_data() shows what is loaded"),
     counts = c(sprintf("chisq_indep(%s)        chi-square test of independence   [sc(6,2)]", name),
-               sprintf("desc_crosstab(%s)      row / column percentages            [sc(1,6)]", name),
+               sprintf("desc_crosstab(%s)      row / column percentages            [sc(1,7)]", name),
                if (!is.null(long)) sprintf("test_2props(%s$%s == \"%s\", group = %s$%s, levels = c(\"%s\", \"%s\"))",
                                            long, names(get(long, envir = .GlobalEnv))[2], T$cols[1], long,
                                            names(get(long, envir = .GlobalEnv))[1], T$rows[1], T$rows[min(2, length(T$rows))])),
-    classes = c(sprintf("desc_classes(%s)       approx. mean / quantiles / modal class   [sc(1,4)]", name),
-                sprintf("desc_classes(%s, below = <value>)   share below a value", name)),
+    classes = c(sprintf("desc_classes(%s)       densities, histogram, ogive, modal class   [sc(1,2)]", name),
+                sprintf("desc_classes(%s, at_most = <value>)   approx. Freq(X <= value)", name)),
     freq = c(sprintf("chisq_gof(%s, p = c(...))   goodness of fit (equal shares if p omitted)   [sc(6,1)]", name),
-             sprintf("desc_freq(%s)              proportions and their SEs                     [sc(1,5)]", name),
+             sprintf("desc_freq(%s)              counts, proportions, cumulative               [sc(1,1)]", name),
              sprintf("desc_prop(%s, event = \"%s\")  one category's proportion + SE", name, T$rows[1])))
   cat(paste0("  ", nx, collapse = "\n"), "\n", sep = "")
   invisible(df)

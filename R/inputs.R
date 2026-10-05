@@ -43,8 +43,36 @@
 }
 
 # Categories of a vector, in a sensible order.
+# Numbers in numeric order; interval labels ("[0,50)", "10-20") by their lower
+# limit; other text alphabetically; factors keep their level order.
 .cats <- function(x) {
-  if (is.factor(x)) levels(droplevels(x)) else sort(unique(as.character(x[!is.na(x)])))
+  if (is.factor(x)) return(levels(droplevels(x)))
+  u <- unique(x[!is.na(x)])
+  if (is.numeric(u)) return(as.character(sort(u)))
+  u <- as.character(u)
+  iv <- .parse_intervals(u)
+  if (!is.null(iv)) return(iv$label)
+  sort(u)
+}
+
+# Parse class labels such as "[0,50)", "[10, 20]", "(5;10]" or "10-20".
+# Returns data.frame(label, lower, upper) sorted by lower limit, or NULL if
+# any label is not an interval.
+.parse_intervals <- function(labels) {
+  labels <- unique(as.character(labels[!is.na(labels)]))
+  if (!length(labels)) return(NULL)
+  num <- "\\s*(-?[0-9]+(?:[.][0-9]+)?)\\s*"
+  br <- regmatches(labels, regexec(paste0("^\\s*[\\[(]", num, "[,;]", num, "[\\])]\\s*$"), labels, perl = TRUE))
+  dash <- regmatches(labels, regexec(paste0("^", num, "-", num, "$"), labels, perl = TRUE))
+  lo <- hi <- rep(NA_real_, length(labels))
+  for (i in seq_along(labels)) {
+    m <- if (length(br[[i]]) == 3) br[[i]] else if (length(dash[[i]]) == 3) dash[[i]] else NULL
+    if (is.null(m)) return(NULL)
+    lo[i] <- as.numeric(m[2]); hi[i] <- as.numeric(m[3])
+  }
+  if (any(hi <= lo)) return(NULL)
+  o <- order(lo, hi)
+  data.frame(label = labels[o], lower = lo[o], upper = hi[o], stringsAsFactors = FALSE)
 }
 
 # Event indicator for proportions. Accepts:
@@ -156,6 +184,10 @@
     return(sprintf("numeric, n=%d", n))
   }
   if (is.factor(x) || is.character(x)) {
+    iv <- .parse_intervals(x)
+    if (!is.null(iv) && nrow(iv) > 1)
+      return(sprintf("measured in classes: %s%s (n=%d)", paste(head(iv$label, 3), collapse = ", "),
+                     if (nrow(iv) > 3) ", ..." else "", n))
     lv <- .cats(x)
     s <- paste(head(lv, 4), collapse = ", ")
     if (length(lv) > 4) s <- paste0(s, ", ...")
