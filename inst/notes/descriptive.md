@@ -79,3 +79,21 @@
   variables in different units or with very different means. It has no fixed range, so it does not
   say whether ONE distribution is "highly dispersed".
 - Changing the unit (minutes -> seconds x 60): mean x 60, SD x 60, variance x 60^2, CV unchanged.
+
+## UBStats (book 2.6, 3.5)                   statcram prints the matching call under each result
+distr.table.x(x, freq = c("counts", "proportions"), total = TRUE, f.digits = 2, p.digits = 0, data)
+  freq: counts, percentages, proportions, cumulative (+ densities with classes). Levels in standard
+  order (alphabetical / numeric / factor levels): for an ordinal text variable use
+  x = factor(x, levels = c("VLow", ..., "VHigh")).
+  Classes from raw numbers: breaks = K (equal widths) or breaks = c(...) (closed left, open right,
+  last closed). Variable measured in classes ("[0,50)", "10-20"): interval = TRUE.
+distr.plot.x(x, freq = "counts", plot.type, bw = FALSE, ord.freq = "none", breaks / interval, data)
+  plot.type: pie, bars, spike, cumulative (step / ogive), histogram (classes; densities are used
+  automatically when widths differ), boxplot. ord.freq = "increasing" / "decreasing" for pie / bars.
+distr.summary.x(x, stats = "summary", digits = 2, f.digits = 4, data)
+  stats: "summary" (five numbers, mean, var, sd), "central" (mode, median, mean), "dispersion"
+  (range, IQR, var, sd, cv), "fivenumbers", "quartiles", "quintiles", "deciles", "percentiles",
+  or single measures "q1", "mean", "mode", "sd", "cv", "IQrange", "p10", ... Missing values are
+  removed automatically. Variables measured in classes are treated as text (no approximation).
+Base R: mean(x, na.rm = TRUE), median(), quantile(x, probs), var(), sd() need na.rm = TRUE;
+quantile() of an ordered factor needs type = 1.

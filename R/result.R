@@ -29,9 +29,9 @@
 #'
 #' Results print as: the hypotheses / inputs, each formula with the numbers
 #' plugged in, the decision, an exam-wording paragraph and the one-line call
-#' that re-runs the procedure. Intervals and tests also show the matching
-#' call of the course package UBStats (chi-square tests: base R
-#' `chisq.test()`). Turn parts off with
+#' that re-runs the procedure. Descriptive results, intervals and tests also
+#' show the matching call of the course package UBStats (chi-square tests:
+#' base R `chisq.test()`). Turn parts off with
 #' `options(statcram.wording = FALSE)`, `options(statcram.plot = FALSE)` or
 #' `options(statcram.ubstats = FALSE)`;
 #' change decimals with `options(statcram.digits = 6)`.

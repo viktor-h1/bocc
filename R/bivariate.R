@@ -39,11 +39,14 @@
 desc_crosstab <- function(x, y = NULL, order_x = NULL, order_y = NULL, breaks_x = NULL, breaks_y = NULL,
                           plot = c("stacked", "beside")) {
   plot <- match.arg(plot)
-  xlab <- .label(substitute(x)); ylab <- .label(substitute(y))
+  qx <- substitute(x); qy <- substitute(y); sbx <- substitute(breaks_x); sby <- substitute(breaks_y)
+  xlab <- .label(qx); ylab <- .label(qy)
   notes <- NULL
   m <- .as_count_table(x)
+  raw <- is.null(m)
   if (is.null(m) && is.data.frame(x) && is.null(y) && ncol(x) == 2) {
     xlab <- names(x)[1]; ylab <- names(x)[2]; y <- x[[2]]; x <- x[[1]]
+    qy <- call("[[", qx, 2); qx <- call("[[", qx, 1)
   }
   if (is.null(m)) {
     if (is.null(y)) stop("Give two variables (x, y) or a count table.", call. = FALSE)
@@ -117,16 +120,26 @@ desc_crosstab <- function(x, y = NULL, order_x = NULL, order_y = NULL, breaks_x 
     sprintf("The more the conditional distributions differ, the stronger the association. Here the chi-square statistic is %s and Cramer's V = %s (a relative measure between 0 and 1, not inflated by the sample size or the table dimensions).", .f(chi), .f(V)),
     "Comparisons of conditional distributions are only meaningful if the groups are homogeneous with respect to other (confounding) factors: aggregated data can hide or reverse relations within subgroups (Simpson's paradox).")
   if (any(ex < 5)) notes <- c(notes, "Some expected counts are below 5 (relevant for the chi-square TEST in chisq_indep()).")
+  ub <- if (!raw) .ub_raw_note else {
+    xe <- .ub_ordered(qx, order_x); ye <- .ub_ordered(qy, order_y)
+    ab <- list(breaks.x = if (!is.null(breaks_x)) sbx, breaks.y = if (!is.null(breaks_y)) sby)
+    c(do.call(.ub_call, c(list("distr.table.xy", x = xe, y = ye, freq = c("counts", "proportions"),
+                               freq.type = c("joint", "y|x", "x|y")), ab), quote = TRUE),
+      do.call(.ub_call, c(list("distr.plot.xy", x = xe, y = ye, plot.type = "bars", freq = "proportions",
+                               freq.type = if (plot == "stacked") "y|x" else "joint",
+                               bar.type = if (plot == "beside") "beside"), ab), quote = TRUE))
+  }
   .result("Joint and conditional distributions", lines, wording, notes, match.call(),
           counts = m, joint = m / n, row_cond = rowp, col_cond = colp, expected = ex,
-          chisq = chi, cramer_v = V, cond_summary = summ)
+          chisq = chi, cramer_v = V, cond_summary = summ, ubstats = ub)
 }
 
 #' @rdname describe
 #' @export
 desc_compare <- function(x, group, group2 = NULL, probs = c(0.10, 0.90), plot = c("boxplot", "hist")) {
   plot <- match.arg(plot)
-  xlab <- .label(substitute(x)); glab <- .label(substitute(group))
+  qx <- substitute(x); qg <- substitute(group); qg2 <- substitute(group2)
+  xlab <- .label(qx); glab <- .label(qg)
   xx <- .one_column(x, xlab); g <- .one_column(group, glab)
   if (length(xx) != length(g)) stop("x and group must have the same length.", call. = FALSE)
   if (!is.null(group2)) {
@@ -174,15 +187,19 @@ desc_compare <- function(x, group, group2 = NULL, probs = c(0.10, 0.90), plot = 
     sprintf("Spread: the IQR (box width) ranges from %s to %s and the standard deviation from %s to %s; check the whiskers, the extreme values and the upper / lower percentiles to compare the tails.",
             .f(min(grp$Q3 - grp$Q1)), .f(max(grp$Q3 - grp$Q1)), .f(min(grp$sd, na.rm = TRUE)), .f(max(grp$sd, na.rm = TRUE))),
     "With a numerical variable the conditional distributions always differ somewhat; the question is whether they differ substantially in location, dispersion or shape (side-by-side boxplots plus summaries), not whether the variables are exactly independent.")
+  ub <- c(.ub_call("distr.summary.x", x = qx, stats = c("central", "fivenumbers", "dispersion", .ub_pcts(probs)),
+                    by1 = qg, by2 = if (!is.null(group2)) qg2),
+          if (is.null(group2)) .ub_call("distr.plot.xy", x = qg, y = qx, plot.type = "boxplot"))
   .result("Comparing a numerical variable across groups", lines, wording,
           if (any(tab$n.a > 0)) "n.a = missing values of the numerical variable within each group (excluded).", match.call(),
-          table = tab)
+          table = tab, ubstats = ub)
 }
 
 #' @rdname describe
 #' @export
 desc_cor <- function(x, y = NULL, line = TRUE, color = NULL, population = FALSE) {
-  xlab <- .label(substitute(x)); ylab <- .label(substitute(y)); clab <- .label(substitute(color))
+  qx <- substitute(x); qy <- substitute(y); qc <- substitute(color)
+  xlab <- .label(qx); ylab <- .label(qy); clab <- .label(qc)
   div <- function(n) if (population) n else n - 1
   # joint frequency table of two discrete numerical variables (numeric row / column labels)
   m <- if (is.null(y)) .as_count_table(x) else NULL
@@ -268,7 +285,12 @@ desc_cor <- function(x, y = NULL, line = TRUE, color = NULL, population = FALSE)
     sprintf("The regression line %s-hat = %s %s %s x %s gives, on average, a change of %s in %s for a one-unit increase in %s; the slope does not measure the strength of the relation (b1 = r s_Y / s_X).",
             ylab, .f(b0), if (b1 < 0) "-" else "+", .f(abs(b1)), xlab, .f(b1), ylab, xlab),
     "Always check the scatterplot: outliers can inflate or deflate r, a low r does not exclude a strong NON-linear relation, and correlation does not imply causation (confounding factors, reverse causality, ecological data).")
+  ub <- if (is.null(y)) .ub_raw_note
+        else c(.ub_call("distr.plot.xy", x = qx, y = qy, plot.type = "scatter", fitline = if (line) TRUE, var.c = if (!is.null(color)) qc),
+               sprintf("cov(%s, %s, use = \"complete.obs\"); cor(%s, %s, use = \"complete.obs\")   # base R",
+                       .call_text(qx), .call_text(qy), .call_text(qx), .call_text(qy)))
   .result("Covariance, correlation and regression line", lines, wording,
           if (sum(!ok)) sprintf("%d case(s) with a missing value were removed (complete pairs only).", sum(!ok)), match.call(),
-          covariance = sxy, correlation = r, intercept = b0, slope = b1, mean_x = mx, mean_y = my, sd_x = sx, sd_y = sy, n = n)
+          covariance = sxy, correlation = r, intercept = b0, slope = b1, mean_x = mx, mean_y = my, sd_x = sx, sd_y = sy, n = n,
+          ubstats = ub)
 }

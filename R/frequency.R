@@ -65,9 +65,10 @@ desc_freq <- function(x, order = NULL, sort = c("none", "decreasing", "increasin
                       plot = c("auto", "bars", "pie", "spike", "cum"), se = FALSE, n = NULL) {
   n_given <- n
   sort <- match.arg(sort); plot <- match.arg(plot)
-  xlab <- .label(substitute(x))
+  sx <- substitute(x); xlab <- .label(sx)
   notes <- NULL
   fr <- .as_freq(x)
+  raw <- is.null(fr); intervals <- FALSE
   numeric <- FALSE; is_props <- FALSE
   if (is.null(fr)) {
     v <- .one_column(x, xlab)
@@ -75,6 +76,7 @@ desc_freq <- function(x, order = NULL, sort = c("none", "decreasing", "increasin
     dropped <- sum(is.na(v)); v <- v[!is.na(v)]
     if (!length(v)) stop(xlab, " has no non-missing values.", call. = FALSE)
     numeric <- is.numeric(v)
+    intervals <- is.null(order) && !is.null(.parse_intervals(v))
     lv <- .cats(v)
     if (!is.null(order)) {
       miss <- setdiff(lv, as.character(order))
@@ -128,9 +130,18 @@ desc_freq <- function(x, order = NULL, sort = c("none", "decreasing", "increasin
       points(xs, p, pch = 19, cex = 0.7)
     } else .plot_cum(names(fr), as.numeric(p), numeric, xlab)
   })
+  ub <- if (!raw) .ub_raw_note else {
+    xe <- .ub_ordered(sx, order)
+    iv <- if (intervals) TRUE
+    c(.ub_call("distr.table.x", x = xe, freq = if (ordered) c("counts", "proportions", "cumulative"), interval = iv),
+      .ub_call("distr.plot.x", x = xe, freq = "proportions",
+               plot.type = switch(ptype, bars = "bars", pie = "pie", spike = "spike", cum = "cumulative"),
+               ord.freq = if (sort != "none" && ptype %in% c("bars", "pie")) sort, interval = iv),
+      if (!is.null(order)) "# factor(..., levels = ) gives UBStats the order (otherwise alphabetical)")
+  }
   .result("Frequency distribution", lines, NULL, notes, match.call(),
           table = tab, n = n, values = Q$values, mode = S$mode, median = S$median, quartiles = S$quartiles,
-          mean = S$mean, variance = S$variance, sd = S$sd)
+          mean = S$mean, variance = S$variance, sd = S$sd, ubstats = ub)
 }
 
 # Summary measures from a frequency distribution (book 3.2-3.4):
@@ -319,7 +330,8 @@ desc_classes <- function(x = NULL, breaks = NULL, lower = NULL, upper = NULL, fr
                          at_most = NULL, at_least = NULL, between = NULL,
                          probs = c(0.25, 0.5, 0.75, 0.9, 0.95), plot = c("both", "hist", "ogive")) {
   plot <- match.arg(plot)
-  xlab <- if (is.null(x)) "X" else .label(substitute(x))
+  sx <- substitute(x); sb <- substitute(breaks)
+  xlab <- if (is.null(x)) "X" else .label(sx)
   C <- .classes_input(x, breaks, lower, upper, freq, prop, xlab)
   if (!is.null(n)) { if (!is.null(C$n) && C$n != n) stop("n = ", n, " does not match the total of the frequencies (", C$n, ").", call. = FALSE); C$n <- n }
   lower <- C$lower; upper <- C$upper; p <- C$p; k <- length(lower)
@@ -414,7 +426,14 @@ desc_classes <- function(x = NULL, breaks = NULL, lower = NULL, upper = NULL, fr
     else "All classes have the same width, so densities are proportional to the proportions.",
     sprintf("The highest concentration of data is in %s (highest density); the median is approximately %s.",
             paste(labs[modal], collapse = " and "), if (is.na(Qs[[2]]$v)) "not determinable" else .f(Qs[[2]]$v)))
-  .result("Frequency distribution of classes", lines, wording, notes, match.call(),
+  ub <- if (C$source == "table") .ub_raw_note else {
+    cl <- if (C$source == "raw") list(breaks = sb) else list(interval = TRUE)
+    pl <- switch(plot, both = c("histogram", "cumulative"), hist = "histogram", ogive = "cumulative")
+    c(do.call(.ub_call, c(list("distr.table.x", x = sx, freq = c("counts", "proportions", "densities", "cumulative")), cl), quote = TRUE),
+      vapply(pl, function(pt) do.call(.ub_call, c(list("distr.plot.x", x = sx, freq = if (pt == "histogram") "densities",
+                                                       plot.type = pt), cl), quote = TRUE), character(1), USE.NAMES = FALSE))
+  }
+  .result("Frequency distribution of classes", lines, wording, notes, match.call(), ubstats = ub,
           table = tab, n = C$n, mean = amean, variance = avar,
           median = Qs[[2]]$v, quartiles = c(Q1 = Qs[[1]]$v, Q3 = Qs[[3]]$v),
           quantiles = stats::setNames(qs, paste0("p", round(100 * probs))),

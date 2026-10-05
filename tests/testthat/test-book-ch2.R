@@ -58,3 +58,38 @@ test_that("Examples 2.4 / 2.7: MonthExp measured in classes", {
   expect_match(statcram:::.kind_tag(MonthExp), "measured in classes")
   expect_equal(statcram:::.cats(MonthExp)[1:2], c("[0,50)", "[50,100)"))
 })
+
+test_that("Example 2.11: TotVisits in classes of different widths (densities, approximate [25, 35))", {
+  tv <- q(desc_classes(freq = c(52, 295, 353, 557, 728, 339, 537, 191, 62),
+                       breaks = c(0, 5, 10, 15, 25, 45, 60, 100, 150, 220), between = c(25, 35)))
+  expect_equal(round(tv$table$c_k, 5), c(0.00334, 0.01895, 0.02267, 0.01789, 0.01169, 0.00726, 0.00431, 0.00123, 0.00028))
+  expect_equal(round(tv$table$p_k, 2), c(0.02, 0.09, 0.11, 0.18, 0.23, 0.11, 0.17, 0.06, 0.02))
+  expect_equal(tv$values$between, (728 / 3114) / 2)              # book: about 0.23 / 2 = 0.115
+  expect_equal(tv$n, 3114)
+})
+
+test_that("UBStats calls for descriptive results (book sections 2.6, 3.5, 4.5)", {
+  set.seed(26)
+  gro <- data.frame(Satisf = sample(c("VLow", "Low", "Med", "High"), 60, TRUE), TotVisits = rpois(60, 40),
+                    MonthExp = sample(c("[0,50)", "[50,100)", "[100,200]"), 60, TRUE), Sex = sample(c("F", "M"), 60, TRUE),
+                    Age = rnorm(60, 45, 10), Exp = rnorm(60, 300, 50))
+  expect_equal(q(desc_freq(gro$Satisf, order = c("VLow", "Low", "Med", "High")))$ubstats[1],
+               "distr.table.x(x = factor(gro$Satisf, levels = c(\"VLow\", \"Low\", \"Med\", \"High\")), freq = c(\"counts\", \"proportions\", \"cumulative\"))")
+  expect_equal(q(desc_freq(gro$Sex, sort = "decreasing", plot = "bars"))$ubstats,
+               c("distr.table.x(x = gro$Sex)", "distr.plot.x(x = gro$Sex, freq = \"proportions\", plot.type = \"bars\", ord.freq = \"decreasing\")"))
+  expect_equal(q(desc_freq(c(A = 10, B = 20)))$ubstats, statcram:::.ub_raw_note)
+  expect_equal(q(desc_classes(gro$TotVisits, breaks = c(0, 30, 40, 50, 80), plot = "hist"))$ubstats,
+               c("distr.table.x(x = gro$TotVisits, freq = c(\"counts\", \"proportions\", \"densities\", \"cumulative\"), breaks = c(0, 30, 40, 50, 80))",
+                 "distr.plot.x(x = gro$TotVisits, freq = \"densities\", plot.type = \"histogram\", breaks = c(0, 30, 40, 50, 80))"))
+  expect_match(q(desc_classes(gro$MonthExp))$ubstats[1], "interval = TRUE\\)$")
+  expect_equal(q(desc_summary(gro$Age, probs = 0.9))$ubstats,
+               c("distr.summary.x(x = gro$Age, stats = c(\"central\", \"fivenumbers\", \"dispersion\", \"p90\"))",
+                 "distr.plot.x(x = gro$Age, plot.type = \"boxplot\")"))
+  expect_equal(q(desc_compare(gro$Exp, gro$Sex))$ubstats[2], "distr.plot.xy(x = gro$Sex, y = gro$Exp, plot.type = \"boxplot\")")
+  expect_match(q(desc_compare(gro$Exp, gro$Sex))$ubstats[1], "by1 = gro\\$Sex\\)$")
+  expect_equal(q(desc_crosstab(gro$Sex, gro$Satisf))$ubstats[1],
+               "distr.table.xy(x = gro$Sex, y = gro$Satisf, freq = c(\"counts\", \"proportions\"), freq.type = c(\"joint\", \"y|x\", \"x|y\"))")
+  expect_equal(q(desc_cor(gro$Age, gro$Exp))$ubstats[1], "distr.plot.xy(x = gro$Age, y = gro$Exp, plot.type = \"scatter\", fitline = TRUE)")
+  expect_equal(q(desc_cv(gro$Age, gro$Exp))$ubstats, c("distr.summary.x(x = gro$Age, stats = c(\"mean\", \"sd\", \"cv\"))",
+                                                       "distr.summary.x(x = gro$Exp, stats = c(\"mean\", \"sd\", \"cv\"))"))
+})

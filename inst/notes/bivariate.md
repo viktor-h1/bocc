@@ -46,3 +46,15 @@ Which tool?
   (inverted U, plateau); subgroups with different relations (structural heterogeneity) distort r;
   correlation is not causation (confounding factors, reverse causality, ecological fallacy);
   do not extrapolate beyond the observed range. ALWAYS look at the scatterplot.
+
+## UBStats (book 4.5)                        statcram prints the matching call under each result
+distr.table.xy(x, y, freq = "counts", freq.type = "joint", total = TRUE, data)
+  freq.type: "joint", "x|y" (column: x given y), "y|x" (row: y given x); x on the ROWS.
+  Classes: breaks.x / breaks.y, or interval.x = TRUE / interval.y = TRUE.
+distr.plot.xy(x, y, plot.type, freq = "counts", freq.type = "joint", bw = FALSE, data)
+  plot.type = "bars" (bar.type = "stacked" or "beside"; freq / freq.type single values),
+  "boxplot" (side-by-side boxplots of the numerical variable by the other one),
+  "scatter" (fitline = TRUE adds and prints the regression line; var.c colours the points).
+distr.summary.x(x, stats = "summary", by1, by2, data)   conditional summaries of x by one or two
+  grouping variables (combinations of by1 and by2).
+Base R: cov(x, y), cor(x, y) (use = "complete.obs" with missing values).

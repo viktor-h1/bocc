@@ -244,3 +244,16 @@
   sprintf("At alpha = %s the normal approximation (p = %s) and the Student t version (p = %s) lead to different decisions: the t test is the more conservative one (heavier tails), so with a normal population or a moderate n use t.",
           .f(alpha), .fp(p_z), .fp(p_t))
 }
+
+# factor(x, levels = c(...)) when an order is given: UBStats uses the standard
+# (alphabetical / numeric / factor) order of the levels.
+.ub_ordered <- function(sx, order) {
+  if (is.null(order)) sx else as.call(list(as.name("factor"), sx, levels = as.character(order)))
+}
+
+# Percentiles UBStats can name ("p1", ..., "p100").
+.ub_pcts <- function(probs) {
+  k <- 100 * probs
+  k <- k[abs(k - round(k)) < 1e-9 & k >= 1 & k <= 100]
+  if (length(k)) paste0("p", round(k))
+}

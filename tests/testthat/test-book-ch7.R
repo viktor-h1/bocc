@@ -205,7 +205,7 @@ test_that("Levene test as UBStats (deviations from the medians)", {
   expect_equal(r$p_value, a$`Pr(>F)`[1])
   expect_equal(r$df, c(1, 53))
   expect_equal(r$s2, c(var(df$Time[df$Area == "A"]), var(df$Time[df$Area == "B"])))
-  expect_match(r$ubstats, "^TEST\\.diffmean\\(x = df\\$Time, by = df\\$Area, var\\.test = TRUE\\)")
+  expect_equal(r$ubstats[1], "TEST.diffvar(x = df$Time, by = df$Area)")
   expect_error(test_levene(), "raw data")
   t2 <- q(test_2means(df$Time, group = df$Area))
   expect_equal(t2$levene$F, r$statistic)

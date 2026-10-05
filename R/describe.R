@@ -131,7 +131,7 @@ NULL
 #' @rdname describe
 #' @export
 desc_summary <- function(x, probs = c(0.10, 0.90, 0.95, 0.99), population = FALSE) {
-  xlab <- .label(substitute(x))
+  sx <- substitute(x); xlab <- .label(sx)
   v <- .num(x, xlab)
   n <- length(v); m <- mean(v); md <- median(v)
   dev2 <- sum((v - m)^2)
@@ -194,16 +194,21 @@ desc_summary <- function(x, probs = c(0.10, 0.90, 0.95, 0.99), population = FALS
           n = n, mean = m, median = md, mode = mo$values, variance = s2, sd = s, quartiles = q, hand_quartiles = hq,
           fivenum = c(min = min(v), q1 = q[1], median = md, q3 = q[2], max = max(v)),
           range = max(v) - min(v), iqr = q[2] - q[1], cv = s / abs(m), whiskers = c(wlo, whi), outliers = outl,
-          percentiles = stats::setNames(pr, paste0("p", round(100 * probs))))
+          percentiles = stats::setNames(pr, paste0("p", round(100 * probs))),
+          ubstats = c(.ub_call("distr.summary.x", x = sx, stats = c("central", "fivenumbers", "dispersion", .ub_pcts(probs))),
+                      .ub_call("distr.plot.x", x = sx, plot.type = "boxplot"),
+                      if (population) "# UBStats uses the sample formulas (divisor n - 1)"))
 }
 
 #' @rdname describe
 #' @export
 desc_cv <- function(..., mean = NULL, sd = NULL) {
   dots <- list(...)
+  ub <- .ub_raw_note
   if (length(dots)) {
     labs <- names(dots) %||% rep("", length(dots))
     exprs <- as.list(substitute(list(...)))[-1]
+    ub <- vapply(exprs, function(e) .ub_call("distr.summary.x", x = e, stats = c("mean", "sd", "cv")), character(1), USE.NAMES = FALSE)
     for (i in seq_along(dots)) if (!nzchar(labs[i])) labs[i] <- .label(exprs[[i]])
     vals <- lapply(seq_along(dots), function(i) .num(dots[[i]], labs[i]))
     tab <- data.frame(variable = labs,
@@ -226,13 +231,14 @@ desc_cv <- function(..., mean = NULL, sd = NULL) {
     "Rule: compare SDs/variances only when the variables are measured on the same scale and have similar means. When units or means differ, use the coefficient of variation CV = s/|mean|, which is unit-free.",
     sprintf("%s has the largest SD, but relative to its mean the most dispersed variable is %s (CV = %s).",
             big_sd, big_cv, .pct(max(tab$CV))))
-  .result("Comparing dispersion (SD vs CV)", lines, wording, NULL, match.call(), table = tab)
+  .result("Comparing dispersion (SD vs CV)", lines, wording, NULL, match.call(), table = tab, ubstats = ub)
 }
 
 #' @rdname describe
 #' @export
 desc_prop <- function(x = NULL, event = NULL, count = NULL, n = NULL) {
-  xlab <- .label(substitute(x))
+  sx <- substitute(x); xlab <- .label(sx)
+  raw <- !is.null(x) && is.null(.as_freq(x))
   if (!is.null(x) && !is.null(.as_freq(x))) {
     fr <- .as_freq(x)
     if (is.null(event)) stop("Say which category: event = \"", names(fr)[1], "\".", call. = FALSE)
@@ -249,7 +255,11 @@ desc_prop <- function(x = NULL, event = NULL, count = NULL, n = NULL) {
   wording <- sprintf(
     "The estimate of the population proportion of %s is the sample proportion p-hat = %s/%s = %s. The true standard error sqrt[p(1 - p)/n] depends on the unknown population proportion p, so it is estimated by substituting p-hat for p: SE(p-hat) = sqrt[%s(1 - %s)/%s] = %s.",
     P$ev, .f(P$count), .f(P$n), .f(P$phat), .f(P$phat), .f(P$phat), .f(P$n), .f(se))
+  ub <- if (!raw) .ub_raw_note
+        else paste(if (is.null(event)) .ub_call("CI.prop", x = sx)
+                   else if (length(event) == 1) .ub_call("CI.prop", x = sx, success = event)
+                   else .ub_call("CI.prop", x = call("%in%", sx, event)), " # prints phat and its se")
   .result("Sample proportion and its estimated standard error", lines, wording, P$note, match.call(),
-          estimate = P$phat, se = se, count = P$count, n = P$n)
+          estimate = P$phat, se = se, count = P$count, n = P$n, ubstats = ub)
 }
 

@@ -1,4 +1,4 @@
-# statcram 0.8.6
+# statcram 0.8.7
 
 An offline statistics exam toolkit for R / RStudio. One numbered menu, plus plain functions
 with consistent names. Every procedure works with **raw data** (including data frames and
@@ -12,7 +12,7 @@ Pure R, no compilation, no internet needed after installing.
 
 ```r
 # from the built file
-install.packages("statcram_0.8.6.tar.gz", repos = NULL, type = "source")
+install.packages("statcram_0.8.7.tar.gz", repos = NULL, type = "source")
 # or from GitHub
 remotes::install_github("viktor-h1/bocc", ref = "claude/quirky-gates-9i7hvr")
 
@@ -126,6 +126,12 @@ while d0 = 0 uses the pooled p. `power_2means()` gives beta for two means with k
 true value inside H0 is reported as P(reject) = alpha(mu1), not as beta. Chi-square tests add
 the residuals (O - E) / sqrt(E), Cramer's V, the E >= 5 rule and the base R call (2 x 2:
 `chisq.test(..., correct = FALSE)`).
+
+Descriptive results also print the matching UBStats call (book sections 2.6, 3.5 and 4.5):
+`distr.table.x()` / `distr.plot.x()` for frequency tables, classes (`breaks =`, `interval = TRUE`)
+and plots; `distr.summary.x()` for summaries (with `by1`, `by2` for groups); `distr.table.xy()` /
+`distr.plot.xy()` for two variables. An ordinal text variable is given as `factor(x, levels = ...)`,
+because UBStats otherwise sorts its levels alphabetically.
 
 Classes are `[a, b)` with the last one closed, densities are c_k = p_k / w_k, histograms use
 densities, and proportions inside a class are approximated assuming values are spread uniformly

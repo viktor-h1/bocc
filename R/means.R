@@ -742,14 +742,15 @@ test_levene <- function(x = NULL, y = NULL, group = NULL, levels = NULL, alpha =
   wording <- sprintf(
     "We test H0: the two population variances are equal (the status quo, retained unless the data clearly contradict it) against H1: they differ, using Levene's test on the absolute deviations from the group medians. The statistic is F = %s with 1 and %s degrees of freedom and p-value %s. %s that the variances of the two populations differ.",
     .f(L$F), .f(L$df2), .fp(L$p_value), .decision_words(L$p_value, alpha))
+  two <- !is.null(group) && length(.cats(.one_column(group, "group")[!is.na(.one_column(group, "group"))])) == 2
   ub <- if (!is.null(group)) {
-          if (.ub_by_ok(group, levels)) .ub_call("TEST.diffmean", x = sx, by = sg, var.test = TRUE)
-          else .ub_call("TEST.diffmean", x = .ub_subset(sx, sg, labs[1]), y = .ub_subset(sx, sg, labs[2]), var.test = TRUE)
-        } else .ub_call("TEST.diffmean", x = sx, y = sy, var.test = TRUE)
+          if (two) .ub_call("TEST.diffvar", x = sx, by = sg)
+          else .ub_call("TEST.diffvar", x = .ub_subset(sx, sg, labs[1]), y = .ub_subset(sx, sg, labs[2]))
+        } else .ub_call("TEST.diffvar", x = sx, y = sy)
   .result("Levene test (equal variances?)", lines, wording, note, match.call(),
           statistic = L$F, df = c(L$df1, L$df2), p_value = L$p_value, critical = crit, s2 = c(L$s2_x, L$s2_y),
           decision = if (L$p_value < alpha) "reject H0" else "fail to reject H0",
-          ubstats = paste(ub, " # the Levene part of the output"))
+          ubstats = c(ub, "# same Levene test as TEST.diffmean(..., var.test = TRUE)"))
 }
 
 #' @rdname ci
