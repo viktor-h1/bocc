@@ -73,12 +73,12 @@
     .fld("value", "Is this value extreme within a group?", "nums"),
     .fld("plot", "Plot", "choice", choices = c(boxplot = "boxplots", hist = "histograms"), default = "boxplot"))),
   desc_cv = list(topic = "Describe data", label = "Dispersion: SD vs coefficient of variation", fn = "desc_cv", fields = list(
-    .src_fld(c(raw = "Raw data", summary = "Means and SDs")),
-    .fld("x1", "First variable", "data", arg = "", kind = "numeric", when = list(source = "raw"), required = TRUE),
-    .fld("x2", "Second variable", "data", arg = "", kind = "numeric", when = list(source = "raw"), required = TRUE),
-    .fld("x3", "Third variable (optional)", "data", arg = "", kind = "numeric", when = list(source = "raw")),
-    .fld("mean", "Means", "nums", when = list(source = "summary"), required = TRUE),
-    .fld("sd", "Standard deviations", "nums", when = list(source = "summary"), required = TRUE))),
+    .fld("x1", "Variable (raw data)", "data", arg = "", kind = "numeric"),
+    .fld("x2", "Another variable (raw data)", "data", arg = "", kind = "numeric"),
+    .fld("mean", "Means given in the question", "nums", hint = "e.g. 4.875 (or several)"),
+    .fld("sd", "Their standard deviations", "nums"),
+    .fld("var", "... or their variances", "nums"),
+    .fld("names", "Names for those variables", "vals", hint = "e.g. classes"))),
   desc_prop = list(topic = "Describe data", label = "Sample proportion and its standard error", fn = "desc_prop", fields = list(
     .src_fld(c(raw = "Raw data", summary = "Count and n")),
     .fld("x", "Categorical variable", "data", kind = "categorical", when = list(source = "raw"), required = TRUE),
@@ -126,6 +126,8 @@
   est_mean = list(topic = "Estimation (one mean, one proportion)", label = "Point estimate of a mean + standard error", fn = "est_mean", fields = list(
     .src_fld(c(raw = "Raw data", summary = "Summary numbers")),
     .fld("x", "Numerical variable", "data", kind = "numeric", when = list(source = "raw"), required = TRUE),
+    .fld("group", "Estimate in each group of (optional)", "data", kind = "categorical", when = list(source = "raw")),
+    .fld("levels", "Only these groups (optional)", "levels", src = "group", when = list(source = "raw")),
     .fld("xbar", "Sample mean", "num", when = list(source = "summary"), required = TRUE),
     .fld("s", "Sample SD s", "num", when = list(source = "summary")),
     .fld("sigma", "Population SD sigma (if known)", "num"),

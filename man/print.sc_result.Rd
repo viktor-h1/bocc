@@ -17,7 +17,9 @@
 \description{
 Results print as: the hypotheses / inputs, each formula with the numbers
 plugged in, the decision, an exam-wording paragraph and the one-line call
-that re-runs the procedure. Descriptive results, intervals and tests also
+that re-runs the procedure. The exam wording follows the moves of the
+official answers (Frame, Tool, Result, Meaning, Conclusion, Caveat; see
+\code{sc_notes("phrasing")}); \code{options(statcram.labels = FALSE)} hides the labels. Descriptive results, intervals and tests also
 show the matching call of the course package UBStats (chi-square tests:
 base R \code{chisq.test()}). Turn parts off with
 \code{options(statcram.wording = FALSE)}, \code{options(statcram.plot = FALSE)} or

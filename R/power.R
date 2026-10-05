@@ -222,7 +222,15 @@ n_mean <- function(margin = NULL, sigma = NULL, conf = 0.95, se = NULL, width = 
   if (is.null(sigma)) notes <- "sigma unknown: s replaces it, so the result is only approximate (the actual width depends on the s of the sample that will be drawn)."
   nn <- ceiling(raw - 1e-9)
   lines <- c(lines, sprintf("Required n = %s (always round UP to the next integer)", nn))
-  .result("Sample size for a mean", lines, NULL, notes, match.call(), n = nn)
+  target <- if (!is.null(M$se)) sprintf("a standard error of at most %s", .f(M$se))
+            else sprintf("a margin of error of at most %s%s (confidence %s)", .f(M$margin), if (!is.null(width)) sprintf(", i.e. a width of at most %s", .f(width)) else "", .f(conf))
+  wording <- c(.w("frame", sprintf("We look for the sample size n giving %s when estimating the population mean.", target)),
+               .w("tool", if (!is.null(M$se)) sprintf("The standard error of the sample mean is %s / sqrt(n): it decreases as n grows, so we solve %s / sqrt(n) <= SE* for n.", sname, sname)
+                          else sprintf("The margin of error of the interval is (critical value) x %s / sqrt(n): it decreases as n grows (larger samples, narrower intervals), so we solve it for n.", sname)),
+               .w("result", sprintf("n >= %s, rounded up: n = %s.", .f(raw), nn)),
+               .w("conclusion", sprintf("At least %s units must be sampled.", nn)),
+               .w("caveat", if (is.null(sigma)) "sigma is unknown and s replaces it, so the result is approximate."))
+  .result("Sample size for a mean", lines, wording, notes, match.call(), n = nn)
 }
 
 # Target from margin of error, interval width (= 2 ME) or standard error.
@@ -251,7 +259,15 @@ n_prop <- function(margin = NULL, p = 0.5, conf = 0.95, se = NULL, width = NULL)
   nn <- ceiling(raw - 1e-9)
   lines <- c(lines, sprintf("Required n = %s (always round UP to the next integer)", nn),
              if (p == 0.5) "p = 0.5 used: p(1 - p) is largest there, so this n works whatever the true p (conservative choice).")
-  .result("Sample size for a proportion", lines, NULL, NULL, match.call(), n = nn)
+  target <- if (!is.null(M$se)) sprintf("a standard error of at most %s", .f(M$se))
+            else sprintf("a margin of error of at most %s%s (confidence %s)", .f(M$margin), if (!is.null(width)) sprintf(", i.e. a width of at most %s", .f(width)) else "", .f(conf))
+  wording <- c(.w("frame", sprintf("We look for the sample size n giving %s when estimating a population proportion.", target)),
+               .w("tool", sprintf("The %s depends on p(1 - p) / n; %s", if (!is.null(M$se)) "standard error sqrt(p(1 - p) / n)" else "margin of error z sqrt(p(1 - p) / n)",
+                                  if (p == 0.5) "with no information on p we use p = 0.5, where p(1 - p) is largest: the resulting n works whatever the true p (conservative choice)."
+                                  else sprintf("we use the guess p = %s.", .f(p)))),
+               .w("result", sprintf("n >= %s, rounded up: n = %s.", .f(raw), nn)),
+               .w("conclusion", sprintf("At least %s units must be sampled.", nn)))
+  .result("Sample size for a proportion", lines, wording, NULL, match.call(), n = nn)
 }
 
 #' @rdname power

@@ -115,11 +115,22 @@ desc_crosstab <- function(x, y = NULL, order_x = NULL, order_y = NULL, breaks_x 
       legend("topleft", legend = colnames(m), fill = cols, bty = "n", cex = 0.7, title = ylab, ncol = min(J, 3))
     }
   })
+  modes_row <- vapply(seq_len(K), function(k) colnames(m)[which.max(rowp[k, ])], "")
+  cond_txt <- if (K * J <= 16) paste(vapply(seq_len(K), function(k) sprintf("%s: %s", rownames(m)[k],
+                 paste(sprintf("%s %s", colnames(m), .f(rowp[k, ], 3)), collapse = ", ")), ""), collapse = "; ")
   wording <- c(
-    sprintf("Two variables are statistically independent when the conditional distributions of %s are the same for every level of %s (and equal to its marginal distribution), i.e. when p_kj = R_k C_j for every pair.", ylab, xlab),
-    sprintf("The more the conditional distributions differ, the stronger the association. Here the chi-square statistic is %s and Cramer's V = %s (a relative measure between 0 and 1, not inflated by the sample size or the table dimensions).", .f(chi), .f(V)),
-    sprintf("To compare the levels of %s, use the CONDITIONAL distributions of %s given %s (row percentages), not the joint counts or joint percentages: the groups have different sizes, so joint frequencies mix the size of a group with the behaviour within it.", xlab, ylab, xlab),
-    "Comparisons of conditional distributions are only meaningful if the groups are homogeneous with respect to other (confounding) factors: aggregated data can hide or reverse relations within subgroups (Simpson's paradox).")
+    .w("frame", sprintf("We study the joint distribution of %s (rows, %d categories) and %s (columns, %d categories) on n = %s units; to compare the levels of %s we use the conditional distributions of %s | %s.",
+                        xlab, K, ylab, J, .f(n), xlab, ylab, xlab)),
+    .w("tool", sprintf("Conditional (row) percentages and the stacked bar chart of %s | %s, because the groups of %s have different sizes: joint counts or joint percentages would mix the size of a group with the behaviour within it.",
+                       ylab, xlab, xlab)),
+    .w("result", if (!is.null(cond_txt)) sprintf("Conditional distributions of %s | %s - %s.", ylab, xlab, cond_txt),
+       sprintf("Chi-square = %s, Cramer's V = %s.", .f(chi), .f(V))),
+    .w("meaning", sprintf("The most frequent category of %s is %s.", ylab,
+                          paste(sprintf("%s for %s = %s", modes_row, xlab, rownames(m)), collapse = ", ")),
+       sprintf("If %s and %s were independent, the conditional distributions of %s would be the same for every level of %s (and equal to the marginal distribution), i.e. p_kj = R_k C_j for every pair.", xlab, ylab, ylab, xlab)),
+    .w("conclusion", if (V < 0.1) sprintf("The conditional distributions are very similar (Cramer's V = %s, close to 0): there is little or no association between %s and %s.", .f(V), xlab, ylab)
+                     else sprintf("The conditional distributions differ (Cramer's V = %s, on a scale from 0 = independence to 1 = perfect association): %s and %s are associated.", .f(V), xlab, ylab)),
+    .w("caveat", "Cramer's V is a relative measure, not inflated by the sample size or the table dimensions. Comparisons of conditional distributions are only meaningful if the groups are homogeneous with respect to other (confounding) factors: aggregated data can hide or reverse relations within subgroups (Simpson's paradox)."))
   if (any(ex < 5)) notes <- c(notes, "Some expected counts are below 5 (relevant for the chi-square TEST in chisq_indep()).")
   ub <- if (!raw) .ub_raw_note else {
     xe <- .ub_ordered(qx, order_x); ye <- .ub_ordered(qy, order_y)
@@ -138,18 +149,21 @@ desc_crosstab <- function(x, y = NULL, order_x = NULL, order_y = NULL, breaks_x 
                           ". Categories: ", paste(colnames(m), collapse = ", "), call. = FALSE)
     ev <- paste(y_event, collapse = " or ")
     share <- rowSums(rowp[, y_event, drop = FALSE]); marg <- sum(C[y_event]) / n
-    sl <- vapply(seq_len(K), function(k) sprintf("  Freq(%s = %s | %s = %s) = %s = %s   (%s of %s)",
-      ylab, ev, xlab, rownames(m)[k], paste(.f(rowp[k, y_event], 3), collapse = " + "), .f(share[k], 3),
-      .f(sum(m[k, y_event])), .f(R[k])), character(1))
+    sl <- vapply(seq_len(K), function(k) sprintf("  Freq(%s = %s | %s = %s) = %s%s   (%s of %s)",
+      ylab, ev, xlab, rownames(m)[k], if (length(y_event) > 1) paste0(paste(.f(rowp[k, y_event], 3), collapse = " + "), " = ") else "",
+      .f(share[k], 3), .f(sum(m[k, y_event])), .f(R[k])), character(1))
     lines <- c(lines, "", sprintf("Share of %s = %s within each level of %s (conditional on %s):", ylab, ev, xlab, xlab), sl,
                sprintf("  Marginal (all units): Freq(%s = %s) = %s / %s = %s", ylab, ev, .f(sum(C[y_event])), .f(n), .f(marg, 3)))
     hi <- rownames(m)[which.max(share)]; lo <- rownames(m)[which.min(share)]
-    wording <- c(sprintf("Among the units with %s = %s, the share with %s = %s is %s; among those with %s = %s it is %s (conditional relative frequencies: %s). Comparing the joint counts or joint percentages instead would be wrong, because the groups have different sizes.",
+    wording <- c(.w("frame", sprintf("We are interested in the percentage of units with %s = %s conditional on %s.", ylab, ev, xlab)),
+                 .w("result", paste(sprintf("Among the units with %s = %s, the share with %s = %s is %s (%s/%s).", xlab, rownames(m), ylab, ev,
+                                            .pct(share, 1), .f(rowSums(m[, y_event, drop = FALSE])), .f(R)), collapse = " ")),
+                 .w("conclusion", sprintf("Among the units with %s = %s, the share with %s = %s is %s; among those with %s = %s it is %s (conditional relative frequencies: %s). It would be wrong to answer based on joint counts or joint percentages, because the groups have different sizes.",
                          xlab, hi, ylab, ev, .pct(max(share), 1), xlab, lo, .pct(min(share), 1),
                          paste(sprintf("%s %s", rownames(m), .f(share, 3)), collapse = ", ")),
-                 sprintf("If %s and %s were independent, all these conditional shares would be equal to the marginal share %s; here they %s.",
+                    sprintf("If %s and %s were independent, all these conditional shares would be equal to the marginal share %s; here they %s.",
                          xlab, ylab, .f(marg, 3), if (max(share) - min(share) < 0.05) "are close to it, consistent with weak or no association"
-                         else "differ markedly, so the two variables appear to be associated"),
+                         else "differ markedly, so the two variables appear to be associated")),
                  wording)
     names(share) <- rownames(m)
   }
@@ -206,38 +220,76 @@ desc_compare <- function(x, group, group2 = NULL, probs = c(0.05, 0.10, 0.90, 0.
   lines <- c(sprintf("Conditional distributions of %s | %s", xlab, glab), "",
              .table_lines(.round_df(tab)))
   # shape of each conditional distribution, from the boxplot quantities
-  shapes <- vapply(seq_len(nrow(grp)), function(i) {
+  SHs <- lapply(seq_len(nrow(grp)), function(i) {
     a <- xx[!is.na(gnum) & gnum == grp$group[i] & !is.na(xx)]
-    if (length(a) < 4) return(sprintf("%s: too few values", grp$group[i]))
-    fe <- .fences(grp$Q1[i], grp$Q3[i]); reg <- a[a >= fe[1] & a <= fe[2]]
-    nl <- sum(a < fe[1]); nu <- sum(a > fe[2])
-    sprintf("%s: %s; mean %s vs median %s%s", grp$group[i],
-            sub(" \\(.*", "", .box_shape(min(reg), grp$Q1[i], grp$median[i], grp$Q3[i], max(reg))),
-            .f(grp$mean[i]), .f(grp$median[i]),
-            if (nl + nu) sprintf("; outliers: %d low (%s), %d high (%s)", nl, .pct(nl / length(a), 1), nu, .pct(nu / length(a), 1)) else "; no outliers")
+    if (length(a) < 4) return(NULL)
+    .shape_info(a, grp$Q1[i], grp$median[i], grp$Q3[i])
+  })
+  shapes <- vapply(seq_len(nrow(grp)), function(i) {
+    if (is.null(SHs[[i]])) return(sprintf("%s: too few values", grp$group[i]))
+    sprintf("%s: %s (%s)", grp$group[i], SHs[[i]]$phrase, SHs[[i]]$evidence)
   }, character(1))
   # non-overlapping central halves: Q3 of one group below Q1 of another
   sep <- character()
   for (i in seq_len(nrow(grp))) for (j in seq_len(nrow(grp))) if (i != j && grp$Q3[i] < grp$Q1[j])
     sep <- c(sep, sprintf("Q3 of %s (%s) < Q1 of %s (%s): at least 75%% of the values for %s are lower than at least 75%% of those for %s.",
                           grp$group[i], .f(grp$Q3[i]), grp$group[j], .f(grp$Q1[j]), grp$group[i], grp$group[j]))
-  hi <- grp$group[which.max(grp$median)]; lo <- grp$group[which.min(grp$median)]
-  wording <- c(
-    sprintf("Centre: the median of %s is highest for %s (%s) and lowest for %s (%s); compare also the means (in red on the boxplots), which are pulled toward long tails.",
-            xlab, hi, .f(max(grp$median)), lo, .f(min(grp$median))),
-    sprintf("Spread: the IQR (box width) ranges from %s to %s and the standard deviation from %s to %s; check the whiskers, the extreme values and the upper / lower percentiles to compare the tails.",
-            .f(min(grp$Q3 - grp$Q1)), .f(max(grp$Q3 - grp$Q1)), .f(min(grp$sd, na.rm = TRUE)), .f(max(grp$sd, na.rm = TRUE))),
-    "With a numerical variable the conditional distributions always differ somewhat; the question is whether they differ substantially in location, dispersion or shape (side-by-side boxplots plus summaries), not whether the variables are exactly independent.")
+  iqr <- grp$Q3 - grp$Q1; miqr <- mean(iqr, na.rm = TRUE)
+  ilo <- which.min(grp$median); ihi <- which.max(grp$median)
+  lo <- grp$group[ilo]; hi <- grp$group[ihi]
+  differ <- c(location = diff(range(grp$median)) >= 0.25 * miqr,
+              variability = max(iqr) >= 1.25 * min(iqr),
+              shape = length(unique(vapply(SHs, function(z) if (is.null(z)) "" else z$core, ""))) > 1)
+  open_txt <- if (all(differ)) sprintf("The distributions of %s | %s differ in location, variability and shape.", xlab, glab)
+              else if (!any(differ)) sprintf("The distributions of %s | %s are similar in location, variability and shape.", xlab, glab)
+              else sprintf("The distributions of %s | %s differ in %s, while they are similar in %s.", xlab, glab,
+                           paste(names(differ)[differ], collapse = " and "), paste(names(differ)[!differ], collapse = " and "))
+  lowest_all <- ilo == which.min(grp$Q1) && ilo == which.min(grp$Q3)
+  highest_all <- ihi == which.max(grp$Q1) && ihi == which.max(grp$Q3)
+  loc_txt <- sprintf("%s has the %s (median %s%s): its values tend to be lower; %s has the %s (median %s).",
+                     lo, if (lowest_all) "lowest measures of location" else "lowest median", .f(grp$median[ilo]),
+                     if (lowest_all) sprintf(", Q1 %s, Q3 %s", .f(grp$Q1[ilo]), .f(grp$Q3[ilo])) else "",
+                     hi, if (highest_all) "highest measures of location" else "highest median", .f(grp$median[ihi]))
+  iq_lo <- which.min(iqr); iq_hi <- which.max(iqr)
+  var_txt <- sprintf("%s has the smallest IQR (%s): its central 50%% is more concentrated than for the other groups; %s has the largest (%s).",
+                     grp$group[iq_lo], .f(iqr[iq_lo]), grp$group[iq_hi], .f(iqr[iq_hi]))
+  med_txt <- sprintf("The median of %s (%s) is the maximum value reached by the lowest 50%% of its values, lower than in the other groups.",
+                     lo, .f(grp$median[ilo]))
+  # which centre measures (mean vs median, group by group)
+  close <- abs(grp$mean - grp$median) <= 0.2 * pmax(grp$sd, 1e-12)
+  sim_txt <- if (any(close)) sprintf("For %s mean and median offer a similar description of the centre (%s).",
+                                     .and_list(grp$group[close]),
+                                     paste(sprintf("%s vs %s", .f(grp$mean[close], 2), .f(grp$median[close], 2)), collapse = "; "))
+  tail_txt <- if (any(!close)) paste(vapply(which(!close), function(i)
+    sprintf("For %s the mean (%s) is %s the median (%s): it is attracted by the long %s tail.", grp$group[i], .f(grp$mean[i], 2),
+            if (grp$mean[i] < grp$median[i]) "below" else "above", .f(grp$median[i], 2), if (grp$mean[i] < grp$median[i]) "left (lower)" else "right (upper)"),
+    character(1)), collapse = " ")
+  pair_txt <- NULL
+  for (i in seq_len(nrow(grp))) for (j in seq_len(nrow(grp))) if (i < j && is.null(pair_txt) &&
+      abs(grp$median[i] - grp$median[j]) <= 0.1 * miqr && abs(grp$mean[i] - grp$mean[j]) > 0.1 * miqr && (!close[i] || !close[j]))
+    pair_txt <- sprintf("The medians of %s and %s (%s and %s) are aligned and do not reflect the long tail of %s, which is captured by comparing the means (%s and %s).",
+                        grp$group[i], grp$group[j], .f(grp$median[i], 2), .f(grp$median[j], 2), if (!close[i]) grp$group[i] else grp$group[j],
+                        .f(grp$mean[i], 2), .f(grp$mean[j], 2))
+  verdict <- if (any(!close)) "To summarise the centre of these distributions report both the means and the medians."
+             else "Mean and median agree in every group, so either summarises the centre (the median is robust to outliers, the mean uses all the values)."
   ub <- c(.ub_call("distr.summary.x", x = qx, stats = c("central", "fivenumbers", "dispersion", .ub_pcts(probs)),
                     by1 = qg, by2 = if (!is.null(group2)) qg2),
           if (is.null(group2)) .ub_call("distr.plot.xy", x = qg, y = qx, plot.type = "boxplot"))
   lines <- c(lines, "", "Shape of each conditional distribution (boxplot: box halves, whiskers, outliers):", paste0("  ", shapes),
              if (length(sep)) c("", sep))
-  wording <- c(wording,
-               sprintf("Shape: %s.", paste(shapes, collapse = "; ")),
-               if (length(sep)) paste(sep, collapse = " "),
-               "Mean vs median: when a group has a long tail (skewness, outliers) its mean is pulled toward the tail while the median is not, so report both: similar medians with different means reveal a different tail.",
-               "If the conditional distributions differ (for example the medians shift as the groups change), the numerical variable and the grouping variable are associated.")
+  wording <- c(
+    .w("frame", sprintf("We compare the conditional distributions of %s | %s in %d groups (%s).", xlab, glab, nrow(grp),
+                        paste(sprintf("%s: n = %s", grp$group, grp$n), collapse = ", "))),
+    .w("tool", "Side-by-side boxplots (one per group, on the same scale) show location, variability and shape at a glance, including the outliers; the conditional summaries give the numbers."),
+    .w("result", sprintf("Medians: %s. Means: %s. IQR: %s.", paste(sprintf("%s %s", grp$group, .f(grp$median)), collapse = ", "),
+                         paste(sprintf("%s %s", grp$group, .f(grp$mean, 2)), collapse = ", "),
+                         paste(sprintf("%s %s", grp$group, .f(iqr)), collapse = ", "))),
+    .w("meaning", open_txt,
+       sprintf("Shape - %s.", paste(vapply(seq_len(nrow(grp)), function(i) if (is.null(SHs[[i]])) "" else
+         sprintf("%s: %s", grp$group[i], SHs[[i]]$phrase), ""), collapse = "; ")),
+       loc_txt, var_txt, med_txt, if (length(sep)) paste(sep, collapse = " ")),
+    .w("conclusion", paste(c(verdict, sim_txt, tail_txt, pair_txt), collapse = " ")),
+    .w("caveat", "With a numerical variable the conditional distributions always differ somewhat: what matters is whether they differ substantially in location, variability or shape; if they do, the numerical variable and the grouping variable are associated."))
   if (length(value)) {
     vl <- unlist(lapply(seq_len(nrow(grp)), function(i) {
       fe <- .fences(grp$Q1[i], grp$Q3[i])
@@ -247,6 +299,18 @@ desc_compare <- function(x, group, group2 = NULL, probs = c(0.05, 0.10, 0.90, 0.
                                         if (v < fe[1]) "extreme LOW" else if (v > fe[2]) "extreme HIGH" else "not extreme"), character(1))
     }))
     lines <- c(lines, "", "Is the value extreme within each group?", vl)
+    vw <- unlist(lapply(seq_len(nrow(grp)), function(i) {
+      fe <- .fences(grp$Q1[i], grp$Q3[i])
+      vapply(value, function(v) {
+        if (v < fe[1]) sprintf("Within %s an extremely low value is below Q1 - 1.5 IQR = %s - 1.5 x %s = %s: since %s < %s, %s is extremely low.",
+                               grp$group[i], .f(grp$Q1[i]), .f(iqr[i]), .f(fe[1]), .f(v), .f(fe[1]), .f(v))
+        else if (v > fe[2]) sprintf("Within %s an extremely high value is above Q3 + 1.5 IQR = %s + 1.5 x %s = %s: since %s > %s, %s is extremely high.",
+                                    grp$group[i], .f(grp$Q3[i]), .f(iqr[i]), .f(fe[2]), .f(v), .f(fe[2]), .f(v))
+        else sprintf("Within %s an extremely low value is below Q1 - 1.5 IQR = %s - 1.5 x %s = %s (extremely high above %s): %s is not extreme.",
+                     grp$group[i], .f(grp$Q1[i]), .f(iqr[i]), .f(fe[1]), .f(fe[2]), .f(v))
+      }, character(1))
+    }))
+    wording <- c(wording, .w("conclusion", vw))
   }
   .result("Comparing a numerical variable across groups", lines, wording,
           if (any(tab$n.a > 0)) "n.a = missing values of the numerical variable within each group (excluded).", match.call(),
@@ -336,13 +400,44 @@ desc_cor <- function(x, y = NULL, line = TRUE, color = NULL, population = FALSE)
     if (line) abline(b0, b1, col = "firebrick", lwd = 2)
     if (!is.null(lev)) legend("topleft", legend = lev, col = pal, pch = 19, bty = "n", cex = 0.75, title = clab)
   })
-  direction <- if (r > 0) "positive (direct): the two variables tend to increase together" else if (r < 0) "negative (inverse): when one increases the other tends to decrease" else "absent"
+  # linearity check: does a curve fit clearly better than the straight line?
+  nonlin <- FALSE; lin_txt <- NULL
+  if (n >= 10 && length(unique(a)) >= 4) {
+    m1 <- stats::lm(b ~ a); m2 <- stats::lm(b ~ a + I(a^2))
+    r2l <- summary(m1)$r.squared; r2q <- summary(m2)$r.squared; pq <- stats::coef(summary(m2))[3, 4]
+    rk <- rank(a, ties.method = "first") / n
+    g3 <- factor(ifelse(rk <= 0.2, "low", ifelse(rk > 0.8, "high", "middle")), levels = c("low", "middle", "high"))
+    rm <- tapply(stats::resid(m1), g3, mean)
+    nonlin <- (r2q - r2l) >= 0.05 && pq < 0.01
+    lines <- c(lines, "",
+               sprintf("Linearity check: R^2 of the straight line = %s; with a curve (quadratic term) = %s (p-value of the curvature %s)",
+                       .f(r2l), .f(r2q), .fp(pq)),
+               sprintf("   mean residual (observed - line) for the lowest 20%% / middle 60%% / highest 20%% of %s: %s",
+                       xlab, paste(.f(rm, 3), collapse = " / ")),
+               sprintf("   -> %s", if (nonlin) "the relationship is NOT linear: the line misses the data at the ends" else "no clear departure from linearity"))
+    if (nonlin) {
+      ends <- sign(rm[c(1, 3)]); mid <- sign(rm[2])
+      lin_txt <- if (ends[1] == ends[2] && mid != ends[1])
+        sprintf("The relationship is not linear: the fitted straight line lies %s the observed values at very low and very high %s and %s them in the middle, so it is a compromise that describes the centre of the data but not the tails.",
+                if (ends[1] < 0) "above" else "below", xlab, if (ends[1] < 0) "below" else "above")
+      else sprintf("The relationship is not linear: a curve describes the data clearly better than the straight line (R^2 %s vs %s), so the line describes only part of the data.",
+                   .f(r2q), .f(r2l))
+    }
+  }
+  ar <- abs(r)
+  size <- if (ar >= 0.7) "high in absolute value" else if (ar >= 0.4) "moderate" else "weak"
+  dir_txt <- if (r < 0) sprintf("The two variables are linked by an inverse relationship: as %s increases, %s tends to decrease (covariance %s < 0).", xlab, ylab, .f(sxy))
+             else if (r > 0) sprintf("The two variables are linked by a direct relationship: as %s increases, %s tends to increase (covariance %s > 0).", xlab, ylab, .f(sxy))
+             else "There is no linear relationship (covariance 0)."
   wording <- c(
-    sprintf("The covariance (%s) shows the DIRECTION of the linear relation, which is %s. Its size depends on the units and dispersion of the variables, so it does not measure the strength.", .f(sxy), direction),
-    sprintf("The correlation coefficient r = %s (between -1 and 1, unit-free) measures the STRENGTH of the LINEAR relation: the closer |r| is to 1, the more the points cluster around a straight line; r = 0 means no linear relation.", .f(r)),
-    sprintf("The regression line %s-hat = %s %s %s x %s gives, on average, a change of %s in %s for a one-unit increase in %s; the slope does not measure the strength of the relation (b1 = r s_Y / s_X).",
-            ylab, .f(b0), if (b1 < 0) "-" else "+", .f(abs(b1)), xlab, .f(b1), ylab, xlab),
-    "Always check the scatterplot: outliers can inflate or deflate r, a low r does not exclude a strong NON-linear relation, and correlation does not imply causation (confounding factors, reverse causality, ecological data).")
+    .w("frame", sprintf("We study the relationship between two numerical variables, %s (X) and %s (Y), observed on n = %d units.", xlab, ylab, n)),
+    .w("tool", "The fundamental tool is the scatterplot: it shows the direction and the form of the relationship and highlights departures from linearity and outliers, so it tells whether the correlation coefficient is a reliable measure of the strength of the relationship. The covariance gives the direction; the correlation coefficient r (unit-free, between -1 and 1) measures the strength of the LINEAR relationship."),
+    .w("result", sprintf("s_XY = %s, r = %s; least-squares line %s-hat = %s %s %s x %s.", .f(sxy), .f(r), ylab, .f(b0), if (b1 < 0) "-" else "+", .f(abs(b1)), xlab)),
+    .w("meaning", dir_txt, lin_txt,
+       sprintf("On average %s changes by %s for a one-unit increase in %s (the slope does not measure the strength: b1 = r s_Y / s_X).", ylab, .f(b1), xlab)),
+    .w("conclusion", if (nonlin) sprintf("The correlation coefficient, %s (r = %s), is not particularly reliable as a measure of the strength, since it does not reflect a general tendency of the data to cluster around a single straight line.", size, .f(r))
+                     else sprintf("The points cluster around a straight line, so r = %s (%s) is a reliable measure of the strength of the linear relationship.", .f(r), size)),
+    .w("caveat", "Outliers can inflate or deflate r; correlation does not imply causation (confounding factors, reverse causality)."))
   ub <- if (is.null(y)) .ub_raw_note
         else c(.ub_call("distr.plot.xy", x = qx, y = qy, plot.type = "scatter", fitline = if (line) TRUE, var.c = if (!is.null(color)) qc),
                sprintf("cov(%s, %s, use = \"complete.obs\"); cor(%s, %s, use = \"complete.obs\")   # base R",

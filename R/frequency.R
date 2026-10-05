@@ -183,7 +183,7 @@
     discrete = if (!is.null(S$mean)) sprintf("The median is %s (the first value whose cumulative frequency reaches 50%%) and the mean is %s = sum(x_k p_k)%s.", S$median, .f(S$mean),
                                             if (abs(S$mean - as.numeric(S$median)) <= 0.1 * (S$sd %||% 0)) "; mean and median are close" else if (S$mean > as.numeric(S$median)) "; mean > median, a sign of a longer right tail" else "; mean < median, a sign of a longer left tail"),
     classes = NULL)
-  c(type_txt, graph_txt, shares, mode_txt, measure_txt)
+  c(.w("frame", type_txt), .w("tool", graph_txt), .w("result", shares), .w("meaning", mode_txt), .w("conclusion", measure_txt))
 }
 
 #' @rdname describe
@@ -233,7 +233,7 @@ desc_freq <- function(x, order = NULL, sort = c("none", "decreasing", "increasin
   Q <- .cum_query_lines(names(fr), as.numeric(p), numeric, at_most, at_least, between, xlab)
   if (length(Q$lines)) lines <- c(lines, "", Q$lines)
   zero_vals <- if (numeric) names(fr)[fr == 0] else character()
-  wording <- c(.freq_wording(type, xlab, names(fr), as.numeric(p), n, S, Fc$guess, zero_vals), Q$words)
+  wording <- c(.freq_wording(type, xlab, names(fr), as.numeric(p), n, S, Fc$guess, zero_vals), .w("result", Q$words))
   # combined share of several categories
   ev_share <- NULL
   if (length(event)) {
@@ -242,8 +242,8 @@ desc_freq <- function(x, order = NULL, sort = c("none", "decreasing", "increasin
     idx <- match(ev, names(fr)); ev_share <- sum(p[idx])
     lines <- c(lines, "", sprintf("Freq(%s in {%s}) = %s = %s%s", xlab, paste(ev, collapse = ", "), paste(.f(p[idx]), collapse = " + "), .f(ev_share),
                                   if (!is_props) sprintf("   (%s of %s units)", .f(sum(fr[idx])), .f(n)) else ""))
-    wording <- c(wording, sprintf("Taken together, %s account for %s of the units (%s); the other categories account for %s.",
-                                  paste(ev, collapse = ", "), .pct(ev_share, 1), paste(.f(p[idx]), collapse = " + "), .pct(1 - ev_share, 1)))
+    wording <- c(wording, .w("conclusion", sprintf("Taken together, %s account for %s of the units (%s); the other categories account for %s.",
+                                  paste(ev, collapse = ", "), .pct(ev_share, 1), paste(.f(p[idx]), collapse = " + "), .pct(1 - ev_share, 1))))
   }
   # a second distribution, side by side in percentages
   cmp <- NULL
@@ -269,13 +269,13 @@ desc_freq <- function(x, order = NULL, sort = c("none", "decreasing", "increasin
     d <- pB - pA; top <- base::order(abs(d), decreasing = TRUE)[seq_len(min(2, length(d)))]
     only <- vals[(pA == 0) != (pB == 0)]
     wording <- c(wording,
-      sprintf("The two distributions come from samples of different sizes (n = %s and n = %s): compare them through relative frequencies (percentages), not counts.",
-              if (is_props) "unknown" else .f(n), if (B$is_props) "unknown" else .f(sum(fr2))),
-      sprintf("Mode: %s vs %s%s%s.", paste(SA$mode, collapse = ", "), paste(SB$mode, collapse = ", "),
+      .w("tool", sprintf("The two distributions come from samples of different sizes (n = %s and n = %s): compare them through relative frequencies (percentages), not counts.",
+              if (is_props) "unknown" else .f(n), if (B$is_props) "unknown" else .f(sum(fr2)))),
+      .w("result", sprintf("Mode: %s vs %s%s%s.", paste(SA$mode, collapse = ", "), paste(SB$mode, collapse = ", "),
               if (!is.null(SA$median)) sprintf("; median: %s vs %s", SA$median, SB$median) else "",
-              if (!is.null(SA$mean)) sprintf("; mean: %s vs %s", .f(SA$mean, 2), .f(SB$mean, 2)) else ""),
-      sprintf("The largest differences are at %s.", paste(sprintf("%s (%s%% vs %s%%)", vals[top], .f(100 * pA[top], 1), .f(100 * pB[top], 1)), collapse = " and ")),
-      if (length(only)) sprintf("Observed in only one of the two: %s.", paste(only, collapse = ", ")))
+              if (!is.null(SA$mean)) sprintf("; mean: %s vs %s", .f(SA$mean, 2), .f(SB$mean, 2)) else "")),
+      .w("meaning", sprintf("The largest differences are at %s.", paste(sprintf("%s (%s%% vs %s%%)", vals[top], .f(100 * pA[top], 1), .f(100 * pB[top], 1)), collapse = " and ")),
+         if (length(only)) sprintf("Observed in only one of the two: %s.", paste(only, collapse = ", "))))
   }
   ptype <- if (plot == "auto") (if (numeric) "spike" else "bars") else plot
   .with_plot(function() {
@@ -586,7 +586,11 @@ desc_classes <- function(x = NULL, breaks = NULL, lower = NULL, upper = NULL, fr
     lines <- c(lines, "  Mean / variance: cannot be computed (an open-ended class has no midpoint).")
   } else {
     amean <- sum(mid * p); ex2 <- sum(mid^2 * p)
-    lines <- c(lines, sprintf("  Mean   ~ sum(m_k p_k) = %s = %s", .expand_sum(mid, p), .f(amean)))
+    sq_terms <- sprintf("%s^2 x %s", .f(mid), .f(p))
+    lines <- c(lines, sprintf("  Mean   ~ sum(m_k p_k) = %s = %s", .expand_sum(mid, p), .f(amean)),
+               sprintf("  Mean of the squares sum(m_k^2 p_k) = %s = %s;  mean^2 = %s^2 = %s",
+                       if (length(sq_terms) <= 6) paste(sq_terms, collapse = " + ") else paste(c(head(sq_terms, 3), "...", tail(sq_terms, 1)), collapse = " + "),
+                       .f(ex2), .f(amean), .f(amean^2, 6)))
     if (!is.null(C$n) && C$n > 1) {
       avar <- C$n / (C$n - 1) * (ex2 - amean^2)
       lines <- c(lines, sprintf("  Variance s^2 ~ n/(n-1) [sum(m_k^2 p_k) - mean^2] = %s/%s x (%s - %s^2) = %s",
@@ -670,14 +674,21 @@ desc_classes <- function(x = NULL, breaks = NULL, lower = NULL, upper = NULL, fr
     sprintf("Splitting at %s: units with X <= %s have median %s and mean %s; units with X > %s have median %s and mean %s. Each subgroup's measures now fall in a class where its data concentrate, so they describe the two groups better than the overall mean and median.",
             .f(split), .f(split), .f(split_res$below[["median"]]), .f(split_res$below[["mean"]]), .f(split), .f(split_res$above[["median"]]), .f(split_res$above[["mean"]]))
   wording <- c(
-    if (C$source == "raw") "The data were grouped into intervals; the frequency distribution and the histogram depend on the chosen classes. The mean and quantiles below are approximations from the classes: with raw data, the exact values come from desc_summary()."
-    else "Only the classes are known (not the raw values), so proportions within a class, the median, the quartiles and the mean are approximations assuming values are spread uniformly within each class (the mean assigns each class's frequency to its midpoint).",
-    if (length(unique(round(wf, 8))) > 1) "The classes have different widths, so the histogram must be built with densities c_k = p_k / w_k (proportion of cases per unit interval) on the y-axis: with counts or proportions, wider classes would look more important than they are."
-    else "All classes have the same width, so the histogram has the same shape with counts, proportions or densities on the y-axis (densities are proportional to the proportions).",
-    sprintf("The highest concentration of data is in %s (modal class: highest density); the median is approximately %s%s.",
-            paste(labs[modal], collapse = " and "), if (is.na(md_v)) "not determinable" else .f(md_v),
-            if (is.na(md_v)) "" else " (graphically: the value where the ogive reaches 0.5)"),
-    freq_txt, shape_txt, peak_txt, low_txt, qwords, split_txt)
+    .w("frame", sprintf("%s is a quantitative variable %s in %d classes%s.", xlab, if (C$source == "raw") "grouped" else "measured", k,
+                        if (!is.null(C$n)) sprintf(" (n = %s units)", .f(C$n)) else "")),
+    .w("tool", if (length(unique(round(wf, 8))) > 1) "The classes have different widths, so the histogram must be built with densities c_k = p_k / w_k (proportion of cases per unit interval) on the y-axis: with counts or proportions, wider classes would look more important than they are. The cumulative frequencies are shown by the ogive."
+               else "All classes have the same width, so the histogram has the same shape with counts, proportions or densities on the y-axis (densities are proportional to the proportions). The cumulative frequencies are shown by the ogive."),
+    .w("result", sprintf("Modal class %s; median approximately %s%s%s.", paste(labs[modal], collapse = " and "),
+                         if (is.na(md_v)) "not determinable" else .f(md_v),
+                         if (is.na(md_v)) "" else " (graphically: the value where the ogive reaches 0.5)",
+                         if (is.na(amean)) "" else sprintf("; mean approximately %s, SD approximately %s", .f(amean), .f(sqrt(avar)))),
+       qwords),
+    .w("meaning", sprintf("The highest concentration of data is in %s (the class with the highest density).", paste(labs[modal], collapse = " and ")),
+       freq_txt, shape_txt, peak_txt),
+    .w("conclusion", split_txt),
+    .w("caveat", if (C$source == "raw") "The data were grouped into intervals; the frequency distribution and the histogram depend on the chosen classes. The mean and quantiles are approximations from the classes: with raw data, the exact values come from desc_summary()."
+                 else "Only the classes are known (not the raw values), so proportions within a class, the median, the quartiles and the mean are approximations assuming values are spread uniformly within each class (the mean assigns each class's frequency to its midpoint).",
+       low_txt))
   ub <- if (C$source == "table") .ub_raw_note else {
     cl <- if (C$source == "raw") list(breaks = sb) else list(interval = TRUE)
     pl <- switch(plot, both = c("histogram", "cumulative"), hist = "histogram", ogive = "cumulative")

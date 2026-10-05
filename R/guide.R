@@ -41,6 +41,8 @@ sc_guide <- function() {
     "  smallest alpha that rejects. A two-sided test at alpha rejects <-> mu0 is outside the 100(1-alpha)% CI.",
     "  Very large n: tiny, practically irrelevant differences become significant.",
     "",
+    "How to phrase any answer: sc_notes(\"phrasing\")  (Frame, Tool, Result, Meaning, Conclusion, Caveat)",
+    "",
     "Describe data (no population claim)",
     "  frequency table / cumulative / Freq(X <= x), few values .. desc_freq()      sc(1,1)",
     "  numbers grouped into intervals, or measured in classes ... desc_classes()   sc(1,2)",
@@ -210,10 +212,10 @@ sc_recipes <- function() {
 
 .notes_files <- c(rules = "exam-rules.md", descriptive = "descriptive.md", bivariate = "bivariate.md", estimation = "point-estimation.md",
                   inference = "inference.md", random = "random-variables.md", chisq = "chi-square.md",
-                  regression = "regression.md", patterns = "past-paper-patterns.md")
+                  regression = "regression.md", patterns = "past-paper-patterns.md", phrasing = "answer-phrasing.md")
 .notes_titles <- c("absolute exam rules", "descriptive & grouped data", "two variables (ch. 4)", "point estimation & standard errors (ch. 6)",
                    "confidence intervals (ch. 6) & tests (ch. 7)", "probability & random variables (ch. 5)", "chi-square tests (ch. 7)",
-                   "regression", "past-paper wording patterns")
+                   "regression", "past-paper wording patterns", "how official answers are phrased (any question)")
 
 .notes_path <- function(file) {
   p <- system.file("notes", file, package = "statcram")

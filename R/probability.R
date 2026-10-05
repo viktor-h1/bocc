@@ -160,6 +160,36 @@ NULL
 
 .has_query <- function(...) any(!vapply(list(...), is.null, logical(1)))
 
+# Wording for probabilities and quantiles: result + meaning, read on the units or,
+# for a sampling distribution, on all possible samples of size n.
+.prob_wording <- function(vals, X, samples = NULL) {
+  if (is.null(vals) || !length(vals)) return(NULL)
+  nm <- names(vals); res <- character(); mean_txt <- character()
+
+  for (i in seq_along(vals)) {
+    k <- nm[i]; v <- unname(vals[[i]])
+    if (startsWith(k, "P(")) {
+      cond <- sub("^P\\((.*)\\)$", "\\1", k)
+      res <- c(res, sprintf("%s = %s", k, .f(v)))
+      mean_txt <- c(mean_txt, if (is.null(samples)) sprintf("The probability that %s is %s (about %s).", cond, .f(v), .pct(v, 1))
+                              else sprintf("The probability that %s is %s: in about %s of all possible samples of size %s, %s.", cond, .f(v), .pct(v, 1), samples, cond))
+    } else if (startsWith(k, "q_")) {
+      a <- as.numeric(sub("q_", "", k))
+      res <- c(res, sprintf("%s = %s", k, .f(v)))
+      mean_txt <- c(mean_txt, sprintf("%s = %s: %s is at most %s with probability %s (%s of the values lie above it).", k, .f(v), X, .f(v), .f(a), .pct(1 - a, 1)))
+    }
+  }
+  if (all(c("middle_lower", "middle_upper") %in% nm)) {
+    lo <- vals[["middle_lower"]]; hi <- vals[["middle_upper"]]
+    res <- c(res, sprintf("central interval [%s, %s]", .f(lo), .f(hi)))
+    mean_txt <- c(mean_txt, sprintf("The central (most typical) values of %s lie between %s and %s, with the same probability in each tail.", X, .f(lo), .f(hi)))
+  }
+  c(.w("result", paste(res, collapse = "; ")), .w("meaning", mean_txt))
+}
+
+.dist_wording <- function(frame, tool, vals, X, samples = NULL, caveat = NULL)
+  c(.w("frame", frame), .w("tool", tool), .prob_wording(vals, X, samples), .w("caveat", caveat))
+
 #' @rdname probability
 #' @export
 prob_normal <- function(mean = 0, sd = NULL, below = NULL, above = NULL, between = NULL, quantile = NULL,
@@ -167,21 +197,30 @@ prob_normal <- function(mean = 0, sd = NULL, below = NULL, above = NULL, between
   sd <- sd %||% (if (!is.null(var)) sqrt(var) else 1)
   if (sd <= 0) stop("sd must be positive.", call. = FALSE)
   E <- .prob_engine(.D_normal(mean, sd), below, above, between, quantile, middle, "X", "Normal")
-  .result("Normal probability", E$lines, NULL, NULL, match.call(), values = E$values)
+  wd <- .dist_wording(sprintf("X is a normal random variable with mean %s and standard deviation %s: X ~ N(%s, %s^2).", .f(mean), .f(sd), .f(mean), .f(sd)),
+                      "Standardise: Z = (X - mu) / sigma ~ N(0, 1); probabilities come from the distribution function (pnorm in R), percentiles from its inverse (qnorm).",
+                      E$values, "X")
+  .result("Normal probability", E$lines, wd, NULL, match.call(), values = E$values)
 }
 
 #' @rdname probability
 #' @export
 prob_t <- function(df, below = NULL, above = NULL, between = NULL, quantile = NULL, middle = NULL) {
   E <- .prob_engine(.D_t(df), below, above, between, quantile, middle, "T", "Student")
-  .result("Student t probability", E$lines, NULL, NULL, match.call(), values = E$values)
+  wd <- .dist_wording(sprintf("T follows a Student t distribution with %s degrees of freedom.", .f(df)),
+                      "The t distribution is symmetric around 0 with heavier tails than N(0, 1) (closer to it as the df grow); probabilities from pt, quantiles from qt.",
+                      E$values, "T")
+  .result("Student t probability", E$lines, wd, NULL, match.call(), values = E$values)
 }
 
 #' @rdname probability
 #' @export
 prob_chisq <- function(df, below = NULL, above = NULL, between = NULL, quantile = NULL, middle = NULL) {
   E <- .prob_engine(.D_chisq(df), below, above, between, quantile, middle, "X2", "")
-  .result("Chi-square probability", E$lines, NULL, NULL, match.call(), values = E$values)
+  wd <- .dist_wording(sprintf("X2 follows a chi-square distribution with %s degrees of freedom.", .f(df)),
+                      "The chi-square distribution takes only positive values and is right-skewed; probabilities from pchisq, quantiles from qchisq.",
+                      E$values, "X2")
+  .result("Chi-square probability", E$lines, wd, NULL, match.call(), values = E$values)
 }
 
 #' @rdname probability
@@ -302,8 +341,13 @@ rv_discrete <- function(values, probs, at_most = NULL, at_least = NULL) {
   .with_plot(function() plot(values, probs, type = "h", lwd = 6, col = "grey40", xlab = "x", ylab = "p(x)",
                              main = "Probability function", las = 1, ylim = c(0, max(probs) * 1.05)))
   .result("Discrete random variable", lines,
-          sprintf("The expected value %s is the average of the values weighted by their probabilities (the long-run mean); the standard deviation %s measures the expected distance of X from it.",
-                  .f(mu), .f(sqrt(v))),
+          c(.w("frame", sprintf("X is a discrete random variable with %d possible values and the given probabilities (they sum to 1).", length(values))),
+            .w("tool", "E(X) = sum x p(x) (average of the values weighted by their probabilities); Var(X) = E(X^2) - E(X)^2; the median is the smallest x with F(x) >= 0.5."),
+            .w("result", sprintf("E(X) = %s, Var(X) = %s, SD(X) = %s, median %s.", .f(mu), .f(v), .f(sqrt(v)), .f(q[2])),
+               if (length(vals)) paste(c(if (!is.null(vals$at_most)) sprintf("P(X <= %s) = %s", .f(at_most), .f(vals$at_most)),
+                                         if (!is.null(vals$at_least)) sprintf("P(X >= %s) = %s", .f(at_least), .f(vals$at_least))), collapse = "; ")),
+            .w("meaning", sprintf("The expected value %s is the long-run average of X over many repetitions; the standard deviation %s measures the expected distance of X from it.",
+                                  .f(mu), .f(sqrt(v))))),
           NULL, match.call(), mean = mu, variance = v, sd = sqrt(v), median = q[2], quartiles = q[c(1, 3)], table = tab, values = vals)
 }
 
@@ -404,7 +448,10 @@ rv_lincomb <- function(a, mu, sigma = NULL, var = NULL, rho = 0, cov = NULL, c =
     lines <- c(lines, "", "Assuming T is normal (the X_i jointly normal, e.g. independent normal variables):", E$lines[-1]); vals <- E$values
   }
   .result("Linear combination of random variables", lines,
-          "E(T) and Var(T) follow from the means, variances and covariances alone; probabilities and quantiles of T also need its distribution: if the variables are (jointly) normal, any linear combination is normal.",
+          c(.dist_wording("T is a linear combination of the random variables, T = sum a_i X_i + c.",
+                          "E(T) = sum a_i E(X_i) + c and Var(T) = sum a_i^2 Var(X_i) + 2 sum a_i a_j Cov(X_i, X_j) follow from the means, variances and covariances alone; probabilities and quantiles of T also need its distribution: if the variables are (jointly) normal, any linear combination is normal.",
+                          vals, "T"),
+            .w("result", sprintf("E(T) = %s, Var(T) = %s, SD(T) = %s.", .f(m), .f(v), .f(sqrt(v))))),
           NULL, match.call(), mean = m, variance = v, sd = sqrt(v), values = vals)
 }
 
@@ -431,8 +478,12 @@ rv_linear <- function(a = 1, mu_x, sd_x = NULL, b = 0, mu_y = 0, sd_y = 0, c = 0
     E <- .prob_engine(.D_normal(mu, sqrt(v)), below, above, between, quantile, middle, "T", "T ~")
     lines <- c(lines, "", "Assuming T is normal (X, Y jointly normal):", E$lines[-1]); vals <- E$values
   }
-  .result("Linear combination of random variables", lines, NULL, NULL, match.call(),
-          mean = mu, variance = v, sd = sqrt(v), covariance = cxy, values = vals)
+  .result("Linear combination of random variables", lines,
+          c(.dist_wording("T = a X + b Y + c is a linear transformation / combination of random variables.",
+                          "E(T) = a E(X) + b E(Y) + c and Var(T) = a^2 Var(X) + b^2 Var(Y) + 2ab Cov(X, Y) (an additive constant changes the mean, not the variance); with (jointly) normal variables T is normal.",
+                          vals, "T"),
+            .w("result", sprintf("E(T) = %s, Var(T) = %s, SD(T) = %s.", .f(mu), .f(v), .f(sqrt(v))))),
+          NULL, match.call(), mean = mu, variance = v, sd = sqrt(v), covariance = cxy, values = vals)
 }
 
 #' @rdname probability
@@ -503,8 +554,15 @@ rv_iid <- function(mu, sigma = NULL, n, stat = c("mean", "sum"), var = NULL,
                E$lines[-1]); vals <- E$values
     if (n <= 30) notes <- sprintf("n = %d is not large: the probabilities are exact only if the population is normal (the CLT approximation may be poor).", n)
   }
+  wd <- c(.dist_wording(if (stat == "mean") sprintf("Xbar is the mean of a random sample of n = %s iid variables with mean %s and variance %s.", n, .f(mu), .f(v1))
+                        else sprintf("S is the sum of n = %s iid variables with mean %s and variance %s.", n, .f(mu), .f(v1)),
+                        if (stat == "mean") "E(Xbar) = mu and Var(Xbar) = sigma^2 / n; Xbar is normal if the population is normal, and approximately normal for large n by the Central Limit Theorem."
+                        else "E(S) = n mu and Var(S) = n sigma^2; S is normal if the population is normal, and approximately normal for large n by the Central Limit Theorem.",
+                        vals, nm, samples = if (stat == "mean") n else NULL,
+                        caveat = if (!is.null(notes)) notes),
+          .w("result", sprintf("E(%s) = %s, SD(%s) = %s.", nm, .f(m), nm, .f(sqrt(v)))))
   .result(if (stat == "mean") "Sampling distribution of the sample mean" else "Sum of iid random variables",
-          lines, NULL, notes, match.call(), mean = m, variance = v, sd = sqrt(v), values = vals)
+          lines, wd, notes, match.call(), mean = m, variance = v, sd = sqrt(v), values = vals)
 }
 
 #' @rdname probability
@@ -521,6 +579,10 @@ rv_prop <- function(p, n, below = NULL, above = NULL, between = NULL, quantile =
     E <- .prob_engine(.D_normal(p, se, sprintf("sqrt(%s*(1-%s)/%s)", .f(p, 6), .f(p, 6), .f(n))), below, above, between, quantile, middle, "p-hat", "p-hat ~")
     lines <- c(lines, "", "Normal approximation (CLT): p-hat ~ approx. N(p, p(1 - p)/n)", E$lines[-1]); vals <- E$values
   }
-  .result("Sampling distribution of a sample proportion", lines, NULL, NULL, match.call(),
+  wd <- c(.dist_wording(sprintf("p-hat is the proportion in a random sample of n = %s units from a population with proportion p = %s.", .f(n), .f(p)),
+                        "E(p-hat) = p and SD(p-hat) = sqrt(p (1 - p) / n); for large n, p-hat is approximately normal by the Central Limit Theorem.",
+                        vals, "p-hat", samples = n),
+          .w("result", sprintf("E(p-hat) = %s, SD(p-hat) = %s.", .f(p), .f(se))))
+  .result("Sampling distribution of a sample proportion", lines, wd, NULL, match.call(),
           mean = p, se = se, values = vals)
 }

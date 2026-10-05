@@ -98,7 +98,10 @@ ci_prop <- function(x = NULL, event = NULL, conf = 0.95, count = NULL, n = NULL,
         else if (length(event) == 1) .ub_call("CI.prop", x = sx, success = event, conf.level = conf)
         else .ub_call("CI.prop", x = call("%in%", sx, event), conf.level = conf)
   .result("Confidence interval for a proportion", lines,
-          c("For a large sample the sample proportion is approximately normal (Central Limit Theorem); since p is unknown, its standard error is estimated by sqrt(p-hat (1 - p-hat) / n).",
+          c(.w("frame", sprintf("The parameter is the population proportion p of %s; the data are a sample of n = %s units.", P$ev, .f(P$n))),
+            .w("tool", "For a large sample the sample proportion is approximately normal (Central Limit Theorem); since p is unknown, its standard error is estimated by sqrt(p-hat (1 - p-hat) / n)."),
+            .w("result", sprintf("%s%% interval: p-hat +/- %s x se = %s +/- %s x %s = [%s, %s] (margin of error %s).", .f(100 * conf, 2), cr$txt,
+                                 .f(P$phat), .f(cr$v), .f(se), .f(b$ci[1]), .f(b$ci[2]), .f(b$me))),
             .ci_wording(conf, sprintf("population proportion of %s", P$ev), b$ci)), P$note, match.call(),
           estimate = P$phat, se = se, critical = cr$v, margin = b$me, ci = b$ci, table = tab, ubstats = ub)
 }

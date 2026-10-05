@@ -27,7 +27,11 @@ test_that("forms build the calls of the Module 1 exercises", {
   expect_equal(dp(ac("desc_classes", source = "density", breaks = "0 20 40 60 80 120 160 300", density = "0.022 0.01 0.005 0.003 0.002 0.001 NA", plot = "both")),
                "desc_classes(breaks = c(0, 20, 40, 60, 80, 120, 160, 300), density = c(0.022, 0.01, 0.005, 0.003, 0.002, 0.001, NA))")
   expect_equal(dp(ac("desc_vars", data = "DS")), "desc_vars(data = DS)")
-  expect_equal(dp(ac("desc_cv", source = "raw", x1 = "a", x2 = "b", x3 = "")), "desc_cv(a, b)")
+  expect_equal(dp(ac("desc_cv", x1 = "a", x2 = "b")), "desc_cv(a, b)")
+  expect_equal(dp(ac("desc_cv", x1 = "Bidding$Bid", mean = "4.875", sd = "2.3243", names = "classes")),
+               "desc_cv(Bidding$Bid, mean = 4.875, sd = 2.3243, names = \"classes\")")
+  expect_equal(dp(ac("est_mean", source = "raw", x = "Bidding$PaidFare", group = "Bidding$Channel", levels = c("Aggregator", "Airline"))),
+               "est_mean(x = Bidding$PaidFare, group = Bidding$Channel, levels = c(\"Aggregator\", \"Airline\"))")
 })
 
 test_that("forms for random variables and estimation", {

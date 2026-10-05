@@ -44,7 +44,10 @@
 #' @param group,group2 Grouping variable(s) for `desc_compare()` (with
 #'   `group2` the groups are the combinations of the two).
 #' @param ... Numeric vectors to compare (`desc_cv`), named or not.
-#' @param mean,sd Summary numbers for `desc_cv()` when raw data are not given.
+#' @param mean,sd Summary numbers for `desc_cv()` (alone or together with raw
+#'   variables in `...`).
+#' @param var `desc_cv()`: variances instead of `sd`.
+#' @param names `desc_cv()`: labels for the variables given by `mean =`.
 #' @param probs Percentiles to report (pairs such as 0.05 / 0.95 are read
 #'   as "the central 90% lie between ...").
 #' @param value `desc_summary()`, `desc_compare()`: value(s) to check
@@ -182,12 +185,48 @@ NULL
     b <- 1 - a
     if (any(abs(probs - b) < 1e-9)) {
       pa <- pr[which.min(abs(probs - a))]; pb <- pr[which.min(abs(probs - b))]
-      out <- c(out, sprintf("P%s = %s and P%s = %s: %s%% of the units have %s at most %s and %s%% have more than %s, so the central (most typical) %s%% lie between %s and %s.",
+      out <- c(out, sprintf("P%s = %s and P%s = %s: %s%% of the units have %s at most %s and %s%% have more than %s (equivalently, P%s is the largest value among the %s%% of units with the lowest values and P%s the smallest among the %s%% with the highest), so the central (most typical) %s%% lie between %s and %s.",
                             round(100 * a), .f(pa), round(100 * b), .f(pb), round(100 * a), xlab, .f(pa), round(100 * a), .f(pb),
+                            round(100 * a), round(100 * a), round(100 * b), round(100 * a),
                             round(100 * (b - a)), .f(pa), .f(pb)))
     }
   }
   if (length(out)) paste(out, collapse = " ") else NULL
+}
+
+# Shape of a distribution read as the official answers do: the central part
+# (box halves, compared with the IQR) and the whiskers; outliers by side; the
+# mean - median gap as a tie-breaker. Returns the phrase and the evidence.
+.shape_info <- function(a, q1, q2, q3) {
+  iqr <- q3 - q1; fe <- .fences(q1, q3); reg <- a[a >= fe[1] & a <= fe[2]]
+  lo <- min(reg); hi <- max(reg); n <- length(a)
+  nl <- sum(a < fe[1]); nu <- sum(a > fe[2]); m <- mean(a); s <- if (n > 1) stats::sd(a) else 0
+  tol <- max(iqr, 1e-12)
+  dir3 <- function(lower, upper, k) if (abs(upper - lower) <= k * tol) "sym" else if (upper > lower) "right" else "left"
+  box <- dir3(q2 - q1, q3 - q2, 0.1); wh <- dir3(q1 - lo, hi - q3, 0.2)
+  close_mm <- abs(m - q2) <= 0.2 * max(s, 1e-12)
+  one_sided <- box == "sym" || wh == "sym"
+  core <- if (box == "sym" && wh == "sym") "sym"
+          else if (box != "left" && wh != "left") (if (close_mm && one_sided) "slight_right" else "right")
+          else if (box != "right" && wh != "right") (if (close_mm && one_sided) "slight_left" else "left")
+          else if (close_mm) "sym" else "mixed"
+  part <- if (box != "sym") "half of the box" else "whisker"
+  side <- if (nl + nu == 0) "" else if (nl > 2 * nu) "lower" else if (nu > 2 * nl) "upper" else "both"
+  strong <- (side == "lower" && nl >= 0.1 * n) || (side == "upper" && nu >= 0.1 * n)
+  phrase <- if (strong) sprintf("strongly %s-skewed because of the numerous %s outliers (%s of the values)",
+                                if (side == "lower") "left" else "right", side, .pct(max(nl, nu) / n, 1))
+    else if (core == "sym" && side %in% c("lower", "upper"))
+      sprintf("the central part is fairly symmetric, although there are some outliers, mainly on the %s side", side)
+    else switch(core, sym = "fairly symmetric", right = "right-skewed (longer upper tail)", left = "left-skewed (longer lower tail)",
+                slight_right = sprintf("fairly symmetric overall, at most slightly right-skewed (longer upper %s; mean close to the median)", part),
+                slight_left = sprintf("fairly symmetric overall, at most slightly left-skewed (longer lower %s; mean close to the median)", part),
+                mixed = "no clear skewness (box and whiskers point in different directions)")
+  if (!strong && core != "sym" && side %in% c("lower", "upper")) phrase <- sprintf("%s; outliers mainly on the %s side", phrase, side)
+  core <- if (strong) (if (side == "lower") "left" else "right") else if (startsWith(core, "slight_")) "sym" else core
+  list(phrase = phrase, core = core,
+       evidence = sprintf("box halves %s vs %s, whiskers %s vs %s, mean %s vs median %s, outliers %d low / %d high",
+                          .f(q2 - q1), .f(q3 - q2), .f(q1 - lo), .f(hi - q3), .f(m), .f(q2), nl, nu),
+       nl = nl, nu = nu, whiskers = c(lo, hi))
 }
 
 .box_shape <- function(lo, q1, q2, q3, hi) {
@@ -242,7 +281,7 @@ desc_summary <- function(x, probs = c(0.05, 0.10, 0.90, 0.95, 0.99), population 
   wlo <- min(regular); whi <- max(regular)
   pr <- quantile(v, probs, names = FALSE)
   mo <- .modes(v)
-  shape <- .box_shape(wlo, q[1], md, q[2], whi)
+  SH <- .shape_info(v, q[1], md, q[2]); shape <- SH$phrase
   mm <- if (abs(m - md) <= 0.05 * (if (is.na(s) || s == 0) 1 else s)) "mean close to the median"
         else if (m > md) "mean > median, pulled toward the upper tail" else "mean < median, pulled toward the lower tail"
   lines <- c(
@@ -283,21 +322,28 @@ desc_summary <- function(x, probs = c(0.05, 0.10, 0.90, 0.95, 0.99), population 
     abline(v = c(m, md), col = c("firebrick", "navy"), lwd = 2, lty = c(1, 2))
     legend("topright", c("mean", "median"), col = c("firebrick", "navy"), lty = c(1, 2), bty = "n", cex = 0.8)
   })
+  p95_txt <- if (any(abs(probs - 0.95) < 1e-9)) {
+    p95 <- pr[which.min(abs(probs - 0.95))]
+    sprintf("Upper fence Q3 + 1.5 IQR = %s vs P95 = %s: %s", .f(fe[2]), .f(p95),
+            if (p95 > fe[2]) "P95 is above the fence, so MORE than 5% of the values are anomalously high (upper outliers)."
+            else "P95 is not above the fence, so at most 5% of the values are anomalously high.")
+  }
   wording <- c(
-    sprintf("The distribution of %s (n = %s) has median %s and mean %s (%s). Half of the observations lie between Q1 = %s and Q3 = %s (IQR = %s); the values range from %s to %s.",
-            xlab, n, .f(md), .f(m), mm, .f(q[1]), .f(q[2]), .f(q[2] - q[1]), .f(min(v)), .f(max(v))),
-    sprintf("The standard deviation is %s, i.e. on average the values deviate from the mean by about %s (CV = %s of the mean). The boxplot suggests a %s distribution.%s",
-            .f(s), .f(s), .pct(s / abs(m)), sub(" \\(.*", "", shape),
-            if (length(outl)) sprintf(" %d value(s) lie more than 1.5 IQR beyond the box and are flagged as extreme: %s.", length(outl), paste(.f(outl), collapse = ", ")) else " No value is flagged as extreme."),
-    if (!grepl("close", mm)) "With a skewed distribution the median, which is robust to extreme values, describes the centre better than the mean (the mean is attracted by the values in the long tail).",
-    .pct_reading(probs, pr, xlab, max(v), min(v)),
-    if (any(abs(probs - 0.95) < 1e-9)) {
-      p95 <- pr[which.min(abs(probs - 0.95))]
-      sprintf("Upper fence Q3 + 1.5 IQR = %s vs P95 = %s: %s", .f(fe[2]), .f(p95),
-              if (p95 > fe[2]) "P95 is above the fence, so MORE than 5% of the values are anomalously high (upper outliers)."
-              else "P95 is not above the fence, so at most 5% of the values are anomalously high.")
-    },
-    if (length(value)) .value_check_words(value, q, xlab), sh$words)
+    .w("frame", sprintf("%s is a quantitative variable observed on n = %s units%s.", xlab, n, if (population) " (the whole population)" else " (a sample)")),
+    .w("tool", "The boxplot (five-number summary and outliers) and the histogram describe location, variability and shape; mean and median are compared because the mean is attracted by long tails while the median is robust to them."),
+    .w("result", sprintf("Median = %s, mean = %s; Q1 = %s, Q3 = %s (IQR = %s); values from %s to %s; standard deviation %s = %s (CV = %s of the mean).",
+                         .f(md), .f(m), .f(q[1]), .f(q[2]), .f(q[2] - q[1]), .f(min(v)), .f(max(v)), sname, .f(s), .pct(s / abs(m)))),
+    .w("meaning", sprintf("Half of the units have %s between %s and %s; the median %s is the maximum value reached by the lowest 50%% of the units. On average the values deviate from the mean by about %s.",
+                          xlab, .f(q[1]), .f(q[2]), .f(md), .f(s)),
+       sprintf("The distribution is %s (%s).", sub(" \\(.*", "", shape), SH$evidence),
+       .pct_reading(probs, pr, xlab, max(v), min(v)), sh$words),
+    .w("conclusion", if (grepl("close", mm)) sprintf("Mean (%s) and median (%s) offer a similar description of the centre.", .f(m), .f(md))
+                     else sprintf("Mean (%s) %s median (%s): with a skewed distribution the median, which is robust to extreme values, describes the centre better; report both to show the tail.",
+                                  .f(m), if (m > md) ">" else "<", .f(md)),
+       if (length(value)) .value_check_words(value, q, xlab)),
+    .w("caveat", if (length(outl)) sprintf("%d value(s) lie more than 1.5 IQR beyond the box and are flagged as extreme: %s%s.", length(outl),
+                                           paste(.f(head(outl, 12)), collapse = ", "), if (length(outl) > 12) " ..." else "") else "No value is flagged as extreme by the 1.5 IQR rule.",
+       p95_txt))
   .result("Descriptive summary", lines, wording,
           c(.dropped_note(v), if (population) "Population formulas used (divisor N)."), match.call(),
           n = n, mean = m, median = md, mode = mo$values, variance = s2, sd = s, quartiles = q, hand_quartiles = hq,
@@ -357,52 +403,62 @@ desc_vars <- function(data) {
   qual <- tab$variable[grepl("^qualitative", tab$type)]; quan <- tab$variable[grepl("^quantitative", tab$type)]
   ids <- by_type("identifier"); disc <- by_type("quantitative discrete")
   wording <- c(
-    sprintf("%s contains %d columns observed on %d units.%s So there are %d statistical variables: %d qualitative (%s) and %d quantitative (%s).",
+    .w("frame", sprintf("%s is a data frame: each row is a unit, each column a variable.", dlab)),
+    .w("tool", "Each variable is classified by type: qualitative (nominal: no order; ordinal: ordered categories) or quantitative (discrete: countable values; continuous: measures). An identifier only labels the units. The type decides the graphs and the summary measures that can be used."),
+    .w("result", sprintf("%s contains %d columns observed on %d units.%s So there are %d statistical variables: %d qualitative (%s) and %d quantitative (%s).",
             dlab, ncol(data), nrow(data),
             if (length(ids)) sprintf(" %s %s an identifier, not a statistical variable.", paste(ids, collapse = ", "), if (length(ids) > 1) "are" else "is") else "",
-            length(qual) + length(quan), length(qual), paste(qual, collapse = ", "), length(quan), paste(quan, collapse = ", ")),
-    if (length(quan)) sprintf("Among the quantitative variables, %s.",
+            length(qual) + length(quan), length(qual), paste(qual, collapse = ", "), length(quan), paste(quan, collapse = ", "))),
+    .w("meaning", if (length(quan)) sprintf("Among the quantitative variables, %s.",
                               if (!length(disc)) "all are continuous"
                               else if (length(disc) == length(quan)) "all are discrete"
-                              else sprintf("%s %s discrete and the others continuous", paste(disc, collapse = ", "), if (length(disc) > 1) "are" else "is")),
-    if (any(tab$note != "" & grepl("text", tab$note)))
+                              else sprintf("%s %s discrete and the others continuous", paste(disc, collapse = ", "), if (length(disc) > 1) "are" else "is"))),
+    .w("caveat", if (any(tab$note != "" & grepl("text", tab$note)))
       sprintf("%s: ordinal but stored as text, so R sorts the categories alphabetically; define a factor with the levels in their natural order before tables and graphs.",
-              paste(tab$variable[grepl("text", tab$note)], collapse = ", ")))
+              paste(tab$variable[grepl("text", tab$note)], collapse = ", "))))
   .result("Variables in the data frame", lines, wording, NULL, match.call(),
           table = tab, rbase = sprintf("str(%s)", dlab), ubstats = NULL)
 }
 
 #' @rdname describe
 #' @export
-desc_cv <- function(..., mean = NULL, sd = NULL) {
+desc_cv <- function(..., mean = NULL, sd = NULL, var = NULL, names = NULL) {
   dots <- list(...)
   ub <- .ub_raw_note
+  rows <- list()
   if (length(dots)) {
-    labs <- names(dots) %||% rep("", length(dots))
+    labs <- base::names(dots) %||% rep("", length(dots))
     exprs <- as.list(substitute(list(...)))[-1]
     ub <- vapply(exprs, function(e) .ub_call("distr.summary.x", x = e, stats = c("mean", "sd", "cv")), character(1), USE.NAMES = FALSE)
     for (i in seq_along(dots)) if (!nzchar(labs[i])) labs[i] <- .label(exprs[[i]])
     vals <- lapply(seq_along(dots), function(i) .num(dots[[i]], labs[i]))
-    tab <- data.frame(variable = labs,
-                      mean = vapply(vals, base::mean, numeric(1)),
-                      sd = vapply(vals, stats::sd, numeric(1)),
-                      variance = vapply(vals, stats::var, numeric(1)),
-                      range = vapply(vals, function(v) diff(range(v)), numeric(1)),
-                      IQR = vapply(vals, stats::IQR, numeric(1)))
-  } else {
-    if (is.null(mean) || is.null(sd) || length(mean) != length(sd))
-      stop("Give two or more numeric vectors, or mean = c(...) and sd = c(...) of equal length.", call. = FALSE)
-    labs <- names(mean) %||% paste0("var", seq_along(mean))
-    tab <- data.frame(variable = labs, mean = mean, sd = sd, variance = sd^2)
+    rows[[1]] <- data.frame(variable = labs, source = "raw data",
+                            mean = vapply(vals, base::mean, numeric(1)),
+                            sd = vapply(vals, stats::sd, numeric(1)), stringsAsFactors = FALSE)
   }
+  if (!is.null(mean)) {
+    if (is.null(sd) && !is.null(var)) sd <- sqrt(var)
+    if (is.null(sd) || length(mean) != length(sd))
+      stop("Give mean = c(...) with sd = c(...) (or var = c(...)) of the same length.", call. = FALSE)
+    labs <- names %||% base::names(mean) %||% paste0("var", seq_along(mean) + length(dots))
+    rows[[2]] <- data.frame(variable = labs, source = if (is.null(var)) "mean and SD given" else "mean and variance given",
+                            mean = as.numeric(mean), sd = as.numeric(sd), stringsAsFactors = FALSE)
+  }
+  tab <- do.call(rbind, rows)
+  if (is.null(tab) || nrow(tab) < 2)
+    stop("Give two or more numeric vectors, or mean = and sd = (or var =), or a mix of the two.", call. = FALSE)
+  tab$variance <- tab$sd^2
   tab$CV <- tab$sd / abs(tab$mean)
-  steps <- sprintf("CV(%s) = %s / |%s| = %s", tab$variable, .f(tab$sd), .f(tab$mean), .f(tab$CV))
+  steps <- sprintf("CV(%s) = s / |mean| = %s / |%s| = %s", tab$variable,
+                   ifelse(tab$source == "mean and variance given", sprintf("sqrt(%s)", .f(tab$variance)), .f(tab$sd)), .f(tab$mean), .f(tab$CV))
   lines <- c(.table_lines(.round_df(tab)), "", steps)
   big_sd <- tab$variable[which.max(tab$sd)]; big_cv <- tab$variable[which.max(tab$CV)]
   wording <- c(
-    "Rule: compare SDs/variances only when the variables are measured on the same scale and have similar means. When units or means differ, use the coefficient of variation CV = s/|mean|, which is unit-free.",
-    sprintf("%s has the largest SD, but relative to its mean the most dispersed variable is %s (CV = %s).",
-            big_sd, big_cv, .pct(max(tab$CV))))
+    .w("frame", sprintf("We compare the dispersion of %s.", paste(tab$variable, collapse = " and "))),
+    .w("tool", "To compare the dispersion of variables measured in different units (or with very different means) we need the coefficient of variation CV = s / |mean|, which is unit-free; SDs and variances can be compared only on the same scale with similar means."),
+    .w("result", paste(sprintf("CV(%s) = %s / %s = %s", tab$variable, .f(tab$sd), .f(abs(tab$mean)), .f(tab$CV)), collapse = "; ")),
+    .w("conclusion", sprintf("Relative to its mean, %s is the most dispersed (CV = %s)%s.", big_cv, .pct(max(tab$CV)),
+                             if (!identical(big_sd, big_cv)) sprintf(", even though %s has the largest SD", big_sd) else "")))
   .result("Comparing dispersion (SD vs CV)", lines, wording, NULL, match.call(), table = tab, ubstats = ub)
 }
 
@@ -424,10 +480,13 @@ desc_prop <- function(x = NULL, event = NULL, count = NULL, n = NULL) {
     sprintf("p-hat = x / n = %s / %s = %s  (%s)", .f(P$count), .f(P$n), .f(P$phat), .pct(P$phat)),
     sprintf("Estimated SE(p-hat) = sqrt(p-hat (1 - p-hat) / n) = sqrt(%s x %s / %s) = %s",
             .f(P$phat), .f(1 - P$phat), .f(P$n), .f(se)))
-  wording <- sprintf(
-    "Estimator: let X_i = 1 if the i-th unit has the characteristic (%s) and 0 otherwise (Bernoulli, P(X_i = 1) = p); the estimator of p is the sample proportion P-hat = (X_1 + ... + X_n) / n, an unbiased estimator (E(P-hat) = p) with standard error sqrt(p(1 - p)/n). The estimate of the population proportion of %s is the sample proportion p-hat = %s/%s = %s. The true standard error sqrt[p(1 - p)/n] depends on the unknown population proportion p, so it is estimated by substituting p-hat for p: SE(p-hat) = sqrt[%s(1 - %s)/%s] = %s.",
-    P$ev, P$ev, .f(P$count), .f(P$n), .f(P$phat), .f(P$phat), .f(P$phat), .f(P$n), .f(se))
-  wording <- c(wording, "The (estimated) standard error is the expected distance of a GENERIC estimate from the unknown p: a smaller SE means the ESTIMATOR's estimates are more concentrated around p, but nothing can be concluded about how close this specific estimate is to its parameter.")
+  wording <- c(
+    .w("frame", sprintf("The parameter is p, the population proportion of %s; the data are a sample of n = %s units.", P$ev, .f(P$n))),
+    .w("tool", sprintf("Estimator: let X_i = 1 if the i-th unit has the characteristic (%s) and 0 otherwise (Bernoulli, P(X_i = 1) = p); the estimator of p is the sample proportion P-hat = (X_1 + ... + X_n) / n, an unbiased estimator (E(P-hat) = p) with standard error sqrt(p(1 - p)/n).", P$ev)),
+    .w("result", sprintf("The estimate of the population proportion of %s is the sample proportion p-hat = %s/%s = %s; estimated SE(p-hat) = sqrt[%s(1 - %s)/%s] = %s.",
+                         P$ev, .f(P$count), .f(P$n), .f(P$phat), .f(P$phat), .f(P$phat), .f(P$n), .f(se))),
+    .w("meaning", "The true standard error sqrt[p(1 - p)/n] depends on the unknown population proportion p, so it is estimated by substituting p-hat for p."),
+    .w("caveat", "The (estimated) standard error is the expected distance of a GENERIC estimate from the unknown p: a smaller SE means the ESTIMATOR's estimates are more concentrated around p, but nothing can be concluded about how close this specific estimate is to its parameter."))
   ub <- if (!raw) .ub_raw_note
         else paste(if (is.null(event)) .ub_call("CI.prop", x = sx)
                    else if (length(event) == 1) .ub_call("CI.prop", x = sx, success = event)

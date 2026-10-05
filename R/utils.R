@@ -302,3 +302,10 @@
   sprintf("The standard error (%s) estimates the expected distance of a GENERIC estimate (%s computed on a random sample of this size) from the parameter: it describes the estimator, not how far this particular estimate is from the true value.",
           .f(se), est)
 }
+
+# "a", "a and b", "a, b and c"
+.and_list <- function(x) {
+  x <- as.character(x)
+  if (length(x) <= 1) return(paste(x, collapse = ""))
+  paste(paste(head(x, -1), collapse = ", "), "and", x[length(x)])
+}

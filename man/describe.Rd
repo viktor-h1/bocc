@@ -49,7 +49,7 @@ desc_summary(
 
 desc_vars(data)
 
-desc_cv(..., mean = NULL, sd = NULL)
+desc_cv(..., mean = NULL, sd = NULL, var = NULL, names = NULL)
 
 desc_prop(x = NULL, event = NULL, count = NULL, n = NULL)
 
@@ -139,7 +139,12 @@ or \verb{> above} (with the \code{mean(condition)} line that gives it in R).}
 
 \item{...}{Numeric vectors to compare (\code{desc_cv}), named or not.}
 
-\item{mean, sd}{Summary numbers for \code{desc_cv()} when raw data are not given.}
+\item{mean, sd}{Summary numbers for \code{desc_cv()} (alone or together with raw
+variables in \code{...}).}
+
+\item{var}{\code{desc_cv()}: variances instead of \code{sd}.}
+
+\item{names}{\code{desc_cv()}: labels for the variables given by \verb{mean =}.}
 
 \item{event}{Category of interest for \code{desc_prop()}; for \code{desc_freq()},
 one or more categories whose combined share is reported.}

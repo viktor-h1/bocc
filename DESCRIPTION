@@ -1,7 +1,7 @@
 Package: statcram
 Type: Package
 Title: Study Companion for Introductory Statistics with R and UBStats
-Version: 0.9.0
+Version: 0.9.1
 Authors@R: person("OpenAI","Prototype",email="noreply@example.com",role=c("aut","cre"))
 Description: A study companion for an introductory statistics course taught
     with R and UBStats. A numbered menu (sc()), a point-and-click panel

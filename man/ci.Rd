@@ -30,7 +30,9 @@ est_mean(
   sigma = NULL,
   sum_x = NULL,
   sum_x2 = NULL,
-  se_target = NULL
+  se_target = NULL,
+  group = NULL,
+  levels = NULL
 )
 
 ci_paired(
@@ -112,6 +114,9 @@ population SD).}
 \item{se_target}{\code{est_mean()}: target standard error; prints the sample
 size needed, n >= (sigma / SE*)^2.}
 
+\item{group, levels}{Grouping variable and the two groups to compare,
+e.g. \verb{group = df$loyalty, levels = c("High", "Medium")}.}
+
 \item{y}{Second sample (paired: second measurement, D = x - y;
 two-sample: the second group).}
 
@@ -127,9 +132,6 @@ assumed equal), \code{"welch"} (unknown, not assumed equal), \code{"large"}
 (non-normal / unknown distribution, large samples, Z) or \code{"known"}
 (population sigmas known, give \code{sigma1}, \code{sigma2}). Omit it to see all
 four tests.}
-
-\item{group, levels}{Grouping variable and the two groups to compare,
-e.g. \verb{group = df$loyalty, levels = c("High", "Medium")}.}
 
 \item{xbar1, n1, xbar2, n2, sigma1, sigma2}{Summary numbers for two samples.}
 

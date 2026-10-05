@@ -1,4 +1,4 @@
-# statcram 0.9.0
+# statcram 0.9.1
 
 A study companion for 30001 Statistics (R, RStudio and UBStats). Practise with the course data
 and the past papers, check your answers against the official solutions, and learn the UBStats and
@@ -21,7 +21,7 @@ Pure R, no compilation, no internet needed after installing.
 
 ```r
 # from the built file
-install.packages("statcram_0.9.0.tar.gz", repos = NULL, type = "source")
+install.packages("statcram_0.9.1.tar.gz", repos = NULL, type = "source")
 # or from GitHub
 remotes::install_github("viktor-h1/bocc", ref = "claude/quirky-gates-9i7hvr")
 
@@ -47,6 +47,7 @@ sc_index()       # every function + its menu shortcut
 sc_recipes()     # R one-liners: new columns, subsets, factors, typed tables
 sc_notes("inference")   # course rules (also: rules, descriptive, estimation, random, chisq, regression, patterns)
 sc_notes("patterns")    # past-paper questions -> what to run -> what the answer must contain
+sc_notes("phrasing")    # how official answers are phrased: 7 moves + phrase bank (any question)
 ```
 
 At every menu prompt: **b** = back, **m** = main menu, **q** = quit.
@@ -54,6 +55,25 @@ When the menu asks for data it lists every data frame column, vector and table l
 now*. Type a number, or **any R expression** (`df$after - df$before`, `df$loyalty == "High"`,
 `subset(df, region == "North")$spend`), or **s** to enter summary numbers, or **t** to type a
 table from paper first.
+
+## How answers are phrased
+
+`sc_notes("phrasing")` describes the general way the official solutions phrase an answer, so an
+answer can be built even for a question no past paper asked:
+- **Seven moves, in this order:** Frame, Tool + why, Computation, Result, Meaning in context,
+  Conclusion (verdict first), Caveat.
+- **Which moves matter:** decided by the question's verb ("compare", "which measure",
+  "calculate", "can we conclude").
+- **A phrase bank** for every concept of the course, and the language rules.
+
+The exam wording of the first-partial procedures is printed with the same labels (Frame, Tool,
+Result, Meaning, Conclusion, Caveat); `options(statcram.labels = FALSE)` hides them. Version 0.9.1
+also follows the 14 Oct 2025 partial:
+- group shapes read as in the solution ("central part fairly symmetric, outliers mainly on the
+  lower side");
+- a linearity check in `desc_cor()`;
+- `est_mean(x, group =)` for estimates and SEs by group;
+- `desc_cv()` mixing raw data with means / SDs / variances.
 
 ## The panel
 

@@ -244,10 +244,10 @@ NULL
 }
 
 .ci_wording <- function(conf, what, ci) {
-  c(sprintf("With a level of confidence of %s%%, we can conclude that the %s lies between %s and %s.",
-            .f(100 * conf, 2), what, .f(ci[1]), .f(ci[2])),
-    sprintf("The confidence level refers to the procedure: over repeated sampling, about %s%% of the intervals built this way contain the true parameter. The parameter is fixed (not random), so this particular interval either contains it or not: it is NOT contained in [%s, %s] \"with probability %s\". A two-sided test at alpha = %s rejects H0: parameter = v exactly for the values v outside the interval.",
-            .f(100 * conf, 2), .f(ci[1]), .f(ci[2]), .f(conf), .f(1 - conf)))
+  c(.w("conclusion", sprintf("With a level of confidence of %s%%, we can conclude that the %s lies between %s and %s.",
+            .f(100 * conf, 2), what, .f(ci[1]), .f(ci[2]))),
+    .w("caveat", sprintf("The confidence level refers to the procedure: over repeated sampling, about %s%% of the intervals built this way contain the true parameter. The parameter is fixed (not random), so this particular interval either contains it or not: it is NOT contained in [%s, %s] \"with probability %s\". A two-sided test at alpha = %s rejects H0: parameter = v exactly for the values v outside the interval.",
+            .f(100 * conf, 2), .f(ci[1]), .f(ci[2]), .f(conf), .f(1 - conf))))
 }
 
 .crit_ci <- function(dist, conf, df) {
@@ -286,8 +286,11 @@ ci_mean <- function(x = NULL, conf = 0.95, method = c("t", "z"),
   }
   lines <- c(head, .ci_table_lines(tab), "", m$inputs, m$steps,
              sprintf("Explained below: %s", m$label), "", b$lines)
-  wording <- c(paste0(m$reason, "."),
-               if (m$case != "known") "With sigma unknown the t interval is exact for a normal population; for a large sample the normal approximation (z) is also valid, and the t interval is the conservative choice (slightly wider). Both are shown above, as in UBStats.",
+  wording <- c(.w("frame", sprintf("The parameter is the population mean of %s (mu); the data are a sample of n = %s units.", xlab, .f(m$n))),
+               .w("tool", paste0(m$reason, "."),
+                  if (m$case != "known") "With sigma unknown the t interval is exact for a normal population; for a large sample the normal approximation (z) is also valid, and the t interval is the conservative choice (slightly wider). Both are shown above, as in UBStats."),
+               .w("result", sprintf("%s%% interval: xbar +/- %s x se = %s +/- %s x %s = [%s, %s] (margin of error %s).", .f(100 * conf, 2), cr$txt,
+                                    .f(m$xbar), .f(cr$v), .f(m$se), .f(b$ci[1]), .f(b$ci[2]), .f(b$me))),
                .ci_wording(conf, what, b$ci))
   ub <- if (!is.null(x)) .ub_call("CI.mean", x = sx, sigma = sigma, conf.level = conf) else .ub_raw_note
   .result("Confidence interval for a mean", lines, wording, m$note, match.call(),
@@ -298,8 +301,9 @@ ci_mean <- function(x = NULL, conf = 0.95, method = c("t", "z"),
 #' @rdname ci
 #' @export
 est_mean <- function(x = NULL, xbar = NULL, s = NULL, n = NULL, sigma = NULL, sum_x = NULL, sum_x2 = NULL,
-                     se_target = NULL) {
+                     se_target = NULL, group = NULL, levels = NULL) {
   sx <- substitute(x); xlab <- .label(sx)
+  if (!is.null(group)) return(.est_mean_groups(x, group, levels, sigma, xlab, sx, substitute(group), match.call()))
   m <- .one_mean(x, xbar, s, n, sigma, "t", xlab, sum_x, sum_x2)
   known <- m$case == "known"
   lines <- c(m$inputs, m$steps, "",
@@ -316,13 +320,55 @@ est_mean <- function(x = NULL, xbar = NULL, s = NULL, n = NULL, sigma = NULL, su
                                   if (known) "" else "   (approximate: s replaces the unknown sigma)"))
   }
   wording <- c(
-    sprintf("The estimate of the population mean of %s is the sample mean, %s. Its %sstandard error, %s, is the expected deviation of a GENERIC estimate (over all possible samples of size %s) from mu: it does not tell how far this particular xbar is from mu, which remains unknown.",
-            xlab, .f(m$xbar), if (known) "" else "estimated ", .f(m$se), .f(m$n)),
-    "A smaller standard error means estimates more concentrated around mu: larger samples give more precise estimates. Comparing two standard errors says which ESTIMATOR is more reliable (its estimates more tightly clustered around the parameter), not how close each specific realised estimate is to its parameter.",
-    "Unbiasedness: an estimator T of a parameter theta is unbiased if E(T) = theta for every possible value of theta. The sample mean Xbar is an unbiased estimator of mu, E(Xbar) = mu, and Var(Xbar) = sigma^2 / n: proportional to the population variance, inversely proportional to n, and tending to 0 as n grows (consistency).")
+    .w("frame", sprintf("The parameter is the population mean mu of %s; the data are a sample of n = %s units.", xlab, .f(m$n))),
+    .w("tool", "The estimator of mu is the sample mean Xbar: unbiased, E(Xbar) = mu, with Var(Xbar) = sigma^2 / n and standard error sigma / sqrt(n)."),
+    .w("result", sprintf("The estimate of the population mean of %s is xbar = %s; %s = %s.", xlab, .f(m$xbar),
+                         if (known) sprintf("SE = sigma / sqrt(n) = %s / sqrt(%s)", .f(m$sigma), .f(m$n))
+                         else sprintf("estimated SE = s / sqrt(n) = %s / sqrt(%s)", .f(m$s), .f(m$n)), .f(m$se))),
+    .w("meaning", if (!known) "The exact standard error sigma / sqrt(n) cannot be determined, as the population variance is unknown; it is estimated by replacing sigma with the sample standard deviation s.",
+       sprintf("The %sstandard error, %s, is the expected deviation of a GENERIC estimate (over all possible samples of size %s) from mu: it does not tell how far this particular xbar is from mu, which remains unknown.",
+               if (known) "" else "estimated ", .f(m$se), .f(m$n))),
+    .w("caveat", "Comparing two standard errors says which ESTIMATOR is more reliable (its estimates more tightly clustered around the parameter), not how close each specific realised estimate is to its parameter. Var(Xbar) = sigma^2 / n tends to 0 as n grows (consistency): larger samples give more precise estimates."))
   ub <- if (!is.null(x)) paste(.ub_call("CI.mean", x = sx, sigma = sigma), " # also prints xbar and its SE") else .ub_raw_note
   .result("Point estimate of a mean and its standard error", lines, wording, m$note, match.call(),
           estimate = m$xbar, se = m$se, n = m$n, n_needed = n_need, ubstats = ub)
+}
+
+# Point estimates of the mean in several groups, each with its (estimated) standard error.
+.est_mean_groups <- function(x, group, levels, sigma, xlab, sx, sg, cl) {
+  v <- .num(x, xlab); g <- .one_column(group, "group")
+  if (length(g) != length(x)) stop("x and group must have the same length.", call. = FALSE)
+  glab <- .label(sg)
+  lv <- levels %||% .cats(g[!is.na(g)])
+  bad <- setdiff(lv, as.character(g)); if (length(bad)) stop("levels not found in ", glab, ": ", paste(bad, collapse = ", "), call. = FALSE)
+  xv <- as.numeric(x)
+  rows <- lapply(lv, function(l) {
+    a <- xv[!is.na(g) & as.character(g) == l & !is.na(xv)]
+    sdv <- sigma %||% stats::sd(a)
+    data.frame(group = l, n = length(a), mean = mean(a), s = stats::sd(a), se = sdv / sqrt(length(a)), stringsAsFactors = FALSE)
+  })
+  tab <- do.call(rbind, rows)
+  sname <- if (is.null(sigma)) "s" else "sigma"
+  lines <- c(sprintf("Point estimates of the mean of %s by %s (sample mean in each group)", xlab, glab), "",
+             .table_lines(.round_df(tab)), "",
+             sprintf("  %s = %s: xbar = %s;  %s = %s / sqrt(%s) = %s / sqrt(%s) = %s", glab, tab$group, .f(tab$mean),
+                     if (is.null(sigma)) "estimated SE" else "SE", sname, "n", .f(if (is.null(sigma)) tab$s else sigma), tab$n, .f(tab$se)))
+  imin <- which.min(tab$se)
+  wording <- c(
+    .w("frame", sprintf("The parameters are the population means of %s for %s; the data are the sample units of each group.",
+                        xlab, paste(sprintf("%s = %s", glab, tab$group), collapse = " and "))),
+    .w("tool", "The estimator of each mean is the sample mean of the group: unbiased, E(Xbar) = mu, with standard error sigma / sqrt(n)."),
+    .w("result", sprintf("The estimates are %s.", paste(sprintf("%s (%s = %s)", .f(tab$mean), glab, tab$group), collapse = " and ")),
+       sprintf("%s: %s.", if (is.null(sigma)) "Estimated standard errors" else "Standard errors",
+               paste(sprintf("%s = %s: %s / sqrt(%s) = %s", glab, tab$group, .f(if (is.null(sigma)) tab$s else sigma), tab$n, .f(tab$se)), collapse = "; "))),
+    .w("meaning", if (is.null(sigma)) "The exact standard errors sigma / sqrt(n) cannot be determined, as the population variances are unknown; they are estimated by replacing sigma with the sample standard deviation s of each group."),
+    .w("conclusion", if (nrow(tab) > 1) sprintf("The estimator for %s = %s has the smallest standard error, so it is the more reliable ESTIMATOR: its estimates are (estimated to be) more tightly clustered around the population mean. No conclusion can be drawn on the reliability of the specific realised estimates or on their distance from the corresponding parameters.",
+                                                glab, tab$group[imin])),
+    .w("caveat", "The standard error refers to the sampling distribution of the estimator: the expected deviation of a GENERIC estimate from the parameter, not of the specific realised estimate."))
+  .result("Point estimates of a mean by group, with standard errors", lines, wording, NULL, cl,
+          table = tab, estimate = stats::setNames(tab$mean, tab$group), se = stats::setNames(tab$se, tab$group),
+          n = stats::setNames(tab$n, tab$group),
+          ubstats = .ub_call("distr.summary.x", x = sx, stats = c("mean", "sd"), by1 = sg))
 }
 
 # ---------- paired ----------

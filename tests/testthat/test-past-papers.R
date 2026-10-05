@@ -127,10 +127,10 @@ test_that("descriptive checks: extreme values, percentile reading, groups, condi
   g <- q(desc_compare(d$bid, d$ch, value = 35))
   expect_true(any(grepl("Q3 of Agency .* < Q1 of Aggregator", g$lines)))
   expect_true(any(grepl("bid = 35 within Aggregator: fences", g$lines, fixed = TRUE)))
-  expect_true(any(grepl("Shape: Agency:", g$wording, fixed = TRUE)))
+  expect_true(any(grepl("Shape - Agency:", g$wording, fixed = TRUE)))
   expect_true("p5" %in% names(g$table) && "p95" %in% names(g$table))
   x <- q(desc_crosstab(rep(c("A", "B"), c(30, 70)), rep(c("y", "n", "y", "n"), c(20, 10, 30, 40))))
-  expect_true(any(grepl("CONDITIONAL distributions", x$wording, fixed = TRUE)))
+  expect_true(any(grepl("conditional distributions of", x$wording, fixed = TRUE)))
 })
 
 test_that("regression: I() equation, significance, F formula, dummy differences, effects, prediction, comparison", {
@@ -275,7 +275,7 @@ test_that("General Jul 2025: CI with sigma known; P(P-hat >= 0.30) with its R ca
   expect_equal(round(r$values[[1]], 3), 0.998)
   expect_true(any(grepl("in R: 1 - pnorm(0.3, mean = 0.3397, sd = sqrt(0.3397*(1-0.3397)/1200))", r$lines, fixed = TRUE)))
   e <- q(est_mean(c(3, 5, 7, 9, 11)))
-  expect_true(any(grepl("tending to 0 as n grows (consistency)", e$wording, fixed = TRUE)))
+  expect_true(any(grepl("tends to 0 as n grows (consistency)", e$wording, fixed = TRUE)))
 })
 
 test_that("General Sep 2025: cut-off and beta for a proportion test", {
