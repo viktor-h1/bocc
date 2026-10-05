@@ -1,0 +1,131 @@
+# Worked examples from "Applied Statistical Methods", chapter 5 (probability and random variables).
+
+test_that("T&E 5.1: roulette events (classical probability, union rule)", {
+  r <- prob_events(pA = 18 / 37, pB = 12 / 37, pAB = 6 / 37)
+  expect_equal(r$union, 24 / 37)
+  expect_false(r$independent)
+  expect_equal(prob_events(0.5, 0.4, independent = TRUE)$intersection, 0.2)
+  expect_equal(prob_events(0.5, 0.4, pAorB = 0.6)$intersection, 0.3)
+  expect_error(prob_events(0.2, 0.3, pAB = 0.25), "not consistent")
+})
+
+test_that("T&E 5.3: multiplication rule and law of total probability", {
+  expect_equal(round(prob_events(250 / 410, 0.3, pB_given_A = 0.3)$intersection, 4), 0.1829)
+  tp <- prob_bayes(prior = c(F = 250 / 410, M = 160 / 410), likelihood = c(0.5, 0.3), event = "N")
+  expect_equal(round(tp$p_event, 3), 0.422)
+})
+
+test_that("T&E 5.5 / 5.6: Bayes' theorem", {
+  d <- prob_bayes(prior = c(D = 1 / 2000, notD = 1999 / 2000), likelihood = c(0.99, 0.02), event = "T")
+  expect_equal(d$p_event, 0.020485)
+  expect_equal(round(unname(d$posterior["D"]), 5), 0.02416)
+  expect_gt(unname(d$posterior_not["notD"]), 0.9999)            # book: 0.9999 (0.999995)
+  pg <- prob_bayes(prior = c(P = 0.6, notP = 0.4), likelihood = c(0.97, 0.02))
+  expect_equal(round(unname(pg$posterior["P"]), 4), 0.9864)
+  expect_equal(round(unname(pg$posterior_not["P"]), 4), 0.0439)
+  db <- prob_bayes(prior = c(T1 = 30, T2 = 50, T3 = 5, T4 = 15), likelihood = c(0.48, 0.38, 0.26, 0.35), event = "I")
+  expect_equal(db$p_event, 0.3995)
+  expect_equal(round(unname(db$posterior), 4), c(0.3605, 0.4756, 0.0325, 0.1314))
+  expect_error(prob_bayes(c(0.5, 0.4), c(0.1, 0.2)), "sum to 1")
+})
+
+test_that("T&E 5.7 / 5.14: discrete r.v. expected value, variance, median", {
+  r <- rv_discrete(values = c(0, 25, 50, 100, 200), probs = c(0.8, 0.008, 0.079, 0.068, 0.045))
+  expect_equal(r$mean, 19.95)
+  expect_equal(r$variance, 2284.4975)
+  expect_equal(round(r$sd, 2), 47.80)          # book prints 47.79 (truncated)
+  expect_equal(r$median, 0)
+  o <- rv_discrete(0:2, c(0.8, 0.15, 0.05))
+  expect_equal(o$mean, 0.25); expect_equal(o$variance, 0.2875)
+})
+
+test_that("T&E 5.8 / Example 5.1 / Example 5.4: Bernoulli and Binomial", {
+  b1 <- prob_binom(1, 0.48)
+  expect_equal(b1$mean, 0.48); expect_equal(b1$variance, 0.52 * 0.48)
+  s <- prob_binom(15, 0.65, exactly = c(0, 5), more_than = 7, quantile = 0.5)
+  expect_equal(s$mean, 9.75)
+  expect_equal(s$values[["P(X = 0)"]], 0.35^15)
+  expect_equal(round(s$values[["P(X = 5)"]], 8), 0.00961175)
+  expect_equal(round(s$values[["P(X > 7)"]], 7), 0.8867689)
+  expect_equal(s$values[["q_0.5"]], 10)
+  r <- prob_binom(3, 0.2, exactly = c(0, 3), at_least = 2)
+  expect_equal(r$values[["P(X = 0)"]], 0.512); expect_equal(r$values[["P(X = 3)"]], 0.008)
+  expect_equal(r$values[["P(X >= 2)"]], 0.104)
+  expect_equal(prob_binom(10, 0.3, less_than = 3)$values[[1]], pbinom(2, 10, 0.3))
+  expect_equal(prob_binom(10, 0.3, between = c(2, 4))$values[[1]], pbinom(4, 10, 0.3) - pbinom(1, 10, 0.3))
+})
+
+test_that("T&E 5.15: Binomial quantiles and their normal approximation", {
+  r <- prob_binom(100, 0.125, quantile = c(0.1, 0.25, 0.5, 0.75, 0.9), normal = TRUE)
+  expect_equal(unname(unlist(r$values)) / 100, c(0.08, 0.10, 0.12, 0.15, 0.17))
+  expect_true(any(grepl("qnorm\\(0.1, 12.5, 3.3072\\) = 8.261667", r$lines)))
+})
+
+test_that("T&E 5.10: Uniform distribution", {
+  u <- prob_unif(10, 35, below = 15, above = 20, quantile = c(0.1, 0.85))
+  expect_equal(u$mean, 22.5)
+  expect_equal(unname(u$values), c(0.2, 0.6, 12.5, 31.25))
+})
+
+test_that("Examples 5.2 / 5.3: Normal probabilities, quantiles, empirical rule", {
+  r <- prob_normal(71, var = 324, below = 30, above = 90, between = c(30, 80), quantile = c(0.05, 0.95, 0.9, 0.3))
+  v <- unname(r$values)
+  expect_equal(round(v[1], 8), 0.01136991)
+  expect_equal(round(v[2], 7), 0.1455857)
+  expect_equal(round(v[3], 7), 0.6800926)
+  expect_equal(round(v[4:7], 5), c(41.39263, 100.60737, 94.06793, 61.56079))
+  m <- prob_normal(71, 18, middle = 0.9)
+  expect_equal(unname(m$values), qnorm(c(0.05, 0.95), 71, 18))
+  expect_equal(round(prob_normal(between = c(-1, 1))$values[[1]], 7), 0.6826895)
+})
+
+test_that("T&E 5.11 / 5.13: linear transformations and combinations", {
+  p <- rv_linear(a = 10, mu_x = 300, sd_x = 90, c = -900)
+  expect_equal(p$mean, 2100); expect_equal(p$sd, 900)
+  pf <- rv_lincomb(a = c(0.6, 0.4), mu = c(0, 0), sigma = c(12, 18), rho = 0.72)
+  expect_equal(pf$variance, 178.3296); expect_equal(round(pf$sd, 3), 13.354)
+  expect_equal(round(rv_lincomb(c(0.6, 0.4), c(0, 0), c(12, 18), rho = -0.42)$sd, 2), 7.75)
+  pr <- rv_lincomb(a = c(1, 1), mu = c(10, 16), sigma = c(1, 2), rho = 0.2, c = 4, between = c(25, 35))
+  expect_equal(pr$mean, 30); expect_equal(pr$variance, 5.8)
+  expect_equal(round(pr$values[[1]], 7), 0.9621187)
+  pk <- rv_lincomb(a = c(1, 1), mu = c(252, 252), sigma = c(7, 7), below = c(480, 490))
+  expect_equal(round(unname(pk$values), 7), c(0.0076676, 0.0786496))
+  expect_equal(rv_lincomb(a = c(2, -1, 0.5), mu = c(1, 2, 3), sigma = c(1, 2, 3))$variance, 4 + 4 + 0.25 * 9)
+})
+
+test_that("T&E 5.12: joint distribution, conditionals, covariance, independence", {
+  j <- rv_joint(matrix(c(0.04, 0.21, 0.28, 0.30, 0.08, 0.09), 2, dimnames = list(X = c("0", "1"), Y = c("0", "1", "2"))))
+  expect_equal(unname(j$marginal_x), c(0.4, 0.6)); expect_equal(unname(j$marginal_y), c(0.25, 0.58, 0.17))
+  expect_false(j$independent)
+  i <- rv_joint(matrix(c(0.08, 0.12, 0.2, 0.3, 0.12, 0.18), 2, dimnames = list(X = c("0", "1"), Y = c("0", "1", "2"))))
+  expect_true(i$independent)
+  expect_equal(i$values$exy, 0.66); expect_equal(i$values$mean_x, 0.6); expect_equal(i$values$mean_y, 1.1)
+  expect_equal(i$values$covariance, 0)
+})
+
+test_that("Examples 5.4 / 5.5 / 5.6: sums and means of iid variables, CLT", {
+  pa <- rv_lincomb(a = rep(0.3, 3), mu = 115, var = 1200, c = -100, below = 0)
+  expect_equal(pa$mean, 3.5); expect_equal(pa$variance, 324)
+  expect_equal(round(pa$values[[1]], 7), 0.4229139)
+  expect_equal(round(rv_iid(48, 4, 5, "mean", above = 50)$values[[1]], 7), 0.1317762)
+  expect_equal(round(rv_iid(48, 4, 10, "sum", quantile = 0.95)$values[[1]], 4), 500.8059)
+  cl <- rv_iid(22, 9, 80, "mean", above = 25)
+  expect_equal(round(cl$values[[1]], 4), 0.0014)
+  q <- rv_iid(22, 9, 80, "sum", quantile = c(0.1, 0.01, 0.99))
+  expect_equal(round(unname(q$values), 3), c(1656.837, 1572.733, 1947.267))
+  ob <- rv_iid(0.88, sqrt(0.88 * 0.12), 260, "sum", below = c(240, 238))
+  expect_equal(round(unname(ob$values), 5), c(0.98372, 0.96044))
+  expect_match(rv_iid(10, 2, 5, above = 11)$notes, "not large")
+})
+
+test_that("menu: Bayes, Binomial and portfolio from the probability topic", {
+  s <- scripted(c("2", "2", "2", "D noD", "0.0005 0.9995", "T", "0.99 0.02", "q"), sc())
+  expect_true(any(grepl("prob_bayes\\(prior = c\\(D = 5e-04, noD = 0.9995\\), likelihood = c\\(0.99, 0.02\\), event = \"T\"\\)", s$out)))
+  s2 <- scripted(c("2", "4", "15", "0.65", "5", "7", "y", "1", "5", "n", "n", "q"), sc())
+  expect_true(any(grepl("prob_binom\\(size = 15, prob = 0.65, exactly = 5, more_than = 7\\)", s2$out)))
+  expect_true(any(grepl("P\\(X > 7\\) = 1 - P\\(X <= 7\\) = 0.886769", s2$out)))
+  s3 <- scripted(c("2", "9", "2", "0.6 0.4", "0 0", "1", "12 18", "2", "0.72", "0", "n", "q"), sc())
+  expect_true(any(grepl("SD\\(T\\) = sqrt\\(178.3296\\) = 13.354", s3$out)))
+  s4 <- scripted(c("2", "6", "71", "2", "324", "1", "30", "y", "4", "0.9", "n", "q"), sc())
+  expect_true(any(grepl("prob_normal\\(mean = 71, below = 30, quantile = 0.9, var = 324\\)", s4$out)))
+})

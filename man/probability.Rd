@@ -5,26 +5,98 @@
 \alias{prob_normal}
 \alias{prob_t}
 \alias{prob_chisq}
+\alias{prob_unif}
+\alias{prob_events}
+\alias{prob_bayes}
 \alias{rv_discrete}
+\alias{prob_binom}
+\alias{rv_lincomb}
 \alias{rv_linear}
+\alias{rv_joint}
 \alias{rv_iid}
 \alias{rv_prop}
 \title{Probabilities, quantiles and random variables}
 \usage{
 prob_normal(
   mean = 0,
-  sd = 1,
+  sd = NULL,
   below = NULL,
   above = NULL,
   between = NULL,
-  quantile = NULL
+  quantile = NULL,
+  middle = NULL,
+  var = NULL
 )
 
-prob_t(df, below = NULL, above = NULL, between = NULL, quantile = NULL)
+prob_t(
+  df,
+  below = NULL,
+  above = NULL,
+  between = NULL,
+  quantile = NULL,
+  middle = NULL
+)
 
-prob_chisq(df, below = NULL, above = NULL, between = NULL, quantile = NULL)
+prob_chisq(
+  df,
+  below = NULL,
+  above = NULL,
+  between = NULL,
+  quantile = NULL,
+  middle = NULL
+)
 
-rv_discrete(values, probs)
+prob_unif(
+  min,
+  max,
+  below = NULL,
+  above = NULL,
+  between = NULL,
+  quantile = NULL,
+  middle = NULL
+)
+
+prob_events(
+  pA,
+  pB,
+  pAB = NULL,
+  pA_given_B = NULL,
+  pB_given_A = NULL,
+  pAorB = NULL,
+  independent = FALSE
+)
+
+prob_bayes(prior, likelihood, event = "B")
+
+rv_discrete(values, probs, at_most = NULL, at_least = NULL)
+
+prob_binom(
+  size,
+  prob,
+  exactly = NULL,
+  at_most = NULL,
+  at_least = NULL,
+  less_than = NULL,
+  more_than = NULL,
+  between = NULL,
+  quantile = NULL,
+  normal = FALSE
+)
+
+rv_lincomb(
+  a,
+  mu,
+  sigma = NULL,
+  var = NULL,
+  rho = 0,
+  cov = NULL,
+  c = 0,
+  below = NULL,
+  above = NULL,
+  between = NULL,
+  quantile = NULL,
+  middle = NULL
+)
 
 rv_linear(
   a = 1,
@@ -40,8 +112,12 @@ rv_linear(
   var_y = NULL,
   below = NULL,
   above = NULL,
-  between = NULL
+  between = NULL,
+  quantile = NULL,
+  middle = NULL
 )
+
+rv_joint(p)
 
 rv_iid(
   mu,
@@ -51,59 +127,128 @@ rv_iid(
   var = NULL,
   below = NULL,
   above = NULL,
-  between = NULL
+  between = NULL,
+  quantile = NULL,
+  middle = NULL
 )
 
-rv_prop(p, n, below = NULL, above = NULL, between = NULL)
+rv_prop(
+  p,
+  n,
+  below = NULL,
+  above = NULL,
+  between = NULL,
+  quantile = NULL,
+  middle = NULL
+)
 }
 \arguments{
 \item{mean, sd}{Mean and standard deviation of the normal distribution.}
 
-\item{below, above}{Value a for P(X < a) / P(X > a).}
+\item{below, above}{Value a for P(X < a) / P(X > a) (continuous: < and <=
+are the same).}
 
 \item{between}{Two values c(a, b) for P(a < X < b).}
 
-\item{quantile}{Probability p: find x with P(X <= x) = p.}
+\item{quantile}{Probability alpha: the alpha-quantile q_alpha = x_(1-alpha),
+the value with P(X <= x) = alpha (several allowed).}
+
+\item{middle}{Probability, e.g. 0.90: the interval containing the central
+90\% of the distribution (between the 5th and 95th percentiles).}
+
+\item{var}{Variance (alternative to \code{sd} / \code{sigma}).}
 
 \item{df}{Degrees of freedom.}
 
-\item{values, probs}{Values of a discrete RV and their probabilities (or \%).}
+\item{min, max}{Limits of the Uniform distribution.}
 
-\item{a, b, c}{Coefficients in T = aX + bY + c.}
+\item{pA, pB, pAB}{P(A), P(B) and P(A and B).}
+
+\item{pA_given_B, pB_given_A, pAorB}{Alternatives to \code{pAB}.}
+
+\item{independent}{\code{prob_events()}: assume A and B independent.}
+
+\item{prior}{Probabilities of the partition events E_1, ..., E_n (named
+vector; \% accepted). They must sum to 1.}
+
+\item{likelihood}{P(B | E_i) for each event of the partition.}
+
+\item{event}{Label of the observed event B (for printing).}
+
+\item{values, probs}{Values of a discrete r.v. and their probabilities (or \%).}
+
+\item{size, prob}{Number of trials m and success probability p.}
+
+\item{exactly, at_most, at_least, less_than, more_than}{Discrete
+probabilities P(X = x), P(X <= x), P(X >= x), P(X < x), P(X > x);
+\code{between = c(a, b)} is P(a <= X <= b) for discrete r.v.s.}
+
+\item{normal}{\code{prob_binom()}: also show the normal approximation
+N(mp, mp(1 - p)) (no continuity correction, as in the book).}
+
+\item{a, b, c}{Coefficients: T = aX + bY + c (\code{rv_linear}); \code{a} is the
+vector of coefficients in \code{rv_lincomb}, \code{c} the constant.}
+
+\item{mu, sigma}{Means and SDs (vectors in \code{rv_lincomb}; single values
+for the iid variables in \code{rv_iid}).}
+
+\item{cov, rho}{Covariance or correlation. In \code{rv_lincomb()}: a single
+correlation for every pair, or a correlation / covariance matrix.}
 
 \item{mu_x, sd_x, mu_y, sd_y}{Means and SDs of X and Y.}
 
-\item{cov, rho}{Covariance or correlation of X and Y (default 0).}
-
 \item{var_x, var_y}{Variances (alternative to \code{sd_x}, \code{sd_y}).}
 
-\item{mu, sigma, var}{Mean and SD (or variance) of each iid variable.}
+\item{p}{Joint probability table for \code{rv_joint()} (matrix or count table
+with the values of X as row names and of Y as column names; counts are
+turned into proportions); population proportion for \code{rv_prop()}.}
 
 \item{n}{Number of iid variables / sample size.}
 
 \item{stat}{\code{"mean"} (sample mean) or \code{"sum"} (total).}
-
-\item{p}{Population proportion.}
 }
 \value{
 An \code{sc_result} (prints itself).
 }
 \description{
+Events and probability rules (book 5.1):
 \itemize{
-\item \code{prob_normal()} P(X < a), P(X > a), P(a < X < b) or the p-quantile of
-N(mean, sd^2), with the standardisation step shown and the area shaded.
+\item \code{prob_events()} P(A or B), P(A and B), P(A | B), complements, independence.
+\item \code{prob_bayes()}  law of total probability and Bayes' theorem for a
+partition E_1, ..., E_n (priors) and P(B | E_i) (likelihoods).
+}
+}
+\details{
+Distributions (book 5.2):
+\itemize{
+\item \code{rv_discrete()} E(X), Var(X), SD(X), cumulative F(x), median / quartiles
+of a discrete random variable given its probability function.
+\item \code{prob_binom()}  Binomial(m, p) (Bernoulli when m = 1): P(X = x),
+P(X <= x), P(X > x), ..., quantiles, E = mp, Var = mp(1 - p); optional
+normal approximation.
+\item \code{prob_unif()}   Uniform(a, b): probabilities, quantiles, E, Var.
+\item \code{prob_normal()} P(X < a), P(X > a), P(a < X < b), quantiles and the
+central interval of N(mean, sd^2), with the standardisation shown.
 \item \code{prob_t()}, \code{prob_chisq()} the same for Student t and chi-square.
-\item \code{rv_discrete()} E(X), Var(X), SD(X) and the CDF of a discrete random variable.
-\item \code{rv_linear()}  T = aX + bY + c: mean, variance (with covariance), SD and
-optional normal probabilities.
+}
+
+Several random variables (book 5.3-5.4):
+\itemize{
+\item \code{rv_lincomb()} a_1 X_1 + ... + a_n X_n + c (any n, with correlations):
+expected value, variance, SD, and normal probabilities / quantiles.
+\code{rv_linear()} is the two-variable form T = aX + bY + c.
+\item \code{rv_joint()}   joint distribution of two discrete r.v.s: marginals,
+conditionals, E, Var, E(XY), covariance, correlation, independence.
 \item \code{rv_iid()}     sum or mean of n iid variables: mean, variance, SE and
-probabilities via the normal / CLT approximation.
+probabilities / quantiles (exact if normal, CLT approximation otherwise).
 \item \code{rv_prop()}    sampling distribution of a sample proportion p-hat.
 }
 }
 \examples{
-prob_normal(mean = 80, sd = 12, above = 100)
-rv_discrete(values = 0:3, probs = c(0.1, 0.3, 0.4, 0.2))
-rv_linear(a = 1, mu_x = 10, sd_x = 1, b = 2, mu_y = 8, sd_y = 1, rho = 0.2)
-rv_iid(mu = 50, sigma = 10, n = 25, stat = "mean", above = 53)
+prob_bayes(prior = c(D = 1/2000, notD = 1999/2000), likelihood = c(0.99, 0.02), event = "positive test")
+prob_binom(size = 15, prob = 0.65, exactly = 5, more_than = 7)
+prob_normal(mean = 71, sd = 18, below = 30, quantile = 0.9, middle = 0.9)
+rv_discrete(values = c(0, 25, 50, 100, 200), probs = c(0.8, 0.008, 0.079, 0.068, 0.045))
+rv_lincomb(a = c(0.6, 0.4), mu = c(0, 0), sigma = c(12, 18), rho = 0.72)
+rv_iid(mu = 22, sigma = 9, n = 80, stat = "mean", above = 25)
 }

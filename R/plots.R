@@ -48,18 +48,14 @@
   })
 }
 
-# Probability as a shaded area under a density curve.
-.plot_area <- function(dist, lo, hi, mean = 0, sd = 1, df = NULL, main = "", xlab = "x") {
+# Probability as a shaded area under a density curve (D from .D_normal() etc.).
+.plot_area <- function(D, lo, hi, main = "", xlab = "x") {
   .with_plot(function() {
-    f <- .density_fun(dist, df, mean, sd)
-    xr <- switch(dist,
-      z = mean + c(-4, 4) * sd,
-      t = mean + c(-1, 1) * max(4, qt(0.995, df)) * sd,
-      chisq = c(0, qchisq(0.999, df)))
-    xr <- range(c(xr, lo[is.finite(lo)], hi[is.finite(hi)]))
-    xs <- seq(xr[1], xr[2], length.out = 400)
-    plot(xs, f(xs), type = "l", lwd = 2, xlab = xlab, ylab = "density", main = main, las = 1)
+    xr <- range(c(D$xr, lo[is.finite(lo)], hi[is.finite(hi)]))
+    xs <- seq(xr[1], xr[2], length.out = 600)
+    plot(xs, D$dens(xs), type = "l", lwd = 2, xlab = xlab, ylab = "density", main = main, las = 1,
+         ylim = c(0, max(D$dens(xs)) * 1.05))
     col <- grDevices::adjustcolor("steelblue", 0.5)
-    for (i in seq_along(lo)) .shade(f, max(lo[i], xr[1]), min(hi[i], xr[2]), col)
+    for (i in seq_along(lo)) .shade(D$dens, max(lo[i], xr[1]), min(hi[i], xr[2]), col)
   })
 }

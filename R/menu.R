@@ -277,49 +277,133 @@
 
 # ---------- topic 2: probability ----------
 
+# What to compute for a continuous distribution (several answers allowed: loop).
 .ask_prob_question <- function(var = "X", quantile = TRUE) {
-  opts <- c(sprintf("P(%s < a)", var), sprintf("P(%s > a)", var), sprintf("P(a < %s < b)", var))
-  if (quantile) opts <- c(opts, sprintf("the value x with P(%s <= x) = p (quantile)", var))
-  i <- .ask_choice("What do you need?", opts)
+  out <- list()
+  repeat {
+    opts <- c(sprintf("P(%s < a)", var), sprintf("P(%s > a)", var), sprintf("P(a < %s < b)", var))
+    if (quantile) opts <- c(opts, sprintf("quantile: the value x with P(%s <= x) = alpha", var),
+                            "central interval containing a given % of the distribution (e.g. 90%)")
+    if (length(out)) opts <- c(opts, "nothing else")
+    i <- .ask_choice(if (length(out)) "Anything else?" else "What do you need?", opts)
+    if (i == length(opts) && length(out)) break
+    add <- switch(i,
+      list(below = .ask_num("a")),
+      list(above = .ask_num("a")),
+      list(between = c(.ask_num("a (lower)"), .ask_num("b (upper)"))),
+      list(quantile = .ask_prob("alpha (e.g. 0.95 for the 95th percentile)", 0.95)),
+      list(middle = .ask_prob("Central probability (e.g. 0.90)", 0.9)))
+    for (nm in names(add)) out[[nm]] <- c(out[[nm]], add[[nm]])
+    if (!.ask_yes("Another probability / quantile for the same distribution?", FALSE)) break
+  }
+  if (!is.null(out$between) && length(out$between) > 2) out$between <- out$between[1:2]
+  if (!is.null(out$middle)) out$middle <- out$middle[1]
+  out
+}
+
+.m_prob_events <- function() {
+  a <- list(pA = .ask_prob_any("P(A)"), pB = .ask_prob_any("P(B)"))
+  i <- .ask_choice("What do you know about A and B together?", c(
+    "P(A and B)", "P(A | B)", "P(B | A)", "P(A or B)", "A and B are independent"))
   switch(i,
-    list(below = .ask_num("a")),
-    list(above = .ask_num("a")),
-    list(between = c(.ask_num("a (lower)"), .ask_num("b (upper)"))),
-    list(quantile = .ask_prob("p (e.g. 0.95)", 0.95)))
+    a$pAB <- .ask_prob_any("P(A and B)"),
+    a$pA_given_B <- .ask_prob_any("P(A | B)"),
+    a$pB_given_A <- .ask_prob_any("P(B | A)"),
+    a$pAorB <- .ask_prob_any("P(A or B)"),
+    a$independent <- TRUE)
+  .mk("prob_events", a)
 }
-.m_prob_normal <- function() {
-  a <- list(mean = .ask_num("Mean", 0), sd = .ask_num("Standard deviation", 1))
-  .mk("prob_normal", c(a, .ask_prob_question()))
+
+# A probability that may be 0 or 1 (or typed as %, or as a fraction like 18/37).
+.ask_prob_any <- function(prompt) {
+  repeat {
+    v <- .ask_num(prompt)
+    if (v > 1 && v <= 100) v <- v / 100
+    if (v >= 0 && v <= 1) return(v)
+    cat("  A probability must be between 0 and 1 (fractions such as 18/37 are fine).\n")
+  }
 }
-.m_prob_t <- function() .mk("prob_t", c(list(df = .ask_num("Degrees of freedom")), .ask_prob_question("T")))
-.m_prob_chisq <- function() .mk("prob_chisq", c(list(df = .ask_num("Degrees of freedom")), .ask_prob_question("X2")))
+
+.m_prob_bayes <- function() {
+  k <- .ask_num("How many events in the partition E_1, ..., E_n (e.g. 2 for D / not D)?", 2)
+  nm <- .split_values(.mq(sprintf("Their names (%d, separated by spaces; Enter = E1 E2 ...)", k), ""))
+  if (length(nm) != k) nm <- paste0("E", seq_len(k))
+  pr <- .ask_nums(sprintf("Prior probabilities P(E_i) for %s (must sum to 1)", paste(nm, collapse = ", ")), k)
+  ev <- .mq("Name of the observed event B (e.g. positive)", "B")
+  lk <- .ask_nums(sprintf("P(%s | E_i) for %s", ev, paste(nm, collapse = ", ")), k)
+  names(pr) <- nm
+  .mk("prob_bayes", list(prior = pr, likelihood = lk, event = ev))
+}
+
 .m_rv_discrete <- function() {
   v <- .ask_nums("Values x, separated by spaces")
   p <- .ask_nums("Probabilities P(X = x) in the same order (or percentages)", length(v))
   .mk("rv_discrete", list(values = v, probs = p))
 }
-.m_rv_linear <- function() {
-  cat("T = a X + b Y + c\n")
-  a <- list(a = .ask_num("a (coefficient of X)", 1), mu_x = .ask_num("E(X)"), sd_x = .ask_num("SD(X)  (type sqrt(v) if you have the variance)"))
-  b <- .ask_num("b (coefficient of Y; 0 if there is no Y)", 0)
-  if (b != 0) {
-    a$b <- b; a$mu_y <- .ask_num("E(Y)"); a$sd_y <- .ask_num("SD(Y)")
-    r <- .ask_num("Correlation rho (Enter if you have the covariance instead)", allow_empty = TRUE)
-    if (is.null(r)) a$cov <- .ask_num("Cov(X, Y)") else a$rho <- r
+
+.m_prob_binom <- function() {
+  a <- list(size = .ask_num("Number of independent trials m (1 = Bernoulli)"), prob = .ask_prob_any("Success probability p"))
+  repeat {
+    i <- .ask_choice("What do you need?", c("P(X = x)", "P(X <= x)  (at most)", "P(X >= x)  (at least)", "P(X < x)",
+                                           "P(X > x)  (more than)", "P(a <= X <= b)", "quantile / median (qbinom)", "only E(X), Var(X)"))
+    key <- c("exactly", "at_most", "at_least", "less_than", "more_than", "between", "quantile", "")[i]
+    if (key == "") break
+    val <- switch(key, between = c(.ask_num("a"), .ask_num("b")), quantile = .ask_prob("alpha (0.5 = median)", 0.5), .ask_num("x"))
+    a[[key]] <- c(a[[key]], val)
+    if (!.ask_yes("Another probability for the same distribution?", FALSE)) break
   }
-  cc <- .ask_num("c (constant)", 0); if (cc != 0) a$c <- cc
-  if (.ask_yes("Also a probability for T (normal)?", FALSE)) a <- c(a, .ask_prob_question("T", quantile = FALSE))
-  .mk("rv_linear", a)
+  if (a$size > 1 && .ask_yes("Also show the normal approximation N(mp, mp(1-p))?", FALSE)) a$normal <- TRUE
+  .mk("prob_binom", a)
 }
+
+.m_prob_unif <- function() .mk("prob_unif", c(list(min = .ask_num("Minimum a"), max = .ask_num("Maximum b")), .ask_prob_question()))
+
+.m_prob_normal <- function() {
+  a <- list(mean = .ask_num("Mean mu", 0))
+  if (.ask_choice("Spread given as:", c("standard deviation sigma", "variance sigma^2")) == 1) a$sd <- .ask_num("Standard deviation", 1)
+  else a$var <- .ask_num("Variance")
+  .mk("prob_normal", c(a, .ask_prob_question()))
+}
+.m_prob_t <- function() .mk("prob_t", c(list(df = .ask_num("Degrees of freedom")), .ask_prob_question("T")))
+.m_prob_chisq <- function() .mk("prob_chisq", c(list(df = .ask_num("Degrees of freedom")), .ask_prob_question("X2")))
+
+.m_rv_lincomb <- function() {
+  k <- .ask_num("How many random variables? (1 for a linear transformation a + bX)", 2)
+  if (k < 1 || k != round(k)) stop("The number of variables must be a whole number >= 1.", call. = FALSE)
+  cat("T = a_1 X_1 + ... + a_k X_k + c\n")
+  a <- .ask_nums(sprintf("Coefficients a_1 ... a_%d (e.g. 0.6 0.4; 1 1 for a sum)", k), k)
+  mu <- .ask_nums(sprintf("Expected values E(X_1) ... E(X_%d)", k), k)
+  args <- list(a = a, mu = mu)
+  if (.ask_choice("Spread given as:", c("standard deviations", "variances")) == 1) args$sigma <- .ask_nums("SDs", k)
+  else args$var <- .ask_nums("Variances", k)
+  if (k > 1) {
+    i <- .ask_choice("How are the variables related?", c("independent (or uncorrelated)", "the same correlation for every pair", "the same covariance for every pair"))
+    if (i == 2) args$rho <- .ask_num("Correlation rho") else if (i == 3) args$cov <- .ask_num("Covariance")
+  }
+  cc <- .ask_num("Constant c (e.g. -900 fixed costs, 4 fixed minutes; 0 if none)", 0)
+  if (cc != 0) args$c <- cc
+  if (.ask_yes("Also probabilities / quantiles of T (assuming normality)?", FALSE)) args <- c(args, .ask_prob_question("T"))
+  .mk("rv_lincomb", args)
+}
+
+.m_rv_joint <- function() {
+  i <- .ask_choice("Where is the joint probability table?", c("entered / loaded (matrix or sc_table count table)",
+                                                               "enter it now with the table wizard (sc_table, count table)"))
+  if (i == 2) sc_table()
+  d <- .ask_data("the joint probability table (values of X as row labels, of Y as column labels)", "table")
+  .mk("rv_joint", list(p = .code(d$expr)))
+}
+
 .m_rv_iid <- function() {
   st <- c("mean", "sum")[.ask_choice("Distribution of:", c("the sample MEAN Xbar", "the SUM / total of the n variables"))]
-  a <- list(mu = .ask_num("Mean of each variable mu"), sigma = .ask_num("SD of each variable sigma"), n = .ask_num("n"), stat = st)
-  if (.ask_yes("Also a probability?", TRUE)) a <- c(a, .ask_prob_question(if (st == "mean") "Xbar" else "S", quantile = FALSE))
+  a <- list(mu = .ask_num("Mean of each variable mu"), sigma = .ask_num("SD of each variable sigma (Bernoulli: sqrt(p*(1-p)))"),
+            n = .ask_num("n"), stat = st)
+  if (.ask_yes("Also probabilities / quantiles?", TRUE)) a <- c(a, .ask_prob_question(if (st == "mean") "Xbar" else "S"))
   .mk("rv_iid", a)
 }
 .m_rv_prop <- function() {
   a <- list(p = .ask_prob("Population proportion p", 0.5), n = .ask_num("Sample size n"))
-  if (.ask_yes("Also a probability?", TRUE)) a <- c(a, .ask_prob_question("p-hat", quantile = FALSE))
+  if (.ask_yes("Also probabilities / quantiles?", TRUE)) a <- c(a, .ask_prob_question("p-hat"))
   .mk("rv_prop", a)
 }
 
@@ -589,11 +673,16 @@
     list("Two variables with few values: joint / conditional distributions, chi-square, Cramer's V", .m_desc_crosstab),
     list("Two numerical variables: scatterplot, covariance, correlation, regression line", .m_desc_cor))),
   list(title = "Probability & random variables", items = list(
-    list("Normal probability or quantile", .m_prob_normal),
+    list("Events: union, intersection, conditional probability, independence", .m_prob_events),
+    list("Law of total probability and Bayes' theorem", .m_prob_bayes),
+    list("Discrete random variable: E(X), Var(X), SD, F(x), median", .m_rv_discrete),
+    list("Binomial / Bernoulli: P(X = x), P(X <= x), P(X > x), quantiles", .m_prob_binom),
+    list("Uniform distribution", .m_prob_unif),
+    list("Normal: probabilities, quantiles, central interval", .m_prob_normal),
     list("Student t probability or quantile", .m_prob_t),
     list("Chi-square probability or quantile", .m_prob_chisq),
-    list("Discrete random variable: E(X), Var(X), SD(X)", .m_rv_discrete),
-    list("Linear combination aX + bY + c (with covariance / correlation)", .m_rv_linear),
+    list("Linear transformation / combination of r.v.s (a + bX, aX + bY + c, portfolios, sums)", .m_rv_lincomb),
+    list("Joint distribution of two discrete r.v.s: marginals, conditionals, covariance, independence", .m_rv_joint),
     list("Sum or mean of n iid variables (CLT)", .m_rv_iid),
     list("Sampling distribution of a sample proportion", .m_rv_prop))),
   list(title = "Confidence intervals", items = list(
@@ -666,8 +755,8 @@
   repeat {
     if (is.null(i)) {
       cat("\n", toupper(tp$title), "\n", sep = "")
-      for (k in seq_along(tp$items)) cat(sprintf(" %d  %s\n", k, tp$items[[k]][[1]]))
-      cat(" b  back to main menu\n")
+      for (k in seq_along(tp$items)) cat(sprintf(" %2d  %s\n", k, tp$items[[k]][[1]]))
+      cat("  b  back to main menu\n")
       repeat {
         a <- tolower(trimws(.read_line("Choose: ")))
         if (a %in% c("b", "m", "0")) return("main")

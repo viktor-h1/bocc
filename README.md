@@ -1,4 +1,4 @@
-# statcram 0.8.3
+# statcram 0.8.4
 
 An offline statistics exam toolkit for R / RStudio. One numbered menu, plus plain functions
 with consistent names. Every procedure works with **raw data** (including data frames and
@@ -12,7 +12,7 @@ Pure R, no compilation, no internet needed after installing.
 
 ```r
 # from the built file
-install.packages("statcram_0.8.3.tar.gz", repos = NULL, type = "source")
+install.packages("statcram_0.8.4.tar.gz", repos = NULL, type = "source")
 # or from GitHub
 remotes::install_github("viktor-h1/bocc", ref = "claude/quirky-gates-9i7hvr")
 
@@ -46,7 +46,7 @@ table from paper first.
 | # | Topic | Functions |
 |---|---|---|
 | 1 | Describe data | `desc_freq` `desc_classes` `desc_summary` `desc_compare` `desc_cv` `desc_prop` `desc_crosstab` `desc_cor` |
-| 2 | Probability & random variables | `prob_normal` `prob_t` `prob_chisq` `rv_discrete` `rv_linear` `rv_iid` `rv_prop` |
+| 2 | Probability & random variables | `prob_events` `prob_bayes` `rv_discrete` `prob_binom` `prob_unif` `prob_normal` `prob_t` `prob_chisq` `rv_lincomb` `rv_joint` `rv_iid` `rv_prop` |
 | 3 | Confidence intervals | `ci_mean` `ci_prop` `ci_paired` `ci_2means` `ci_2props` |
 | 4 | Hypothesis tests | `test_mean` `test_prop` `test_paired` `test_2means` `test_2props` |
 | 5 | Power / Type II error / sample size | `power_mean` `power_prop` `n_mean` `n_prop` |
@@ -97,6 +97,13 @@ conditional modes / quartiles, expected counts, chi-square and Cramer's V, stack
 bars), `desc_compare()` (conditional summaries and side-by-side boxplots, optional second grouping
 variable) and `desc_cor()` (scatterplot, covariance, correlation, regression line b0 + b1 x;
 matrices; covariance from a joint frequency table).
+
+Probability follows chapter 5: `prob_events()` (union, conditional, independence),
+`prob_bayes()` (total probability and Bayes), `rv_discrete()`, `prob_binom()` (with the R call:
+`P(X > 7) = 1 - pbinom(7, 15, 0.65)`), `prob_unif()`, `prob_normal()` (probabilities, quantiles
+q_alpha = x_(1-alpha), central intervals; `var =` accepted), `rv_lincomb()` (any number of variables
+with correlations), `rv_joint()` (marginals, conditionals, covariance, independence) and `rv_iid()`
+(sums and means, CLT, quantiles).
 
 Classes are `[a, b)` with the last one closed, densities are c_k = p_k / w_k, histograms use
 densities, and proportions inside a class are approximated assuming values are spread uniformly
