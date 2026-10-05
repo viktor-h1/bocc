@@ -172,6 +172,7 @@ test_mean <- function(x = NULL, mu0, alt = "two.sided", alpha = 0.05, method = c
     sprintf("Critical value: %s  ->  %s", paste(.f(crit), collapse = " and "), .reject_region(alt, crit, sname)),
     sprintf("  on the xbar scale: %s", .reject_region(alt, xcut, "xbar")),
     sprintf("p-value = %s = %s", .p_text(alt, .dist_label(m$dist, m$df), stat), .fp(p)),
+    .r_pval_line(stat, alt, m$dist, m$df),
     "",
     .decision_lines(p, alpha),
     .p_reading(p))
@@ -180,7 +181,8 @@ test_mean <- function(x = NULL, mu0, alt = "two.sided", alpha = 0.05, method = c
     xlab, .hyp_text("mu", .f(mu0), alt), m$reason, .f(m$xbar), .f(m$se), sname, .f(stat),
     if (!is.null(m$df)) sprintf(" with %s degrees of freedom", .f(m$df)) else "",
     .decision_words(p, alpha), xlab, .alt_words(alt), .f(mu0)),
-    .zt_disagree(p_z, p_t, alpha))
+    .zt_disagree(p_z, p_t, alpha),
+    .p_meaning(p, sname, stat, alt, sprintf("mu = %s", .f(mu0))))
   ub <- if (!is.null(x)) .ub_call("TEST.mean", x = sx, sigma = sigma, mu0 = mu0, alternative = .ub_alt(alt)) else .ub_raw_note
   .plot_test(stat, alt, alpha, m$dist, m$df, main = "One-mean test")
   .result("One-mean test", lines, wording, m$note, match.call(),
@@ -241,8 +243,10 @@ NULL
 }
 
 .ci_wording <- function(conf, what, ci) {
-  sprintf("Based on the observed sample, the %s is estimated to lie between %s and %s with a confidence level of %s%%. That is, %s%% of intervals built this way would contain the true parameter.",
-          what, .f(ci[1]), .f(ci[2]), .f(100 * conf, 2), .f(100 * conf, 2))
+  c(sprintf("With a level of confidence of %s%%, we can conclude that the %s lies between %s and %s.",
+            .f(100 * conf, 2), what, .f(ci[1]), .f(ci[2])),
+    sprintf("The confidence level refers to the procedure: over repeated sampling, about %s%% of the intervals built this way contain the true parameter. The parameter is fixed (not random), so this particular interval either contains it or not: it is NOT contained in [%s, %s] \"with probability %s\". A two-sided test at alpha = %s rejects H0: parameter = v exactly for the values v outside the interval.",
+            .f(100 * conf, 2), .f(ci[1]), .f(ci[2]), .f(conf), .f(1 - conf)))
 }
 
 .crit_ci <- function(dist, conf, df) {
@@ -313,7 +317,8 @@ est_mean <- function(x = NULL, xbar = NULL, s = NULL, n = NULL, sigma = NULL, su
   wording <- c(
     sprintf("The estimate of the population mean of %s is the sample mean, %s. Its %sstandard error, %s, is the expected deviation of a GENERIC estimate (over all possible samples of size %s) from mu: it does not tell how far this particular xbar is from mu, which remains unknown.",
             xlab, .f(m$xbar), if (known) "" else "estimated ", .f(m$se), .f(m$n)),
-    "A smaller standard error means estimates more concentrated around mu: larger samples give more precise estimates.")
+    "A smaller standard error means estimates more concentrated around mu: larger samples give more precise estimates. Comparing two standard errors says which ESTIMATOR is more reliable (its estimates more tightly clustered around the parameter), not how close each specific realised estimate is to its parameter.",
+    "Unbiasedness: an estimator T of a parameter theta is unbiased if E(T) = theta for every possible value of theta. The sample mean Xbar is an unbiased estimator of mu, E(Xbar) = mu.")
   ub <- if (!is.null(x)) paste(.ub_call("CI.mean", x = sx, sigma = sigma), " # also prints xbar and its SE") else .ub_raw_note
   .result("Point estimate of a mean and its standard error", lines, wording, m$note, match.call(),
           estimate = m$xbar, se = m$se, n = m$n, n_needed = n_need, ubstats = ub)
@@ -411,6 +416,7 @@ test_paired <- function(x = NULL, y = NULL, d0 = 0, alt = "two.sided", alpha = 0
     sprintf("%s = (Dbar - d0) / SE = (%s - %s) / %s = %s", sname, .f(P$dbar), .f(d0), .f(P$se), .f(stat)),
     sprintf("Critical value: %s  ->  %s", paste(.f(crit), collapse = " and "), .reject_region(alt, crit, sname)),
     sprintf("p-value = %s = %s", .p_text(alt, .dist_label(dist, df), stat), .fp(p)),
+    .r_pval_line(stat, alt, dist, df),
     "",
     .decision_lines(p, alpha),
     .p_reading(p))
@@ -419,7 +425,8 @@ test_paired <- function(x = NULL, y = NULL, d0 = 0, alt = "two.sided", alpha = 0
     P$def, .hyp_text("mu_D", .f(d0), alt), .f(P$dbar), .f(P$se), sname, .f(stat),
     if (!is.null(df)) sprintf(" with %s degrees of freedom", .f(df)) else "",
     .decision_words(p, alpha), .alt_words(alt), .f(d0)),
-    .zt_disagree(p_z, p_t, alpha))
+    .zt_disagree(p_z, p_t, alpha),
+    .p_meaning(p, sname, stat, alt, sprintf("mu_D = %s", .f(d0))))
   mdiff <- if (d0 != 0) d0
   ub <- if (!is.null(x) && !is.null(y))
           .ub_call("TEST.diffmean", x = sx, y = sy, type = "paired", sigma.d = sigma_d, mdiff0 = mdiff, alternative = .ub_alt(alt))
@@ -484,19 +491,30 @@ ci_paired <- function(x = NULL, y = NULL, conf = 0.95, method = c("t", "z"),
 
 .two_means <- function(x, y, group, levels, xbar1, s1, n1, xbar2, s2, n2, sigma1, sigma2, case, xlab, ylab,
                        allow_all = FALSE) {
-  note <- NULL
+  note <- NULL; mixed <- NULL
   if (!is.null(x)) {
     if (!is.null(group)) {
       sp <- .split2(x, group, levels)
       a <- .num(sp$x1, sp$levels[1]); b <- .num(sp$x2, sp$levels[2])
       labs <- sp$levels; vlab <- xlab
+    } else if (is.null(y) && !is.null(xbar2)) {
+      # group 1 from the data, group 2 from summary numbers (e.g. last year's campaign)
+      .need(n2, msg = "With summary numbers for group 2 give xbar2 = , n2 = and s2 = (or sigma2 =).")
+      a <- .num(x, xlab); labs <- c(xlab, "group 2 (summary numbers)"); vlab <- "the variable"
+      note <- c(.dropped_note(a), sprintf("Group 1 (%s) computed from the data: n = %d, mean = %s, s = %s; group 2 from the summary numbers.",
+                                          xlab, sum(!is.na(a)), .f(mean(a, na.rm = TRUE)), .f(sd(a, na.rm = TRUE))))
+      a <- a[!is.na(a)]
+      n1 <- length(a); xbar1 <- mean(a); s1 <- sd(a)
+      raw <- NULL; mixed <- TRUE
     } else {
-      if (is.null(y)) stop("Give the second sample y = ..., or the grouping variable group = ...", call. = FALSE)
+      if (is.null(y)) stop("Give the second sample y = ..., the grouping variable group = ..., or group 2's summary numbers (xbar2, s2, n2).", call. = FALSE)
       a <- .num(x, xlab); b <- .num(y, ylab); labs <- c(xlab, ylab); vlab <- "the variable"
     }
-    note <- .dropped_note(a, b)
-    n1 <- length(a); n2 <- length(b); xbar1 <- mean(a); xbar2 <- mean(b); s1 <- sd(a); s2 <- sd(b)
-    raw <- list(a = a[!is.na(a)], b = b[!is.na(b)])
+    if (is.null(mixed)) {
+      note <- .dropped_note(a, b)
+      n1 <- length(a); n2 <- length(b); xbar1 <- mean(a); xbar2 <- mean(b); s1 <- sd(a); s2 <- sd(b)
+      raw <- list(a = a[!is.na(a)], b = b[!is.na(b)])
+    }
   } else {
     raw <- NULL
     .need(xbar1, n1, xbar2, n2, msg = "Give data (x, y or x + group) or xbar1, n1, xbar2, n2 with s1, s2 (or sigma1, sigma2).")
@@ -542,7 +560,7 @@ ci_paired <- function(x = NULL, y = NULL, conf = 0.95, method = c("t", "z"),
   tab <- data.frame(group = labs, n = c(n1, n2), mean = c(xbar1, xbar2),
                     sd = c(s1 %||% NA, s2 %||% NA))
   list(n1 = n1, n2 = n2, xbar1 = xbar1, xbar2 = xbar2, s1 = s1, s2 = s2, diff = xbar1 - xbar2, se = se, dist = dist, df = df,
-       case = case, reason = reason, steps = steps, labs = labs, vlab = vlab, note = note, raw = raw,
+       case = case, reason = reason, steps = steps, labs = labs, vlab = vlab, note = note, raw = raw, mixed = isTRUE(mixed),
        table = .table_lines(.round_df(tab)))
 }
 
@@ -570,6 +588,7 @@ test_2means <- function(x = NULL, y = NULL, case, d0 = 0, alt = "two.sided", alp
       sprintf("%s = (xbar - ybar - d0) / SE = (%s - %s) / %s = %s", sname, .f(M$diff), .f(d0), .f(M$se), .f(stat)),
       sprintf("Critical value: %s  ->  %s", paste(.f(crit), collapse = " and "), .reject_region(alt, crit, sname)),
       sprintf("p-value = %s = %s", .p_text(alt, .dist_label(M$dist, M$df), stat), .fp(p)),
+      .r_pval_line(stat, alt, M$dist, M$df),
       "",
       .decision_lines(p, alpha),
       .p_reading(p))
@@ -579,6 +598,7 @@ test_2means <- function(x = NULL, y = NULL, case, d0 = 0, alt = "two.sided", alp
       if (!is.null(M$df)) sprintf(" with %s degrees of freedom", .f(M$df, 2)) else "",
       .decision_words(p, alpha), M$vlab, M$labs[1],
       if (d0 == 0) .alt_words(alt) else sprintf("%s (by %s)", .alt_words(alt), .f(d0)), M$labs[2])
+    wording <- c(wording, .p_meaning(p, sname, stat, alt, sprintf("mu_x - mu_y = %s", .f(d0))))
   }
   if (M$case == "known") {
     tab <- data.frame(row.names = "Normal", n_x = M$n1, n_y = M$n2, xbar = M$xbar1, ybar = M$xbar2, `xbar-ybar` = M$diff,
@@ -607,7 +627,7 @@ test_2means <- function(x = NULL, y = NULL, case, d0 = 0, alt = "two.sided", alp
   if (!is.null(L)) { lines <- c(lines, "", L$lines); wording <- c(wording, L$wording) }
   mdiff <- if (d0 != 0) d0
   vt <- if (!is.null(L)) TRUE
-  ub <- if (is.null(x)) .ub_raw_note
+  ub <- if (is.null(x) || M$mixed) .ub_raw_note
         else if (!is.null(group)) {
           if (.ub_by_ok(group, levels) && is.null(sigma1))
             .ub_call("TEST.diffmean", x = sx, by = sg, mdiff0 = mdiff, alternative = .ub_alt(alt), var.test = vt)
@@ -735,6 +755,7 @@ test_levene <- function(x = NULL, y = NULL, group = NULL, levels = NULL, alpha =
     sprintf("        (a one-way ANOVA F on the deviations, df = 1 and n_x + n_y - 2 = %s)", .f(L$df2)),
     sprintf("Critical value F(%s; 1, %s) = %s  ->  reject H0 if F > %s", .f(1 - alpha), .f(L$df2), .f(crit), .f(crit)),
     sprintf("p-value = P(F(1, %s) > %s) = %s", .f(L$df2), .f(L$F), .fp(L$p_value)),
+    .r_pval_line(L$F, "greater", "F", 1, L$df2),
     "",
     .decision_lines(L$p_value, alpha),
     if (L$p_value < alpha) "-> treat the variances as different: ci_2means / test_2means with case = \"welch\" (or the 'different' rows)."
@@ -809,7 +830,7 @@ ci_2means <- function(x = NULL, y = NULL, case, conf = 0.95, group = NULL, level
   L <- .levene_block(M, var_test)
   if (!is.null(L)) { lines <- c(lines, "", L$lines); wording <- c(wording, L$wording) }
   vt <- if (!is.null(L)) TRUE
-  ub <- if (is.null(x)) .ub_raw_note
+  ub <- if (is.null(x) || M$mixed) .ub_raw_note
         else if (!is.null(group)) {
           if (.ub_by_ok(group, levels) && is.null(sigma1)) .ub_call("CI.diffmean", x = sx, by = sg, conf.level = conf, var.test = vt)
           else .ub_call("CI.diffmean", x = .ub_subset(sx, sg, M$labs[1]), y = .ub_subset(sx, sg, M$labs[2]),

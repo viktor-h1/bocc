@@ -5,15 +5,18 @@
 \alias{reg_fit}
 \alias{reg_predict}
 \alias{reg_test}
+\alias{reg_effect}
 \alias{reg_check}
 \alias{reg_compare}
 \title{Linear regression}
 \usage{
 reg_fit(formula, data, alpha = 0.05)
 
-reg_predict(model, ..., newdata = NULL, conf = 0.95)
+reg_predict(model, ..., newdata = NULL, conf = 0.95, value = NULL)
 
 reg_test(model, term, value = 0, alt = "two.sided", alpha = 0.05)
+
+reg_effect(model, term, change = 1, conf = 0.95)
 
 reg_check(model)
 
@@ -37,11 +40,14 @@ names need backticks: \code{`monthly spend` ~ age}.}
 
 \item{conf}{Confidence level.}
 
-\item{term}{Name of the coefficient as shown in the coefficient table.}
-
 \item{value}{Null value of the coefficient (default 0).}
 
+\item{term}{Name of the coefficient as shown in the coefficient table.}
+
 \item{alt}{Alternative: \code{"<"}, \code{">"} or \code{"!="}.}
+
+\item{change}{\code{reg_effect()}: number of units of the change in the
+explanatory variable (default 1).}
 
 \item{model1, model2}{Two fitted models (smaller first for nested models).}
 }
@@ -56,6 +62,8 @@ R^2 / adjusted R^2, residual SE, interpretation of every coefficient.
 response and prediction interval for ONE new individual.
 \item \code{reg_test()}    t test of one coefficient against any value
 (H0: beta = value).
+\item \code{reg_effect()}  confidence interval for a coefficient and for the
+effect of a change of \code{change} units (e.g. 10 units: 10 x CI).
 \item \code{reg_check()}   diagnostics: residual plots, normal Q-Q, leverage,
 Cook's distance, largest standardised residuals, correlations among
 predictors and VIFs (multicollinearity).
@@ -67,4 +75,5 @@ for nested models, the partial F test.
 fit <- reg_fit(mpg ~ wt + hp, data = mtcars)
 reg_predict(fit, wt = 3, hp = 120)
 reg_test(fit, "wt", value = -3)
+reg_effect(fit, "hp", change = 10, conf = 0.90)
 }

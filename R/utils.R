@@ -257,3 +257,41 @@
   k <- k[abs(k - round(k)) < 1e-9 & k >= 1 & k <= 100]
   if (length(k)) paste0("p", round(k))
 }
+
+# ---------- "report the R function / analytical expression" (past papers) ----------
+
+# R call giving the p-value of an observed statistic.
+.r_pval <- function(stat, alt, dist = c("z", "t", "chisq", "F"), df = NULL, df2 = NULL) {
+  dist <- match.arg(dist)
+  s <- .f(stat, 4); a <- .f(abs(stat), 4)
+  dft <- if (!is.null(df)) .f(df, 4)
+  switch(dist,
+    z = switch(alt, less = sprintf("pnorm(%s)", s), greater = sprintf("1 - pnorm(%s)", s),
+               two.sided = sprintf("2 * (1 - pnorm(%s))", a)),
+    t = switch(alt, less = sprintf("pt(%s, df = %s)", s, dft), greater = sprintf("1 - pt(%s, df = %s)", s, dft),
+               two.sided = sprintf("2 * (1 - pt(%s, df = %s))", a, dft)),
+    chisq = sprintf("1 - pchisq(%s, df = %s)", s, dft),
+    F = sprintf("1 - pf(%s, df1 = %s, df2 = %s)", s, dft, .f(df2, 4)))
+}
+
+.r_pval_line <- function(...) sprintf("  in R: %s", .r_pval(...))
+
+# Exam-style reading of a p-value, and why a single decision has no probability of being right.
+.p_meaning <- function(p, stat_name, stat, alt, h0_txt) {
+  dir <- switch(alt, less = "at least as small as", greater = "at least as large as",
+                two.sided = "at least as far from 0 (in either direction) as")
+  sprintf("Meaning of the p-value: if H0 were true (%s), a value of the test statistic %s the observed %s = %s would be obtained with probability %s, i.e. in about %s of all possible samples of this size. It is not the probability that H0 is true, and no probability can be attached to the decision taken on this sample (it is either right or wrong): alpha and beta describe the procedure over repeated samples.",
+          h0_txt, dir, stat_name, .f(stat), .fp(p), .pct(p, 1))
+}
+
+# R calls for the probability of rejecting / not rejecting H0 under a true value (power, beta).
+.r_power <- function(cut, true, se_txt, alt) {
+  m <- .f(true, 6)
+  switch(alt,
+    less = c(reject = sprintf("pnorm(%s, mean = %s, sd = %s)", .f(cut, 6), m, se_txt),
+             accept = sprintf("1 - pnorm(%s, mean = %s, sd = %s)", .f(cut, 6), m, se_txt)),
+    greater = c(reject = sprintf("1 - pnorm(%s, mean = %s, sd = %s)", .f(cut, 6), m, se_txt),
+                accept = sprintf("pnorm(%s, mean = %s, sd = %s)", .f(cut, 6), m, se_txt)),
+    two.sided = c(reject = sprintf("pnorm(%s, %s, %s) + 1 - pnorm(%s, %s, %s)", .f(cut[1], 6), m, se_txt, .f(cut[2], 6), m, se_txt),
+                  accept = sprintf("pnorm(%s, %s, %s) - pnorm(%s, %s, %s)", .f(cut[2], 6), m, se_txt, .f(cut[1], 6), m, se_txt)))
+}

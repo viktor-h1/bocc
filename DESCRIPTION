@@ -1,7 +1,7 @@
 Package: statcram
 Type: Package
 Title: Exam-Friendly Statistics Toolkit with a Numbered Menu
-Version: 0.8.7
+Version: 0.8.8
 Authors@R: person("OpenAI","Prototype",email="noreply@example.com",role=c("aut","cre"))
 Description: An offline statistics exam toolkit. A numbered menu (sc()) and
     consistently named functions cover descriptive statistics, probability,

@@ -58,6 +58,7 @@ test_prop <- function(x = NULL, p0, event = NULL, alt = "two.sided", alpha = 0.0
     sprintf("Critical value: %s  ->  %s", paste(.f(crit), collapse = " and "), .reject_region(alt, crit, "Z")),
     sprintf("  on the p-hat scale: %s", .reject_region(alt, p0 + crit * se0, "p-hat")),
     sprintf("p-value = %s = %s", .p_text(alt, "Z", stat), .fp(p)),
+    .r_pval_line(stat, alt, "z"),
     "",
     .decision_lines(p, alpha),
     .p_reading(p))
@@ -65,6 +66,7 @@ test_prop <- function(x = NULL, p0, event = NULL, alt = "two.sided", alpha = 0.0
     "Let p denote the population proportion of %s. We test %s. The sample proportion is p-hat = %s/%s = %s. Under H0 (at the boundary value p0 = %s) the standard error is sqrt[p0(1 - p0)/n] = %s, giving Z = %s. %s to conclude that the population proportion is %s %s.",
     P$ev, .hyp_text("p", .f(p0), alt), .f(P$count), .f(P$n), .f(P$phat), .f(p0), .f(se0), .f(stat),
     .decision_words(p, alpha), .alt_words(alt), .f(p0))
+  wording <- c(wording, .p_meaning(p, "Z", stat, alt, sprintf("p = %s", .f(p0))))
   ub <- if (is.null(x)) .ub_raw_note
         else if (is.null(event)) .ub_call("TEST.prop", x = sx, p0 = p0, alternative = .ub_alt(alt))
         else if (length(event) == 1) .ub_call("TEST.prop", x = sx, success = event, p0 = p0, alternative = .ub_alt(alt))
@@ -173,6 +175,7 @@ test_2props <- function(x = NULL, y = NULL, event = NULL, alt = "two.sided", alp
     sprintf("Z = (p_x-hat - p_y-hat - d0) / %s = (%s - %s) / %s = %s", if (pooled) "se_0" else "se", .f(P$diff), .f(d0), .f(se), .f(stat)),
     sprintf("Critical value: %s  ->  %s", paste(.f(crit), collapse = " and "), .reject_region(alt, crit, "Z")),
     sprintf("p-value = %s = %s", .p_text(alt, "Z", stat), .fp(p)),
+    .r_pval_line(stat, alt, "z"),
     "",
     .decision_lines(p, alpha),
     .p_reading(p))
@@ -183,6 +186,7 @@ test_2props <- function(x = NULL, y = NULL, event = NULL, alt = "two.sided", alp
     else sprintf("Since d0 is not 0 the two proportions differ under H0, so each is estimated separately and the standard error is %s", .f(se)),
     .f(stat), .decision_words(p, alpha), P$labs[1], .alt_words(alt), P$labs[2],
     if (d0 != 0) sprintf(" by %s", .f(d0)) else "")
+  wording <- c(wording, .p_meaning(p, "Z", stat, alt, sprintf("p_x - p_y = %s", .f(d0))))
   succ <- if (!is.null(event) && length(event) == 1) event else NULL
   pd <- if (d0 != 0) d0
   ub <- if (is.null(x)) .ub_raw_note

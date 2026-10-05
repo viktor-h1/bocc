@@ -69,13 +69,16 @@ chisq_gof <- function(x, p = NULL, alpha = 0.05, estimated = 0) {
     sprintf("Chi-square = sum of contributions = %s", .f(chi)),
     sprintf("df = k - 1%s = %s", if (estimated) sprintf(" - %s", estimated) else "", df),
     sprintf("Critical value chi-square(%s; %s) = %s  ->  reject H0 if chi-square > %s", .f(1 - alpha), df, .f(crit), .f(crit)),
-    sprintf("p-value = P(chi-square(%s) > %s) = %s", df, .f(chi), .fp(pv)), "",
+    sprintf("p-value = P(chi-square(%s) > %s) = %s", df, .f(chi), .fp(pv)),
+    .r_pval_line(chi, "greater", "chisq", df), "",
     .decision_lines(pv, alpha))
   notes <- c(how, .expected_note(ex))
   big <- names(obs)[which.max(abs(resid))]
   wording <- c(sprintf(
     "We test whether the population distribution of %s follows the theoretical distribution specified under H0; under H1 at least one category probability differs. The Pearson chi-square statistic is %s with %s degrees of freedom (right-tail test), with p-value %s. %s to conclude that the population distribution differs from the specified one.",
     xlab, .f(chi), df, .fp(pv), .decision_words(pv, alpha)),
+    sprintf("Meaning of the p-value: P(chi-square(%s) > %s) = %s is the probability, if H0 were true (the stated probabilities hold), of a statistic at least as large as the observed %s, i.e. of a sample at least as far from the expected counts as this one.",
+            df, .f(chi), .fp(pv), .f(chi)),
     sprintf("The largest contribution comes from %s (residual %s: %s than expected under H0). The test itself does not say which categories differ; the residuals do. With a very large n even small, practically negligible differences lead to rejection.",
             big, .f(resid[big]), if (resid[big] > 0) "more" else "fewer"))
   rx <- if (raw) call("table", sx) else if (is.data.frame(x)) unname(obs) else sx
@@ -132,7 +135,8 @@ chisq_indep <- function(x, y = NULL, alpha = 0.05) {
     sprintf("Chi-square = sum of contributions = %s", .f(chi)),
     sprintf("df = (rows - 1)(columns - 1) = (%s - 1)(%s - 1) = %s", nrow(obs), ncol(obs), df),
     sprintf("Critical value chi-square(%s; %s) = %s  ->  reject H0 if chi-square > %s", .f(1 - alpha), df, .f(crit), .f(crit)),
-    sprintf("p-value = P(chi-square(%s) > %s) = %s", df, .f(chi), .fp(pv)), "",
+    sprintf("p-value = P(chi-square(%s) > %s) = %s", df, .f(chi), .fp(pv)),
+    .r_pval_line(chi, "greater", "chisq", df), "",
     .decision_lines(pv, alpha),
     .p_reading(pv), "",
     sprintf("Strength (descriptive, ch. 4): Cramer's V = sqrt(chi-square / (n (min(rows, cols) - 1))) = sqrt(%s / (%s x %s)) = %s",
@@ -142,6 +146,8 @@ chisq_indep <- function(x, y = NULL, alpha = 0.05) {
   wording <- c(sprintf(
     "We test H0: %s and %s are independent in the population (p_kj = R_k C_j for every cell) against H1: the two variables are associated. Expected counts under independence are row total x column total / grand total. The Pearson chi-square statistic is %s with %s degrees of freedom and p-value %s. %s to conclude that %s and %s are associated in the population.",
     xlab, ylab, .f(chi), df, .fp(pv), .decision_words(pv, alpha), xlab, ylab),
+    sprintf("Meaning of the p-value: P(chi-square(%s) > %s) = %s is the probability, if H0 were true (the variables are independent), of a statistic at least as large as the observed %s.",
+            df, .f(chi), .fp(pv), .f(chi)),
     sprintf("Rejecting independence does not mean a strong association: the test only says the variables are not independent. Cramer's V = %s measures the strength, and the residuals show which combinations occur more or less often than expected.", .f(V)))
   rb <- do.call(.ub_call, c(list("chisq.test"), rx, if (two) list(correct = FALSE)), quote = TRUE)
   .plot_test(chi, "greater", alpha, "chisq", df, main = "Chi-square independence")

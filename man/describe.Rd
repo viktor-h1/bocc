@@ -26,13 +26,19 @@ desc_compare(
   x,
   group,
   group2 = NULL,
-  probs = c(0.1, 0.9),
-  plot = c("boxplot", "hist")
+  probs = c(0.05, 0.1, 0.9, 0.95),
+  plot = c("boxplot", "hist"),
+  value = NULL
 )
 
 desc_cor(x, y = NULL, line = TRUE, color = NULL, population = FALSE)
 
-desc_summary(x, probs = c(0.1, 0.9, 0.95, 0.99), population = FALSE)
+desc_summary(
+  x,
+  probs = c(0.05, 0.1, 0.9, 0.95, 0.99),
+  population = FALSE,
+  value = NULL
+)
 
 desc_cv(..., mean = NULL, sd = NULL)
 
@@ -88,7 +94,12 @@ spikes for numbers), \code{"bars"}, \code{"pie"}, \code{"spike"}, \code{"cum"}.
 \item{group, group2}{Grouping variable(s) for \code{desc_compare()} (with
 \code{group2} the groups are the combinations of the two).}
 
-\item{probs}{Percentiles to report.}
+\item{probs}{Percentiles to report (pairs such as 0.05 / 0.95 are read
+as "the central 90\% lie between ...").}
+
+\item{value}{\code{desc_summary()}, \code{desc_compare()}: value(s) to check
+against the outlier fences Q1 - 1.5 IQR and Q3 + 1.5 IQR (within each
+group for \code{desc_compare()}), e.g. "is a bid of 35 extremely low?".}
 
 \item{line}{\code{desc_cor()}: add the regression line to the scatterplot.}
 

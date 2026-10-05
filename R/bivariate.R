@@ -118,6 +118,7 @@ desc_crosstab <- function(x, y = NULL, order_x = NULL, order_y = NULL, breaks_x 
   wording <- c(
     sprintf("Two variables are statistically independent when the conditional distributions of %s are the same for every level of %s (and equal to its marginal distribution), i.e. when p_kj = R_k C_j for every pair.", ylab, xlab),
     sprintf("The more the conditional distributions differ, the stronger the association. Here the chi-square statistic is %s and Cramer's V = %s (a relative measure between 0 and 1, not inflated by the sample size or the table dimensions).", .f(chi), .f(V)),
+    sprintf("To compare the levels of %s, use the CONDITIONAL distributions of %s given %s (row percentages), not the joint counts or joint percentages: the groups have different sizes, so joint frequencies mix the size of a group with the behaviour within it.", xlab, ylab, xlab),
     "Comparisons of conditional distributions are only meaningful if the groups are homogeneous with respect to other (confounding) factors: aggregated data can hide or reverse relations within subgroups (Simpson's paradox).")
   if (any(ex < 5)) notes <- c(notes, "Some expected counts are below 5 (relevant for the chi-square TEST in chisq_indep()).")
   ub <- if (!raw) .ub_raw_note else {
@@ -136,7 +137,8 @@ desc_crosstab <- function(x, y = NULL, order_x = NULL, order_y = NULL, breaks_x 
 
 #' @rdname describe
 #' @export
-desc_compare <- function(x, group, group2 = NULL, probs = c(0.10, 0.90), plot = c("boxplot", "hist")) {
+desc_compare <- function(x, group, group2 = NULL, probs = c(0.05, 0.10, 0.90, 0.95), plot = c("boxplot", "hist"),
+                         value = NULL) {
   plot <- match.arg(plot)
   qx <- substitute(x); qg <- substitute(group); qg2 <- substitute(group2)
   xlab <- .label(qx); glab <- .label(qg)
@@ -180,6 +182,22 @@ desc_compare <- function(x, group, group2 = NULL, probs = c(0.10, 0.90), plot = 
   })
   lines <- c(sprintf("Conditional distributions of %s | %s", xlab, glab), "",
              .table_lines(.round_df(tab)))
+  # shape of each conditional distribution, from the boxplot quantities
+  shapes <- vapply(seq_len(nrow(grp)), function(i) {
+    a <- xx[!is.na(gnum) & gnum == grp$group[i] & !is.na(xx)]
+    if (length(a) < 4) return(sprintf("%s: too few values", grp$group[i]))
+    fe <- .fences(grp$Q1[i], grp$Q3[i]); reg <- a[a >= fe[1] & a <= fe[2]]
+    nl <- sum(a < fe[1]); nu <- sum(a > fe[2])
+    sprintf("%s: %s; mean %s vs median %s%s", grp$group[i],
+            sub(" \\(.*", "", .box_shape(min(reg), grp$Q1[i], grp$median[i], grp$Q3[i], max(reg))),
+            .f(grp$mean[i]), .f(grp$median[i]),
+            if (nl + nu) sprintf("; outliers: %d low, %d high", nl, nu) else "; no outliers")
+  }, character(1))
+  # non-overlapping central halves: Q3 of one group below Q1 of another
+  sep <- character()
+  for (i in seq_len(nrow(grp))) for (j in seq_len(nrow(grp))) if (i != j && grp$Q3[i] < grp$Q1[j])
+    sep <- c(sep, sprintf("Q3 of %s (%s) < Q1 of %s (%s): at least 75%% of the values for %s are lower than at least 75%% of those for %s.",
+                          grp$group[i], .f(grp$Q3[i]), grp$group[j], .f(grp$Q1[j]), grp$group[i], grp$group[j]))
   hi <- grp$group[which.max(grp$median)]; lo <- grp$group[which.min(grp$median)]
   wording <- c(
     sprintf("Centre: the median of %s is highest for %s (%s) and lowest for %s (%s); compare also the means (in red on the boxplots), which are pulled toward long tails.",
@@ -190,6 +208,23 @@ desc_compare <- function(x, group, group2 = NULL, probs = c(0.10, 0.90), plot = 
   ub <- c(.ub_call("distr.summary.x", x = qx, stats = c("central", "fivenumbers", "dispersion", .ub_pcts(probs)),
                     by1 = qg, by2 = if (!is.null(group2)) qg2),
           if (is.null(group2)) .ub_call("distr.plot.xy", x = qg, y = qx, plot.type = "boxplot"))
+  lines <- c(lines, "", "Shape of each conditional distribution (boxplot: box halves, whiskers, outliers):", paste0("  ", shapes),
+             if (length(sep)) c("", sep))
+  wording <- c(wording,
+               sprintf("Shape: %s.", paste(shapes, collapse = "; ")),
+               if (length(sep)) paste(sep, collapse = " "),
+               "Mean vs median: when a group has a long tail (skewness, outliers) its mean is pulled toward the tail while the median is not, so report both: similar medians with different means reveal a different tail.",
+               "If the conditional distributions differ (for example the medians shift as the groups change), the numerical variable and the grouping variable are associated.")
+  if (length(value)) {
+    vl <- unlist(lapply(seq_len(nrow(grp)), function(i) {
+      fe <- .fences(grp$Q1[i], grp$Q3[i])
+      vapply(value, function(v) sprintf("  %s = %s within %s: fences [Q1 - 1.5 IQR, Q3 + 1.5 IQR] = [%s - 1.5 x %s, %s + 1.5 x %s] = [%s, %s] -> %s",
+                                        xlab, .f(v), grp$group[i], .f(grp$Q1[i]), .f(grp$Q3[i] - grp$Q1[i]), .f(grp$Q3[i]),
+                                        .f(grp$Q3[i] - grp$Q1[i]), .f(fe[1]), .f(fe[2]),
+                                        if (v < fe[1]) "extreme LOW" else if (v > fe[2]) "extreme HIGH" else "not extreme"), character(1))
+    }))
+    lines <- c(lines, "", "Is the value extreme within each group?", vl)
+  }
   .result("Comparing a numerical variable across groups", lines, wording,
           if (any(tab$n.a > 0)) "n.a = missing values of the numerical variable within each group (excluded).", match.call(),
           table = tab, ubstats = ub)

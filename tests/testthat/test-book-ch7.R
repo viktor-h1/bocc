@@ -247,7 +247,7 @@ test_that("composite hypotheses, p-value reading and z/t disagreement", {
   expect_true(any(grepl("different decisions", r$wording)))               # z rejects at 0.07, t does not
   l <- q(test_prop(count = 58, n = 150, p0 = 0.42, alt = "<"))
   expect_true(any(grepl("H0: p >= 0.42  (or p = 0.42)", l$lines, fixed = TRUE)))
-  expect_true(grepl("H0: p >= 0.42 against H1: p < 0.42", l$wording))
+  expect_true(any(grepl("H0: p >= 0.42 against H1: p < 0.42", l$wording)))
 })
 
 test_that("menu: two-means tests with all four rows, two proportions with d0, Levene, power_2means", {

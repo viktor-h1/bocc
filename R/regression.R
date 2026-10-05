@@ -11,6 +11,8 @@
 #'   response and prediction interval for ONE new individual.
 #' * `reg_test()`    t test of one coefficient against any value
 #'   (H0: beta = value).
+#' * `reg_effect()`  confidence interval for a coefficient and for the
+#'   effect of a change of `change` units (e.g. 10 units: 10 x CI).
 #' * `reg_check()`   diagnostics: residual plots, normal Q-Q, leverage,
 #'   Cook's distance, largest standardised residuals, correlations among
 #'   predictors and VIFs (multicollinearity).
@@ -26,6 +28,10 @@
 #' @param ... For `reg_predict()`: values of the predictors, e.g.
 #'   `age = 40, premium = "Yes"`.
 #' @param newdata Alternative to `...`: a data frame of predictor values.
+#' @param value `reg_predict()`: an observed value to judge (is it unexpected
+#'   for one unit with these characteristics? inside the prediction interval?).
+#' @param change `reg_effect()`: number of units of the change in the
+#'   explanatory variable (default 1).
 #' @param conf Confidence level.
 #' @param term Name of the coefficient as shown in the coefficient table.
 #' @param value Null value of the coefficient (default 0).
@@ -36,6 +42,7 @@
 #' fit <- reg_fit(mpg ~ wt + hp, data = mtcars)
 #' reg_predict(fit, wt = 3, hp = 120)
 #' reg_test(fit, "wt", value = -3)
+#' reg_effect(fit, "hp", change = 10, conf = 0.90)
 #' @name regression
 NULL
 
@@ -43,6 +50,30 @@ NULL
   if (inherits(model, "sc_result") && !is.null(model$model)) model <- model$model
   if (!inherits(model, "lm")) stop("model must be the result of reg_fit() or an lm() model.", call. = FALSE)
   model
+}
+
+# Factor dummies: coefficient name -> c(variable, level, baseline).
+.dummy_info <- function(m) {
+  xl <- m$xlevels; out <- list()
+  for (v in names(xl)) for (lv in xl[[v]][-1]) {
+    for (nm in c(paste0(v, lv), paste0("`", v, "`", lv))) out[[nm]] <- c(v, lv, xl[[v]][1])
+  }
+  out
+}
+
+# Coefficient names as the course writes them: I(EmplStatus = Stud) for dummies.
+.coef_labels <- function(m) {
+  di <- .dummy_info(m); nms <- names(coef(m))
+  vapply(nms, function(nm) if (!is.null(di[[nm]])) sprintf("I(%s = %s)", di[[nm]][1], di[[nm]][2]) else nm, character(1))
+}
+
+# Significance of one coefficient at the usual levels.
+.signif_txt <- function(p) {
+  if (is.na(p)) return("p-value not available")
+  if (p < 0.01) sprintf("p-value %s < 0.01: significant at any usual level", .fp(p))
+  else if (p < 0.05) sprintf("p-value %s: significant at 5%% and 10%%, not at 1%%", .fp(p))
+  else if (p < 0.10) sprintf("p-value %s: significant only at 10%%, not at 5%% or 1%%", .fp(p))
+  else sprintf("p-value %s > 0.10: not significant at the usual levels", .fp(p))
 }
 
 # Plain-language reading of each coefficient.
@@ -64,14 +95,30 @@ NULL
     for (v in names(xl)) {
       for (lv in xl[[v]][-1]) if (identical(nm, paste0(v, lv)) || identical(nm, paste0("`", v, "`", lv))) fac <- c(v, lv, xl[[v]][1])
     }
+    pv <- coef(summary(m))[nm, 4]
     if (!is.null(fac)) {
-      out <- c(out, sprintf("%s %s: units with %s = %s have a fitted %s that is on average %s %s than units with %s = %s (the baseline)%s.",
+      out <- c(out, sprintf("%s %s: units with %s = %s have a %s that is on average %s %s than units with %s = %s (the baseline)%s. %s (H0: beta = 0, i.e. no difference from the baseline %s).",
                             nm, .f(b), fac[1], fac[2], y, .f(abs(b)), if (b < 0) "lower" else "higher",
-                            fac[1], fac[3], hold))
+                            fac[1], fac[3], hold, .signif_txt(pv), fac[3]))
     } else {
-      out <- c(out, sprintf("%s %s: when %s increases by 1 unit, the fitted %s changes on average by %s%s.",
-                            nm, .f(b), nm, y, .f(b), hold))
+      out <- c(out, sprintf("%s %s: when %s increases by 1 unit, %s changes on average by %s (an average %s of %s)%s. %s.",
+                            nm, .f(b), nm, y, .f(b), if (b < 0) "decrease" else "increase", .f(abs(b)), hold, .signif_txt(pv)))
     }
+  }
+  out
+}
+
+# Differences between non-baseline levels of the same factor (b_A - b_B).
+.dummy_pairs <- function(m) {
+  di <- .dummy_info(m); b <- coef(m); out <- character()
+  vars <- unique(vapply(di, `[`, "", 1))
+  for (v in vars) {
+    nms <- intersect(names(b), names(di)[vapply(di, function(z) z[1] == v, logical(1))])
+    if (length(nms) < 2) next
+    pr <- utils::combn(nms, 2)
+    d <- apply(pr, 2, function(z) sprintf("%s vs %s: %s - (%s) = %s", di[[z[1]]][2], di[[z[2]]][2], .f(b[[z[1]]]), .f(b[[z[2]]]), .f(b[[z[1]]] - b[[z[2]]])))
+    out <- c(out, sprintf("%s: each dummy compares a level with the baseline %s, and its p-value tests only that difference. The estimated average difference between two non-baseline levels, holding the other variables constant, is the difference of their coefficients (%s); its significance cannot be read from this output (refit with a different baseline, e.g. relevel(factor(%s), ref = \"%s\")).",
+                          v, di[[nms[1]]][3], paste(d, collapse = "; "), v, di[[nms[1]]][2]))
   }
   out
 }
@@ -86,10 +133,10 @@ reg_fit <- function(formula, data, alpha = 0.05) {
   fs <- s$fstatistic
   fp <- if (is.null(fs)) NA else pf(fs[1], fs[2], fs[3], lower.tail = FALSE)
   y <- deparse(formula(m)[[2]])
-  b <- coef(m)
+  b <- coef(m); bl <- .coef_labels(m)
   eq <- paste0(y, "-hat = ", .f(b[1]),
                paste0(vapply(seq_along(b)[-1], function(i)
-                 sprintf(" %s %s %s", if (b[i] < 0) "-" else "+", .f(abs(b[i])), names(b)[i]), character(1)), collapse = ""))
+                 sprintf(" %s %s %s", if (b[i] < 0) "-" else "+", .f(abs(b[i])), bl[i]), character(1)), collapse = ""))
   ctab <- data.frame(term = rownames(co), estimate = co[, 1], std_error = co[, 2], t = co[, 3], p_value = co[, 4],
                      signif = ifelse(co[, 4] < alpha, "yes", "no"))
   rdf <- m$df.residual
@@ -98,15 +145,20 @@ reg_fit <- function(formula, data, alpha = 0.05) {
     sprintf("Model: %s   (n = %s, residual df = %s)", paste(deparse(formula(m)), collapse = " "), nobs(m), rdf), "",
     "Fitted equation:", paste0("  ", eq), "",
     sprintf("Coefficients (each t test: H0: beta_j = 0 vs H1: beta_j != 0; signif at alpha = %s; |t| critical = %s):", .f(alpha), .f(tcrit)),
-    .table_lines(.round_df(ctab)), "",
+    .table_lines(transform(.round_df(ctab), p_value = .p_cells(ctab$p_value))),
+    sprintf("  t = estimate / std_error, e.g. %s: %s / %s = %s; p-value = 2 P(T(%s) > |t|)",
+            rownames(co)[min(2, nrow(co))], .f(co[min(2, nrow(co)), 1]), .f(co[min(2, nrow(co)), 2]), .f(co[min(2, nrow(co)), 3]), rdf), "",
     sprintf("R-squared          = %s  (%s of the sample variability of %s is explained by the model)", .f(s$r.squared), .pct(s$r.squared), y),
     sprintf("Adjusted R-squared = %s  (use this to compare models with different numbers of predictors)", .f(s$adj.r.squared)),
     sprintf("Residual SE        = %s  (typical size of a residual, in units of %s)", .f(s$sigma), y))
   if (!is.null(fs)) {
     fcrit <- qf(1 - alpha, fs[2], fs[3])
     lines <- c(lines, "",
-               "Global F test: H0: all slope coefficients = 0   vs   H1: at least one slope != 0",
-               sprintf("F = %s on %s and %s df;  critical F = %s;  p-value = %s", .f(fs[1]), fs[2], fs[3], .f(fcrit), .fp(fp)),
+               "Global F test: H0: beta_1 = ... = beta_k = 0 (all slopes)   vs   H1: at least one beta_j != 0",
+               sprintf("F = (SSR / k) / (SSE / (n - k - 1)) = (%s / %s) / (%s / %s) = %s",
+                       .f(sum((fitted(m) - mean(model.response(model.frame(m))))^2)), fs[2], .f(sum(residuals(m)^2)), fs[3], .f(fs[1])),
+               sprintf("F = %s on %s and %s df;  critical F = %s;  p-value = P(F(%s, %s) > %s) = %s", .f(fs[1]), fs[2], fs[3], .f(fcrit), fs[2], fs[3], .f(fs[1]), .fp(fp)),
+               .r_pval_line(fs[1], "greater", "F", fs[2], fs[3]),
                .decision_lines(fp, alpha))
   }
   wording <- c(.coef_meaning(m),
@@ -114,7 +166,9 @@ reg_fit <- function(formula, data, alpha = 0.05) {
                                          .f(fs[1]), .fp(fp), if (fp < alpha) "globally significant" else "not globally significant", .f(alpha),
                                          if (fp < alpha) "at least one explanatory variable helps explain the response (this does not mean every coefficient is significant)."
                                          else "there is insufficient evidence that any explanatory variable helps explain the response."),
-               sprintf("R-squared = %s: %s of the sample variability of %s is explained by the fitted model.", .f(s$r.squared), .pct(s$r.squared), y))
+               sprintf("R-squared = %s: %s of the sample variability of %s is explained by the linear model with %s as explanatory variables.",
+                       .f(s$r.squared), .pct(s$r.squared), y, paste(attr(terms(m), "term.labels"), collapse = ", ")),
+               .dummy_pairs(m))
   mf <- model.frame(m)
   .with_plot(function() {
     if (ncol(mf) == 2 && is.numeric(mf[[2]])) {
@@ -132,7 +186,7 @@ reg_fit <- function(formula, data, alpha = 0.05) {
 
 #' @rdname regression
 #' @export
-reg_predict <- function(model, ..., newdata = NULL, conf = 0.95) {
+reg_predict <- function(model, ..., newdata = NULL, conf = 0.95, value = NULL) {
   m <- .as_lm(model); conf <- .prob(conf, "conf")
   if (is.null(newdata)) {
     vals <- list(...)
@@ -158,10 +212,34 @@ reg_predict <- function(model, ..., newdata = NULL, conf = 0.95) {
       sprintf("  %s%% PI for ONE new individual:  y-hat +/- t x sqrt(SE_mean^2 + s^2) = %s +/- %s x %s = [%s, %s]",
               .f(100 * conf, 2), .f(out$fit[i]), .f(tq), .f(se_pi[i]), .f(out$pi_lower[i]), .f(out$pi_upper[i])))
   }
-  wording <- "The confidence interval estimates the AVERAGE response of all units with these characteristics; the prediction interval covers the response of ONE new unit. The prediction interval is wider because it adds the variability of an individual outcome around the mean (s^2) to the uncertainty in the estimated mean."
-  .result("Regression prediction", lines, wording,
-          "Check the diagnostics (reg_check) before relying on intervals; avoid extrapolating outside the observed range.",
-          match.call(), predictions = out)
+  y <- deparse(formula(m)[[2]])
+  wording <- c(
+    sprintf("Point estimate: the predicted %s for units with these characteristics is %s. The %s%% confidence interval [%s, %s] estimates the AVERAGE %s of all units with these characteristics; the %s%% prediction interval [%s, %s] is for the %s of ONE new unit.",
+            y, .f(out$fit[1]), .f(100 * conf, 2), .f(out$ci_lower[1]), .f(out$ci_upper[1]), y, .f(100 * conf, 2), .f(out$pi_lower[1]), .f(out$pi_upper[1]), y),
+    "The prediction interval is wider than the confidence interval because, besides the uncertainty in estimating the mean response, it includes the natural variability of individual observations around that mean (s^2).")
+  if (length(value)) {
+    v <- value[1]; i <- 1
+    in_ci <- v >= out$ci_lower[i] && v <= out$ci_upper[i]; in_pi <- v >= out$pi_lower[i] && v <= out$pi_upper[i]
+    lines <- c(lines, "", sprintf("Value %s: %s the CI for the mean, %s the PI for one individual.", .f(v),
+                                  if (in_ci) "inside" else "outside", if (in_pi) "inside" else "outside"))
+    wording <- c(wording, sprintf("A value of %s for ONE unit with these characteristics is %s: it lies %s the %s%% prediction interval [%s, %s]%s.",
+      .f(v), if (in_pi) "not unexpected or anomalous" else "unexpected (anomalous)", if (in_pi) "inside" else "outside",
+      .f(100 * conf, 2), .f(out$pi_lower[i]), .f(out$pi_upper[i]),
+      if (!in_ci && in_pi) sprintf(" (it is outside the confidence interval for the MEAN, [%s, %s], but that interval refers to the average of all such units, not to a single one)", .f(out$ci_lower[i]), .f(out$ci_upper[i])) else ""))
+  }
+  # extrapolation: numeric predictor values outside the observed range
+  mf <- model.frame(m); ext <- character()
+  for (v in intersect(names(newdata), names(mf))) if (is.numeric(mf[[v]]) && is.numeric(newdata[[v]])) {
+    r <- range(mf[[v]]); bad <- newdata[[v]] < r[1] | newdata[[v]] > r[2]
+    if (any(bad)) ext <- c(ext, sprintf("%s = %s is outside the observed range [%s, %s]", v, paste(.f(newdata[[v]][bad]), collapse = ", "), .f(r[1]), .f(r[2])))
+  }
+  notes <- "Check the diagnostics (reg_check) before relying on intervals."
+  if (length(ext)) {
+    notes <- c(sprintf("EXTRAPOLATION: %s.", paste(ext, collapse = "; ")), notes)
+    wording <- c(wording, sprintf("The estimate is not reliable: %s, so we are predicting for units whose characteristics are not homogeneous with those of the sample used to estimate the model (extrapolation); we do not know whether the linear relation still holds there.",
+                                  paste(ext, collapse = "; ")))
+  }
+  .result("Regression prediction", lines, wording, notes, match.call(), predictions = out, extrapolation = length(ext) > 0)
 }
 
 #' @rdname regression
@@ -177,7 +255,8 @@ reg_test <- function(model, term, value = 0, alt = "two.sided", alpha = 0.05) {
              sprintf("Estimate b = %s   SE(b) = %s   residual df = %s", .f(b), .f(se), df), "",
              sprintf("t = (b - %s) / SE(b) = (%s - %s) / %s = %s", .f(value), .f(b), .f(value), .f(se), .f(stat)),
              sprintf("Critical value: %s  ->  %s", paste(.f(crit), collapse = " and "), .reject_region(alt, crit, "t")),
-             sprintf("p-value = %s = %s", .p_text(alt, sprintf("t(%s)", df), stat), .fp(p)), "",
+             sprintf("p-value = %s = %s", .p_text(alt, sprintf("t(%s)", df), stat), .fp(p)),
+             .r_pval_line(stat, alt, "t", df), "",
              .decision_lines(p, alpha))
   wording <- sprintf("We test H0: beta = %s for %s against H1: beta %s %s using t = (b - %s)/SE(b) = %s with %s residual degrees of freedom. %s that the coefficient of %s is %s %s.",
                      .f(value), term, .alt_sym(alt), .f(value), .f(value), .f(stat), df, .decision_words(p, alpha),
@@ -186,6 +265,39 @@ reg_test <- function(model, term, value = 0, alt = "two.sided", alpha = 0.05) {
   .result("Regression coefficient t test", lines, wording, NULL, match.call(),
           statistic = stat, p_value = p, critical = crit, df = df,
           decision = if (p < alpha) "reject H0" else "fail to reject H0")
+}
+
+#' @rdname regression
+#' @export
+reg_effect <- function(model, term, change = 1, conf = 0.95) {
+  m <- .as_lm(model); conf <- .prob(conf, "conf")
+  co <- coef(summary(m))
+  if (!term %in% rownames(co)) stop("term must be one of: ", paste(rownames(co), collapse = ", "), call. = FALSE)
+  b <- co[term, 1]; se <- co[term, 2]; df <- m$df.residual
+  tq <- qt((1 + conf) / 2, df)
+  ci <- b + c(-1, 1) * tq * se
+  eff <- change * b; eci <- sort(change * ci)
+  y <- deparse(formula(m)[[2]])
+  di <- .dummy_info(m)[[term]]
+  hold <- if (length(coef(m)) > 2) ", keeping the other explanatory variables constant" else ""
+  lines <- c(sprintf("Coefficient of %s: b = %s,  SE(b) = %s,  residual df = %s", term, .f(b), .f(se), df),
+             sprintf("%s%% CI for beta: b +/- t(%s; %s) x SE = %s +/- %s x %s = [%s, %s]",
+                     .f(100 * conf, 2), .f((1 + conf) / 2), df, .f(b), .f(tq), .f(se), .f(ci[1]), .f(ci[2])),
+             sprintf("  in R: confint(mod, \"%s\", level = %s)", term, .f(conf)))
+  if (change != 1) lines <- c(lines, "",
+             sprintf("Change of %s units in %s: expected change in %s = %s x b = %s", .f(change), term, y, .f(change), .f(eff)),
+             sprintf("%s%% CI = %s x [%s, %s] = [%s, %s]", .f(100 * conf, 2), .f(change), .f(ci[1]), .f(ci[2]), .f(eci[1]), .f(eci[2])))
+  wording <- if (!is.null(di)) sprintf("We are %s%% confident that, on average%s, %s for units with %s = %s differs from that of the baseline %s = %s by a value between %s and %s.",
+                                         .f(100 * conf, 2), hold, y, di[1], di[2], di[1], di[3], .f(ci[1]), .f(ci[2]))
+             else sprintf("We are %s%% confident that%s, an increase of %s unit%s in %s is associated with an average change in %s between %s and %s%s.",
+                          .f(100 * conf, 2), hold, .f(change), if (change == 1) "" else "s", term, y, .f(eci[1]), .f(eci[2]),
+                          if (eci[2] < 0) sprintf(" (an average decrease between %s and %s)", .f(-eci[2]), .f(-eci[1]))
+                          else if (eci[1] > 0) sprintf(" (an average increase between %s and %s)", .f(eci[1]), .f(eci[2])) else "")
+  wording <- c(wording, if (ci[1] > 0 || ci[2] < 0) sprintf("The interval does not contain 0, so the coefficient is significantly different from 0 at alpha = %s.", .f(1 - conf))
+               else sprintf("The interval contains 0, so the coefficient is not significantly different from 0 at alpha = %s.", .f(1 - conf)),
+               if (length(coef(m)) > 2) "The effect is quantified for given values of the other explanatory variables: nothing has to be specified about them.")
+  .result(sprintf("Effect of %s (coefficient interval)", term), lines, wording, NULL, match.call(),
+          estimate = b, se = se, ci = ci, change = change, effect = eff, effect_ci = eci, df = df)
 }
 
 .vif <- function(m) {
@@ -207,7 +319,7 @@ reg_check <- function(model) {
   n <- nobs(m); p <- length(coef(m))
   tab <- data.frame(obs = names(rs), std_residual = rs, leverage = lev, cooks_d = cook)
   tab <- tab[order(abs(tab$std_residual), decreasing = TRUE), , drop = FALSE]
-  lines <- c("Plots: residuals vs fitted, normal Q-Q, Cook's distance, residuals vs leverage.", "",
+  lines <- c("Plots: residuals vs fitted (which = 1), normal Q-Q (which = 2), scale-location (which = 3), histogram of standardised residuals.", "",
              "Largest standardised residuals:", .table_lines(.round_df(head(tab, 8))), "",
              sprintf("Flags: |std residual| > 2: %d obs;  leverage > 2p/n = %s: %d obs;  Cook's D > 4/n = %s: %d obs",
                      sum(abs(rs) > 2), .f(2 * p / n), sum(lev > 2 * p / n), .f(4 / n), sum(cook > 4 / n)))
@@ -223,13 +335,30 @@ reg_check <- function(model) {
                paste0("  ", paste(sprintf("%s = %s", names(v), .f(v, 2)), collapse = "   ")))
     if (any(v > 5)) notes <- c(notes, "A VIF above 5 (or 10) indicates strong multicollinearity.")
   }
+  sk <- mean((rs - mean(rs))^3) / sd(rs)^3
+  fit <- fitted(m); thirds <- cut(rank(fit, ties.method = "first"), 3, labels = FALSE)
+  sds <- tapply(rs, thirds, sd)
+  lines <- c(lines, "",
+    "Assumptions (errors eps_i):",
+    "  Homoscedasticity: Var(eps_i) = sigma^2 for every i (constant, not depending on the explanatory variables)",
+    "    tools: residuals vs fitted  plot(mod, which = 1);  sqrt(|standardised residuals|) vs fitted  plot(mod, which = 3)",
+    sprintf("    rough check: SD of standardised residuals in the lower / middle / upper third of fitted values = %s",
+            paste(.f(sds, 2), collapse = " / ")),
+    "  Normality: eps_i ~ N(0, sigma^2)",
+    "    tools: normal Q-Q plot  plot(mod, which = 2);  histogram of standardised residuals  hist(rstandard(mod))",
+    sprintf("    rough check: skewness of standardised residuals = %s; %s of them beyond +/-2 (about 5%% expected under normality)",
+            .f(sk, 2), .pct(mean(abs(rs) > 2), 1)),
+    "  Linearity / independence: no pattern (curve) in residuals vs fitted.")
   .with_plot(function() {
     op <- par(mfrow = c(2, 2)); on.exit(par(op))
-    plot(m, which = c(1, 2, 4, 5))
+    plot(m, which = c(1, 2, 3))
+    hist(rs, main = "Histogram of standardised residuals", xlab = "standardised residuals", col = "grey85", border = "white", freq = FALSE)
   })
   wording <- c(
-    "Residuals vs fitted: look for a random cloud around 0 with constant spread (linearity, homoskedasticity); a funnel shape suggests heteroskedasticity, a curve suggests non-linearity.",
-    "Normal Q-Q: points close to the line support approximately normal errors.",
+    sprintf("Homoscedasticity (constant error variance, Var(eps_i) = sigma^2) is assessed with the residuals-vs-fitted plot, plot(mod, which = 1), or the scale-location plot, plot(mod, which = 3): a random band of constant width around 0 supports it, a funnel shape (spread growing with the fitted values) indicates a violation. Here the spread of the standardised residuals across low / middle / high fitted values is %s.",
+            paste(.f(sds, 2), collapse = " / ")),
+    sprintf("Normality of the errors is assessed with the normal Q-Q plot, plot(mod, which = 2) (points close to the line; deviations in the tails indicate heavier or lighter tails), and the histogram of the standardised residuals (approximately symmetric and bell-shaped). Here the skewness of the standardised residuals is %s (%s).",
+            .f(sk, 2), if (abs(sk) < 0.3) "close to symmetric" else if (sk > 0) "right-skewed: a mild or marked deviation from normality, check the plots" else "left-skewed: a mild or marked deviation from normality, check the plots"),
     "Leverage / Cook's distance: observations with high leverage and large residuals can be influential; check whether the conclusions change without them.",
     "Multicollinearity signs: strong correlations between explanatory variables, a significant global F test with weak individual t tests, unexpected signs, or coefficients that change a lot when a variable is added.")
   .result("Regression diagnostics", lines, wording, notes, match.call(), influence = tab)
@@ -264,5 +393,29 @@ reg_compare <- function(model1, model2, alpha = 0.05) {
     wording <- c(wording, sprintf("The partial F test %s that the added variables improve the model (p-value %s).",
                                   if (fp < alpha) "shows" else "does not show", .fp(fp)))
   }
+  # significance of common coefficients in the two models
+  c1 <- coef(s1); c2 <- coef(s2); common <- setdiff(intersect(rownames(c1), rownames(c2)), "(Intercept)")
+  if (length(common)) {
+    ct <- data.frame(term = common, b_model1 = c1[common, 1], p_model1 = c1[common, 4], b_model2 = c2[common, 1], p_model2 = c2[common, 4])
+    lines <- c(lines, "", "Coefficients in both models:",
+               .table_lines(transform(.round_df(ct), p_model1 = .p_cells(ct$p_model1), p_model2 = .p_cells(ct$p_model2))))
+    ch <- common[(c1[common, 4] < alpha) != (c2[common, 4] < alpha)]
+    if (length(ch)) {
+      big <- if (nrow(c2) >= nrow(c1)) m2 else m1
+      X <- model.matrix(big)[, -1, drop = FALSE]
+      added <- setdiff(colnames(X), if (identical(big, m2)) rownames(c1) else rownames(c2))
+      for (tm in ch) {
+        cors <- if (length(added) && tm %in% colnames(X)) sapply(added, function(a) stats::cor(X[, tm], X[, a])) else numeric()
+        wording <- c(wording, sprintf("%s is %s in model 1 (p = %s) but %s in model 2 (p = %s). %s",
+          tm, if (c1[tm, 4] < alpha) "significant" else "not significant", .fp(c1[tm, 4]),
+          if (c2[tm, 4] < alpha) "significant" else "not significant", .fp(c2[tm, 4]),
+          if (length(cors)) sprintf("It is correlated with the added variable(s) (%s): in the smaller model %s also captured part of their effect; once they are included its own contribution, for given values of them, is smaller (a situation close to multicollinearity).",
+                                    paste(sprintf("r(%s, %s) = %s", tm, names(cors), .f(cors, 2)), collapse = ", "), tm)
+          else "Its estimated contribution depends on which other explanatory variables are held constant."))
+      }
+    }
+  }
+  if (nested && abs(length(t1) - length(t2)) == 1)
+    wording <- c(wording, "With a single added variable the partial F test is equivalent to that variable's t test in the larger model (F = t^2, same p-value).")
   .result("Comparing two regression models", lines, wording, NULL, match.call(), table = tab, f_p_value = fp)
 }

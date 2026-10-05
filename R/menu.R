@@ -129,12 +129,17 @@
 
 # ---------- topic 1: describe ----------
 
-.m_desc_summary <- function() .mk("desc_summary", list(x = .code(.ask_data("a numeric variable", "vector")$expr)))
+.ask_value_check <- function() .ask_num("Is a specific value extreme? Type it (Enter = skip)", allow_empty = TRUE)
+.m_desc_summary <- function() {
+  x <- .code(.ask_data("a numeric variable", "vector")$expr)
+  .mk("desc_summary", list(x = x, value = .ask_value_check()))
+}
 .m_desc_compare <- function() {
   a <- list(x = .code(.ask_data("the numerical variable", "vector")$expr),
             group = .code(.ask_data("the grouping variable", "vector")$expr))
   if (.ask_yes("Condition on a second grouping variable too (combinations of the two)?", FALSE))
     a$group2 <- .code(.ask_data("the second grouping variable", "vector")$expr)
+  a$value <- .ask_value_check()
   .mk("desc_compare", a)
 }
 .m_desc_cv <- function() {
@@ -662,7 +667,9 @@
       else vals[[v]] <- .ask_num(sprintf("Value of %s", v))
     }
   }
-  .mk("reg_predict", c(list(model = .code(mn)), vals, list(conf = .ask_prob("Confidence level", 0.95))))
+  conf <- .ask_prob("Confidence level", 0.95)
+  value <- .ask_num("Observed value to judge (is it unexpected?) - Enter = none", allow_empty = TRUE)
+  .mk("reg_predict", c(list(model = .code(mn)), vals, list(conf = conf, value = value)))
 }
 .m_reg_test <- function() {
   mn <- .ask_model(); m <- .as_lm(get(mn, envir = .GlobalEnv))
@@ -671,6 +678,14 @@
   value <- .ask_num("Null value (H0: beta = ?)", 0)
   .mk("reg_test", list(model = .code(mn), term = term, value = value, alt = .ask_alt("beta", .f(value)),
                        alpha = .ask_prob("Significance level alpha", 0.05)))
+}
+.m_reg_effect <- function() {
+  mn <- .ask_model(); m <- .as_lm(get(mn, envir = .GlobalEnv))
+  terms <- setdiff(names(coef(m)), "(Intercept)")
+  term <- terms[.ask_choice("Which coefficient?", terms)]
+  change <- .ask_num("Change of how many units? (Enter = 1)", allow_empty = TRUE)
+  .mk("reg_effect", list(model = .code(mn), term = term, change = if (!is.null(change) && change != 1) change,
+                         conf = .ask_prob("Confidence level", 0.95)))
 }
 .m_reg_check <- function() .mk("reg_check", list(model = .code(.ask_model())))
 .m_reg_compare <- function() {
@@ -777,7 +792,8 @@
     list("Predict: CI for the mean response + PI for one individual", .m_reg_predict),
     list("Test one coefficient against any value", .m_reg_test),
     list("Diagnostics: residual plots, leverage, Cook's D, multicollinearity", .m_reg_check),
-    list("Compare two models (adjusted R2, partial F test)", .m_reg_compare))),
+    list("Compare two models (adjusted R2, partial F test)", .m_reg_compare),
+    list("CI for a coefficient / effect of a change of c units (e.g. 10 years)", .m_reg_effect))),
   list(title = "Enter a table from paper / data tools", items = list(
     list("Enter a table from paper (numbered placeholders)", .m_table),
     list("Fix a table you entered", .m_table_edit),

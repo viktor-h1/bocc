@@ -42,7 +42,11 @@
 #'   `group2` the groups are the combinations of the two).
 #' @param ... Numeric vectors to compare (`desc_cv`), named or not.
 #' @param mean,sd Summary numbers for `desc_cv()` when raw data are not given.
-#' @param probs Percentiles to report.
+#' @param probs Percentiles to report (pairs such as 0.05 / 0.95 are read
+#'   as "the central 90% lie between ...").
+#' @param value `desc_summary()`, `desc_compare()`: value(s) to check
+#'   against the outlier fences Q1 - 1.5 IQR and Q3 + 1.5 IQR (within each
+#'   group for `desc_compare()`), e.g. "is a bid of 35 extremely low?".
 #' @param population `desc_summary()`, `desc_cor()`: TRUE when the data are
 #'   the whole population (divisor N instead of n - 1).
 #' @param breaks `desc_classes()`: a single number K (K classes of equal
@@ -118,6 +122,44 @@ NULL
 }
 
 # Book 3.3.2: compare the lower and upper parts of the box and the whiskers.
+# Is a given value extreme (beyond the Tukey fences Q1 - 1.5 IQR, Q3 + 1.5 IQR)?
+.value_check_lines <- function(value, q, xlab) {
+  fe <- .fences(q[1], q[2]); iqr <- q[2] - q[1]
+  c(sprintf("Is %s an extreme value of %s?  Fences: Q1 - 1.5 IQR = %s - 1.5 x %s = %s;  Q3 + 1.5 IQR = %s + 1.5 x %s = %s",
+            paste(.f(value), collapse = ", "), xlab, .f(q[1]), .f(iqr), .f(fe[1]), .f(q[2]), .f(iqr), .f(fe[2])),
+    vapply(value, function(v) sprintf("  %s: %s", .f(v),
+      if (v < fe[1]) sprintf("%s < %s -> extreme LOW value (lower outlier)", .f(v), .f(fe[1]))
+      else if (v > fe[2]) sprintf("%s > %s -> extreme HIGH value (upper outlier)", .f(v), .f(fe[2]))
+      else sprintf("inside [%s, %s] -> not extreme", .f(fe[1]), .f(fe[2]))), character(1)))
+}
+
+.value_check_words <- function(value, q, xlab) {
+  fe <- .fences(q[1], q[2])
+  vapply(value, function(v) {
+    if (v < fe[1]) sprintf("An extremely low value of %s is one below Q1 - 1.5 IQR = %s - 1.5 x %s = %s: since %s < %s, the value %s is extreme (a lower outlier).",
+                           xlab, .f(q[1]), .f(q[2] - q[1]), .f(fe[1]), .f(v), .f(fe[1]), .f(v))
+    else if (v > fe[2]) sprintf("An extremely high value of %s is one above Q3 + 1.5 IQR = %s + 1.5 x %s = %s: since %s > %s, the value %s is extreme (an upper outlier).",
+                                xlab, .f(q[2]), .f(q[2] - q[1]), .f(fe[2]), .f(v), .f(fe[2]), .f(v))
+    else sprintf("Values of %s are extreme if below Q1 - 1.5 IQR = %s or above Q3 + 1.5 IQR = %s: %s lies between the two thresholds, so it is not an extreme value.",
+                 xlab, .f(fe[1]), .f(fe[2]), .f(v))
+  }, character(1))
+}
+
+# Reading of percentiles: P_low / P_high pairs give the central share.
+.pct_reading <- function(probs, pr, xlab) {
+  out <- character()
+  for (a in probs[probs < 0.5]) {
+    b <- 1 - a
+    if (any(abs(probs - b) < 1e-9)) {
+      pa <- pr[which.min(abs(probs - a))]; pb <- pr[which.min(abs(probs - b))]
+      out <- c(out, sprintf("P%s = %s and P%s = %s: %s%% of the units have %s at most %s and %s%% have more than %s, so the central (most typical) %s%% lie between %s and %s.",
+                            round(100 * a), .f(pa), round(100 * b), .f(pb), round(100 * a), xlab, .f(pa), round(100 * a), .f(pb),
+                            round(100 * (b - a)), .f(pa), .f(pb)))
+    }
+  }
+  if (length(out)) paste(out, collapse = " ") else NULL
+}
+
 .box_shape <- function(lo, q1, q2, q3, hi) {
   near <- function(a, b) abs(a - b) <= 0.1 * max(a, b, 1e-12)
   box <- if (near(q2 - q1, q3 - q2)) "sym" else if (q3 - q2 > q2 - q1) "right" else "left"
@@ -130,7 +172,7 @@ NULL
 
 #' @rdname describe
 #' @export
-desc_summary <- function(x, probs = c(0.10, 0.90, 0.95, 0.99), population = FALSE) {
+desc_summary <- function(x, probs = c(0.05, 0.10, 0.90, 0.95, 0.99), population = FALSE, value = NULL) {
   sx <- substitute(x); xlab <- .label(sx)
   v <- .num(x, xlab)
   n <- length(v); m <- mean(v); md <- median(v)
@@ -175,7 +217,8 @@ desc_summary <- function(x, probs = c(0.10, 0.90, 0.95, 0.99), population = FALS
     sprintf("  Extreme values (outliers): %s", if (length(outl)) paste(.f(outl), collapse = ", ") else "none"), "",
     sprintf("Shape: Q2 - Q1 = %s vs Q3 - Q2 = %s;  lower whisker %s vs upper whisker %s",
             .f(md - q[1]), .f(q[2] - md), .f(q[1] - wlo), .f(whi - q[2])),
-    sprintf("  -> %s; %s", shape, mm))
+    sprintf("  -> %s; %s", shape, mm),
+    if (length(value)) c("", .value_check_lines(value, q, xlab)))
   .with_plot(function() {
     op <- par(mfrow = c(1, 2)); on.exit(par(op))
     boxplot(v, main = paste("Boxplot:", xlab), ylab = xlab, col = "grey90")
@@ -188,7 +231,9 @@ desc_summary <- function(x, probs = c(0.10, 0.90, 0.95, 0.99), population = FALS
             xlab, n, .f(md), .f(m), mm, .f(q[1]), .f(q[2]), .f(q[2] - q[1]), .f(min(v)), .f(max(v))),
     sprintf("The standard deviation is %s, i.e. on average the values deviate from the mean by about %s (CV = %s of the mean). The boxplot suggests a %s distribution.%s",
             .f(s), .f(s), .pct(s / abs(m)), sub(" \\(.*", "", shape),
-            if (length(outl)) sprintf(" %d value(s) lie more than 1.5 IQR beyond the box and are flagged as extreme: %s.", length(outl), paste(.f(outl), collapse = ", ")) else " No value is flagged as extreme."))
+            if (length(outl)) sprintf(" %d value(s) lie more than 1.5 IQR beyond the box and are flagged as extreme: %s.", length(outl), paste(.f(outl), collapse = ", ")) else " No value is flagged as extreme."),
+    .pct_reading(probs, pr, xlab),
+    if (length(value)) .value_check_words(value, q, xlab))
   .result("Descriptive summary", lines, wording,
           c(.dropped_note(v), if (population) "Population formulas used (divisor N)."), match.call(),
           n = n, mean = m, median = md, mode = mo$values, variance = s2, sd = s, quartiles = q, hand_quartiles = hq,
@@ -253,8 +298,8 @@ desc_prop <- function(x = NULL, event = NULL, count = NULL, n = NULL) {
     sprintf("Estimated SE(p-hat) = sqrt(p-hat (1 - p-hat) / n) = sqrt(%s x %s / %s) = %s",
             .f(P$phat), .f(1 - P$phat), .f(P$n), .f(se)))
   wording <- sprintf(
-    "The estimate of the population proportion of %s is the sample proportion p-hat = %s/%s = %s. The true standard error sqrt[p(1 - p)/n] depends on the unknown population proportion p, so it is estimated by substituting p-hat for p: SE(p-hat) = sqrt[%s(1 - %s)/%s] = %s.",
-    P$ev, .f(P$count), .f(P$n), .f(P$phat), .f(P$phat), .f(P$phat), .f(P$n), .f(se))
+    "Estimator: let X_i = 1 if the i-th unit has the characteristic (%s) and 0 otherwise (Bernoulli, P(X_i = 1) = p); the estimator of p is the sample proportion P-hat = (X_1 + ... + X_n) / n, an unbiased estimator (E(P-hat) = p) with standard error sqrt(p(1 - p)/n). The estimate of the population proportion of %s is the sample proportion p-hat = %s/%s = %s. The true standard error sqrt[p(1 - p)/n] depends on the unknown population proportion p, so it is estimated by substituting p-hat for p: SE(p-hat) = sqrt[%s(1 - %s)/%s] = %s.",
+    P$ev, P$ev, .f(P$count), .f(P$n), .f(P$phat), .f(P$phat), .f(P$phat), .f(P$n), .f(se))
   ub <- if (!raw) .ub_raw_note
         else paste(if (is.null(event)) .ub_call("CI.prop", x = sx)
                    else if (length(event) == 1) .ub_call("CI.prop", x = sx, success = event)

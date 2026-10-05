@@ -82,6 +82,9 @@ NULL
   list(cut = cut, power = power, beta = 1 - power)
 }
 
+# "- 2.3263", "+ 1.2816" or "-/+ 1.96" for the cut-off formula.
+.pm_z <- function(z) if (length(z) == 2) sprintf("-/+ %s", .f(abs(z[2]))) else sprintf("%s %s", if (z < 0) "-" else "+", .f(abs(z)))
+
 # Text for beta / P(not reject) given the cut-off(s) and the true value.
 .beta_txt <- function(cut, true, se, alt, est, par) {
   switch(alt,
@@ -100,11 +103,14 @@ NULL
 }
 
 # beta and power lines, or (true value inside H0) P(reject) = alpha(true) and 1 - alpha(true).
-.power_lines <- function(P, true, null, alt, alpha, se1, est, par) {
+.power_lines <- function(P, true, null, alt, alpha, se1, est, par, se_txt = .f(se1, 6)) {
+  R <- .r_power(P$cut, true, se_txt, alt)
   if (!.in_h0(true, null, alt)) {
     return(list(in_h0 = FALSE, lines = c(
       sprintf("beta = %s = %s", .beta_txt(P$cut, true, se1, alt, est, par), .f(P$beta, 6)),
-      sprintf("Power = 1 - beta = %s", .f(P$power, 6))),
+      sprintf("  in R: %s", R[["accept"]]),
+      sprintf("Power = 1 - beta = P(reject H0 | %s = %s) = %s", par, .f(true), .f(P$power, 6)),
+      sprintf("  in R: %s", R[["reject"]])),
       wording = sprintf("The Type II error probability is the probability of failing to reject H0 when the true value is %s = %s: beta = %s. The power of the test, the probability of correctly rejecting H0 when %s = %s, is 1 - beta = %s. These probabilities describe the testing procedure over all possible samples, not the correctness of the decision taken on one specific sample.",
                         par, .f(true), .f(P$beta), par, .f(true), .f(P$power))))
   }
@@ -112,7 +118,9 @@ NULL
     sprintf("The value %s = %s satisfies H0: here rejecting H0 would be a Type I error and not rejecting is the CORRECT decision (no Type II error).", par, .f(true)),
     sprintf("P(reject H0 | %s = %s) = alpha(%s) = %s   (<= alpha = %s, reached at the boundary %s = %s)",
             par, .f(true), .f(true), .f(P$power, 6), .f(alpha), par, .f(null)),
-    sprintf("P(fail to reject H0 | %s = %s) = 1 - alpha(%s) = %s", par, .f(true), .f(true), .f(P$beta, 6))),
+    sprintf("  in R: %s", R[["reject"]]),
+    sprintf("P(fail to reject H0 | %s = %s) = 1 - alpha(%s) = %s", par, .f(true), .f(true), .f(P$beta, 6)),
+    sprintf("  in R: %s", R[["accept"]])),
     wording = sprintf("Since %s = %s is a value of H0, failing to reject H0 is the correct decision: its probability is 1 - alpha(%s) = %s, at least 1 - alpha = %s because the Type I error probability is largest at the boundary value %s = %s.",
                       par, .f(true), .f(true), .f(P$beta), .f(1 - alpha), par, .f(null)))
 }
@@ -125,12 +133,12 @@ power_mean <- function(mu0, mu1, sigma, n, alpha = 0.05, alt) {
   se <- sigma / sqrt(n)
   P <- .power_core(mu0, mu1, se, se, alpha, alt)
   z <- .crit(alt, alpha, "z")
-  O <- .power_lines(P, mu1, mu0, alt, alpha, se, "Xbar", "mu")
+  O <- .power_lines(P, mu1, mu0, alt, alpha, se, "Xbar", "mu", sprintf("%s/sqrt(%s)", .f(sigma, 6), n))
   lines <- c(
     sprintf("Test: %s,  sigma = %s, n = %s, alpha = %s", .hyp_text("mu", .f(mu0), alt), .f(sigma), n, .f(alpha)),
     sprintf("True mean mu1 = %s", .f(mu1)), "",
     sprintf("SE = sigma / sqrt(n) = %s / sqrt(%s) = %s", .f(sigma), n, .f(se)),
-    sprintf("Cut-off(s) on the xbar scale: mu0 + z x SE = %s + %s x %s = %s", .f(mu0), paste(.f(z), collapse = " / "), .f(se), paste(.f(P$cut), collapse = " and ")),
+    sprintf("Cut-off(s) on the xbar scale: mu0 %s z x SE = %s %s x %s = %s", switch(alt, less = "-", greater = "+", two.sided = "-/+"), .f(mu0), .pm_z(z), .f(se), paste(.f(P$cut), collapse = " and ")),
     sprintf("We fail to reject H0 when %s", .acc_txt(P$cut, alt, "xbar")),
     O$lines)
   .plot_power(mu0, mu1, se, se, P$cut, alt, "xbar")
@@ -149,13 +157,14 @@ power_2means <- function(d1, sigma1, sigma2, n1, n2, d0 = 0, alpha = 0.05, alt) 
   se <- sqrt(sigma1^2 / n1 + sigma2^2 / n2)
   P <- .power_core(d0, d1, se, se, alpha, alt)
   z <- .crit(alt, alpha, "z")
-  O <- .power_lines(P, d1, d0, alt, alpha, se, "Xbar - Ybar", "mu_x - mu_y")
+  O <- .power_lines(P, d1, d0, alt, alpha, se, "Xbar - Ybar", "mu_x - mu_y",
+                    sprintf("sqrt(%s/%s + %s/%s)", .f(sigma1^2, 6), n1, .f(sigma2^2, 6), n2))
   lines <- c(
     sprintf("Test: %s,  sigma_x = %s, sigma_y = %s, n_x = %s, n_y = %s, alpha = %s",
             .hyp_text("mu_x - mu_y", .f(d0), alt), .f(sigma1), .f(sigma2), n1, n2, .f(alpha)),
     sprintf("True difference mu_x - mu_y = %s", .f(d1)), "",
     sprintf("SE = sqrt(sigma_x^2/n_x + sigma_y^2/n_y) = sqrt(%s/%s + %s/%s) = %s", .f(sigma1^2), n1, .f(sigma2^2), n2, .f(se)),
-    sprintf("Cut-off(s) on the (xbar - ybar) scale: d0 + z x SE = %s + %s x %s = %s", .f(d0), paste(.f(z), collapse = " / "), .f(se), paste(.f(P$cut), collapse = " and ")),
+    sprintf("Cut-off(s) on the (xbar - ybar) scale: d0 %s z x SE = %s %s x %s = %s", switch(alt, less = "-", greater = "+", two.sided = "-/+"), .f(d0), .pm_z(z), .f(se), paste(.f(P$cut), collapse = " and ")),
     sprintf("We fail to reject H0 when %s", .acc_txt(P$cut, alt, "xbar - ybar")),
     O$lines)
   .plot_power(d0, d1, se, se, P$cut, alt, "xbar - ybar")
@@ -173,11 +182,11 @@ power_prop <- function(p0, p1, n, alpha = 0.05, alt) {
   se0 <- sqrt(p0 * (1 - p0) / n); se1 <- sqrt(p1 * (1 - p1) / n)
   P <- .power_core(p0, p1, se0, se1, alpha, alt)
   z <- .crit(alt, alpha, "z")
-  O <- .power_lines(P, p1, p0, alt, alpha, se1, "P-hat", "p")
+  O <- .power_lines(P, p1, p0, alt, alpha, se1, "P-hat", "p", sprintf("sqrt(%s*(1-%s)/%s)", .f(p1), .f(p1), n))
   lines <- c(
     sprintf("Test: %s,  n = %s, alpha = %s;  true p1 = %s", .hyp_text("p", .f(p0), alt), n, .f(alpha), .f(p1)), "",
     sprintf("SE under H0 = sqrt(p0 (1 - p0) / n) = sqrt(%s x %s / %s) = %s", .f(p0), .f(1 - p0), n, .f(se0)),
-    sprintf("Cut-off(s) on the p-hat scale: p0 + z x SE0 = %s + %s x %s = %s", .f(p0), paste(.f(z), collapse = " / "), .f(se0), paste(.f(P$cut), collapse = " and ")),
+    sprintf("Cut-off(s) on the p-hat scale: p0 %s z x SE0 = %s %s x %s = %s", switch(alt, less = "-", greater = "+", two.sided = "-/+"), .f(p0), .pm_z(z), .f(se0), paste(.f(P$cut), collapse = " and ")),
     sprintf("We fail to reject H0 when %s", .acc_txt(P$cut, alt, "p-hat")),
     sprintf("SE under p1 = sqrt(p1 (1 - p1) / n) = sqrt(%s x %s / %s) = %s", .f(p1), .f(1 - p1), n, .f(se1)),
     O$lines)

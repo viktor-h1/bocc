@@ -375,6 +375,15 @@ desc_classes <- function(x = NULL, breaks = NULL, lower = NULL, upper = NULL, fr
                                 .f(max(between)), .f(min(between)), .f(rb$v), .f(ra$v), .f(rb$v - ra$v)),
                  sprintf("   F(%s) = %s", .f(max(between)), rb$txt), sprintf("   F(%s) = %s", .f(min(between)), ra$txt))
     }
+    if (!is.null(C$n)) {
+      nm <- c(at_most = "Freq(X <= %s)", at_least = "Freq(X >= %s)", between = "Freq(%s <= X <= %s)")
+      for (k in names(vals)) {
+        arg <- switch(k, at_most = .f(at_most), at_least = .f(at_least), between = .f(sort(between)))
+        lines <- c(lines, sprintf("   Number of units: n x %s = %s x %s = %s  (approximately %s units)",
+                                  do.call(sprintf, c(list(nm[[k]]), as.list(arg))), .f(C$n), .f(vals[[k]]), .f(C$n * vals[[k]]),
+                                  .f(floor(C$n * vals[[k]] + 0.5))))
+      }
+    }
   }
   # central tendency and dispersion (approximations, book 3.2.1 / 3.4)
   closed <- which(!open)
@@ -393,7 +402,9 @@ desc_classes <- function(x = NULL, breaks = NULL, lower = NULL, upper = NULL, fr
     if (!is.null(C$n) && C$n > 1) {
       avar <- C$n / (C$n - 1) * (ex2 - amean^2)
       lines <- c(lines, sprintf("  Variance s^2 ~ n/(n-1) [sum(m_k^2 p_k) - mean^2] = %s/%s x (%s - %s^2) = %s",
-                                .f(C$n), .f(C$n - 1), .f(ex2), .f(amean), .f(avar)))
+                                .f(C$n), .f(C$n - 1), .f(ex2), .f(amean), .f(avar)),
+                 sprintf("     (without the n/(n-1) factor: %s - %s^2 = %s, SD = %s; almost the same for large n)",
+                         .f(ex2), .f(amean), .f(ex2 - amean^2), .f(sqrt(ex2 - amean^2))))
     } else {
       avar <- ex2 - amean^2
       lines <- c(lines, sprintf("  Variance ~ sum(m_k^2 p_k) - mean^2 = %s - %s^2 = %s   (n unknown: n/(n-1) ignored, ~1 for large n)",
@@ -402,7 +413,9 @@ desc_classes <- function(x = NULL, breaks = NULL, lower = NULL, upper = NULL, fr
     lines <- c(lines, sprintf("  SD     ~ sqrt(%s) = %s     CV = SD / |mean| = %s", .f(avar), .f(sqrt(avar)), .f(sqrt(avar) / abs(amean))))
   }
   qs <- vapply(probs, function(q) .class_Q(q, lower, upper, p, dens)$v, numeric(1))
-  lines <- c(lines, sprintf("  Quantiles: %s", paste(sprintf("p%s = %s", round(100 * probs), ifelse(is.na(qs), "n.a. (open class)", .f(qs))), collapse = "   ")))
+  lines <- c(lines, sprintf("  Quantiles: %s", paste(sprintf("p%s = %s", round(100 * probs), ifelse(is.na(qs), "n.a. (open class)", .f(qs))), collapse = "   ")),
+             vapply(probs[probs != 0.5 & probs != 0.25 & probs != 0.75], function(q)
+               sprintf("    p%s = %s", round(100 * q), .class_Q(q, lower, upper, p, dens)$txt), character(1)))
   .with_plot(function() {
     if (plot == "both") { op <- par(mfrow = c(1, 2)); on.exit(par(op)) }
     lo <- lower[closed]; up <- upper[closed]

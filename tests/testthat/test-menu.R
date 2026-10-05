@@ -42,7 +42,7 @@ test_that("menu: two independent means by group, proportion of an expression, ch
 
 test_that("menu: regression fit (saved as a model), prediction and table entry from the picker", {
   in_global(list(mk = mk), {
-    s <- scripted(c("7", "1", "1", "1", "2 3", "n", "fit1", "0.05", "2", "1", "1", "1", "0.95", "q"), sc())
+    s <- scripted(c("7", "1", "1", "1", "2 3", "n", "fit1", "0.05", "2", "1", "1", "1", "0.95", "", "q"), sc())
     expect_true(exists("fit1", envir = .GlobalEnv))
     expect_true(any(grepl("fit1 <- reg_fit\\(formula = spend ~ loyalty \\+ vip", s$out)))
     expect_true(any(grepl("PI for ONE new individual", s$out)))

@@ -1,4 +1,4 @@
-# statcram 0.8.7
+# statcram 0.8.8
 
 An offline statistics exam toolkit for R / RStudio. One numbered menu, plus plain functions
 with consistent names. Every procedure works with **raw data** (including data frames and
@@ -12,7 +12,7 @@ Pure R, no compilation, no internet needed after installing.
 
 ```r
 # from the built file
-install.packages("statcram_0.8.7.tar.gz", repos = NULL, type = "source")
+install.packages("statcram_0.8.8.tar.gz", repos = NULL, type = "source")
 # or from GitHub
 remotes::install_github("viktor-h1/bocc", ref = "claude/quirky-gates-9i7hvr")
 
@@ -33,6 +33,7 @@ sc_guide()       # which test do I need?
 sc_index()       # every function + its menu shortcut
 sc_recipes()     # R one-liners: new columns, subsets, factors, typed tables
 sc_notes("inference")   # course rules (also: rules, descriptive, estimation, random, chisq, regression, patterns)
+sc_notes("patterns")    # past-paper questions -> what to run -> what the answer must contain
 ```
 
 At every menu prompt: **b** = back, **m** = main menu, **q** = quit.
@@ -51,7 +52,7 @@ table from paper first.
 | 4 | Hypothesis tests | `test_mean` `test_prop` `test_paired` `test_2means` `test_2props` `test_levene` |
 | 5 | Power / Type II error / sample size | `power_mean` `power_prop` `n_mean` `n_prop` `n_2props` `power_2means` |
 | 6 | Chi-square | `chisq_gof` `chisq_indep` |
-| 7 | Regression | `reg_fit` `reg_predict` `reg_test` `reg_check` `reg_compare` |
+| 7 | Regression | `reg_fit` `reg_predict` `reg_test` `reg_check` `reg_compare` `reg_effect` |
 | 8 | Enter a table from paper / data tools | `sc_table` `sc_data` `sc_recipes` |
 | 9 | Which test? / course notes | `sc_guide` `sc_index` `sc_notes` |
 
@@ -126,6 +127,20 @@ while d0 = 0 uses the pooled p. `power_2means()` gives beta for two means with k
 true value inside H0 is reported as P(reject) = alpha(mu1), not as beta. Chi-square tests add
 the residuals (O - E) / sqrt(E), Cramer's V, the E >= 5 rule and the base R call (2 x 2:
 `chisq.test(..., correct = FALSE)`).
+
+The exam wording follows the official solutions of the 2025/26 past papers. Each p-value and each
+power / beta probability comes with its analytical expression and the R call that gives it
+(`in R: 1 - pt(1.58, df = 99)`, `pnorm(616.7066, mean = 635, sd = 120/sqrt(441))`). Tests explain
+what the p-value means and that no probability can be attached to the decision taken. Intervals
+say what the confidence level means and which test values they reject. `desc_summary()` and
+`desc_compare()` take `value =` to check whether a value is extreme within a group, and read P5 /
+P95 as "the central 90%". `desc_classes()` turns approximate proportions into counts.
+`test_2means()` accepts raw data for this year and summary numbers for last year
+(`xbar2 =, s2 =, n2 =`). In regression, the equation uses I(X = level) dummies, each
+coefficient's significance is stated at the usual levels, and the F formula is shown.
+`reg_effect()` gives the CI for a change of c units. `reg_predict(value =)` judges an observed
+value and flags extrapolation, `reg_check()` states the assumptions with `plot(mod, which = )`,
+and `reg_compare()` explains coefficients that lose significance.
 
 Descriptive results also print the matching UBStats call (book sections 2.6, 3.5 and 4.5):
 `distr.table.x()` / `distr.plot.x()` for frequency tables, classes (`breaks =`, `interval = TRUE`)
