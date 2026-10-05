@@ -1,9 +1,48 @@
 # PAST-PAPER PATTERNS -> WHAT TO RUN -> WHAT THE ANSWER MUST CONTAIN
-(from the 2024/25 and 2025/26 midterm, partial and general exams with official solutions)
+(from the Module 1 exercises and the 2024/25 and 2025/26 midterm, partial and general exams with official solutions)
 
 General rule: short, focused answers in the space of each question. Give the NUMBER, the
 FORMULA / analytic expression with the numbers in it, and a one-line INTERPRETATION in context.
 When asked, also the R function used (statcram prints it as "in R: ...").
+
+## Module 1 exercises (graphs and central tendency)
+"How many variables, how many qualitative / quantitative?" -> desc_vars(df) (str(df) in R): an
+     identifier (index, id) is not a statistical variable; years / months / dates used as labels are
+     qualitative; integer counts with few values are discrete, measures with many values continuous.
+"Type of the variable and a suitable graph" -> desc_freq(): nominal -> pie or bar chart (the
+     alphabetical order of the bars means nothing); ordinal -> bars in the natural order (factor with
+     levels); discrete -> SPIKE plot, not bars (distances between values, a value with 0 cases keeps
+     its place); continuous -> histogram. Absolute or relative frequencies give the same picture.
+"Ordinal variable stored as text (Young / Middle / Senior)" -> R sorts it alphabetically: define
+     factor(x, levels = c("Young", "Middle", "Senior")) or desc_freq(x, order = ...) before the median
+     and cumulative frequencies ("81% at most Middle").
+"Which central measure for District?" -> nominal: the MODE only. Say whether it is representative
+     (Lodi 35% with 3 districts; US 29.4% vs Germany 28.4% -> poorly representative).
+"Percentage of European customers" -> desc_freq(x, event = c("France", "Germany", "United Kingdom"))
+     = 0.189 + 0.284 + 0.233 = 70.6%.
+"Percentage of pizzerias with sales between 15000 and 30000 / fewer than 5 employees" (raw data)
+     -> desc_summary(x, between = c(15000, 30000)) or below = 5: in R mean(x >= 15000 & x < 30000).
+"Mean and median of Sales; which is better?" -> desc_summary(): mean > median = right skew; the
+     median is robust to the long tail.
+"Histogram with 15 equal classes vs unequal classes" -> desc_classes(x, breaks = 15) or breaks =
+     c(...): unequal widths need DENSITIES on the y-axis; with equal widths counts, proportions and
+     densities give the same shape.
+"Frequency table typed from the text (Quantity 1..6 with counts)" -> desc_freq(c("1" = 5401, ...,
+     "5" = 0, "6" = 700)): mode, median (first F >= 0.5), mean = sum(x p); spike plot + step ogive.
+"Compare with the same variable in another period" -> desc_freq(new, compare = old): different n,
+     so compare PERCENTAGES, not counts; mode / median / mean side by side.
+"Time in classes: % below 5, below 30, between 15 and 50" -> desc_classes(freq =, breaks =,
+     at_most = c(5, 30), between = c(15, 50)): uniform within classes (half of [0,10) -> 61 units).
+"Modal class" -> highest DENSITY ([10,20)), not highest count ([60,90) is 3 times wider).
+"Mean and median from classes; comment" -> approximations (midpoints, uniform within classes);
+     both may fall in a low-density class when there are two typical behaviours (two peaks).
+"Median and mean of the two subgroups (below / above 30 minutes)" -> desc_classes(..., split = 30):
+     relative frequencies recomputed within each subgroup.
+"Histogram printed in the text, evaluate statements on median / mean" -> read the densities and use
+     desc_classes(density = c(0.022, 0.01, ..., NA), breaks = c(0, 20, ...)): p_k = c_k x w_k, the
+     unreadable class = 1 - the others; then median, mean, Freq(X > 40).
+"Graph that shows the tails in detail" -> histogram; the mode of a variable with many distinct
+     values is not useful (all values have similar, low frequencies).
 
 ## Describing data
 "Sketch a graph to compare the distributions of X across groups"

@@ -1,0 +1,4 @@
+Name: statcram panel
+Description: Point-and-click statcram for the first-partial topics (describing data, random variables and the CLT, estimation of one mean and one proportion).
+Binding: sc_app
+Interactive: true

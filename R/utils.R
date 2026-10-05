@@ -118,6 +118,7 @@
     fn <- as.character(expr[[1]])[1]
     if (fn == "$" && length(expr) == 3) return(as.character(expr[[3]]))
     if (fn == "[[" && length(expr) == 3 && is.character(expr[[3]])) return(expr[[3]])
+    if (fn == "c" && !is.null(names(expr)) && all(nzchar(names(expr)[-1]))) return("X")   # typed table c("1" = 5401, ...)
   }
   out <- paste(deparse(expr, width.cutoff = 60L), collapse = " ")
   if (nchar(out) > 40) out <- paste0(substr(out, 1, 37), "...")

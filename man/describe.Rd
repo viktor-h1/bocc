@@ -6,6 +6,7 @@
 \alias{desc_cor}
 \alias{describe}
 \alias{desc_summary}
+\alias{desc_vars}
 \alias{desc_cv}
 \alias{desc_prop}
 \alias{desc_freq}
@@ -38,8 +39,15 @@ desc_summary(
   x,
   probs = c(0.05, 0.1, 0.9, 0.95, 0.99),
   population = FALSE,
-  value = NULL
+  value = NULL,
+  at_most = NULL,
+  below = NULL,
+  at_least = NULL,
+  above = NULL,
+  between = NULL
 )
+
+desc_vars(data)
 
 desc_cv(..., mean = NULL, sd = NULL)
 
@@ -54,7 +62,9 @@ desc_freq(
   between = NULL,
   plot = c("auto", "bars", "pie", "spike", "cum"),
   se = FALSE,
-  n = NULL
+  n = NULL,
+  event = NULL,
+  compare = NULL
 )
 
 desc_classes(
@@ -69,7 +79,9 @@ desc_classes(
   at_least = NULL,
   between = NULL,
   probs = c(0.25, 0.5, 0.75, 0.9, 0.95),
-  plot = c("both", "hist", "ogive")
+  plot = c("both", "hist", "ogive"),
+  density = NULL,
+  split = NULL
 )
 }
 \arguments{
@@ -113,11 +125,24 @@ group for \code{desc_compare()}), e.g. "is a bid of 35 extremely low?".}
 \item{population}{\code{desc_summary()}, \code{desc_cor()}: TRUE when the data are
 the whole population (divisor N instead of n - 1).}
 
+\item{at_most, at_least, between}{Optional: proportion of values
+\verb{<= at_most}, \verb{>= at_least}, or within \code{between = c(a, b)}. Exact for
+raw values (\code{desc_freq}; \code{desc_summary}, where \code{between} means
+a <= X < b), approximate for classes (\code{desc_classes}, where several
+values or a list of pairs are allowed). For ordered categories give
+level names, e.g. \code{at_least = "High"}.}
+
+\item{below, above}{\code{desc_summary()}: exact share of raw values \verb{< below}
+or \verb{> above} (with the \code{mean(condition)} line that gives it in R).}
+
+\item{data}{\code{desc_vars()}: a data frame.}
+
 \item{...}{Numeric vectors to compare (\code{desc_cv}), named or not.}
 
 \item{mean, sd}{Summary numbers for \code{desc_cv()} when raw data are not given.}
 
-\item{event}{Category of interest for \code{desc_prop()}.}
+\item{event}{Category of interest for \code{desc_prop()}; for \code{desc_freq()},
+one or more categories whose combined share is reported.}
 
 \item{count}{Number of successes for \code{desc_prop()} (with \code{n}).}
 
@@ -132,12 +157,10 @@ an ordinal character variable).}
 \item{sort}{\code{desc_freq()}: \code{"none"} (standard order), \code{"decreasing"} or
 \code{"increasing"} frequency (Pareto-style).}
 
-\item{at_most, at_least, between}{Optional: proportion of values
-\verb{<= at_most}, \verb{>= at_least}, or within \code{between = c(a, b)}. Exact for
-raw values (\code{desc_freq}), approximate for classes (\code{desc_classes}).
-For ordered categories give level names, e.g. \code{at_least = "High"}.}
-
 \item{se}{\code{desc_freq()}: also show the estimated SE of each proportion.}
+
+\item{compare}{\code{desc_freq()}: a second distribution (raw values or a
+typed table) shown side by side in percentages, with mode, median and mean.}
 
 \item{breaks}{\code{desc_classes()}: a single number K (K classes of equal
 width w = (Max - Min) / K, starting at the minimum) or the class limits
@@ -148,6 +171,13 @@ width w = (Max - Min) / K, starting at the minimum) or the class limits
 \item{freq, prop}{Frequencies or proportions / percentages per class
 (typed class table). Open classes: use \code{Inf} / \code{-Inf} as the outer limit,
 e.g. \code{breaks = c(0, 300, 500, 1000, Inf)} for a last class "1000 or more".}
+
+\item{density}{\code{desc_classes()}: densities read off a histogram, one per
+class (\verb{breaks =} gives the limits); one \code{NA} is obtained as 1 minus
+the other proportions.}
+
+\item{split}{\code{desc_classes()}: a class limit; the classes below and above
+it are analysed as two subgroups (median and mean of each).}
 }
 \value{
 An \code{sc_result} (prints itself).
@@ -162,6 +192,9 @@ whiskers and extreme values; shape read from the boxplot.
 summaries (n, n.a, min, Q1, median, mean, Q3, max, sd, CV, percentiles)
 and side-by-side boxplots (or histograms); optional second grouping variable.
 \item \code{desc_cv()}       compare dispersion of variables (SD vs coefficient of variation).
+\item \code{desc_vars()}     overview of a data frame: the statistical type of each
+column (identifier, qualitative nominal / ordinal, quantitative discrete /
+continuous) and the graphs and measures that fit it.
 \item \code{desc_freq()}     frequency distribution of a variable with few distinct
 values: counts f_k, proportions p_k, percentages, cumulative F_k;
 Freq(X <= x), Freq(X >= x), Freq(a <= X <= b); bar / pie / spike /

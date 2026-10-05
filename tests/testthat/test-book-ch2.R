@@ -76,7 +76,7 @@ test_that("UBStats calls for descriptive results (book sections 2.6, 3.5, 4.5)",
   expect_equal(q(desc_freq(gro$Satisf, order = c("VLow", "Low", "Med", "High")))$ubstats[1],
                "distr.table.x(x = factor(gro$Satisf, levels = c(\"VLow\", \"Low\", \"Med\", \"High\")), freq = c(\"counts\", \"proportions\", \"cumulative\"))")
   expect_equal(q(desc_freq(gro$Sex, sort = "decreasing", plot = "bars"))$ubstats,
-               c("distr.table.x(x = gro$Sex)", "distr.plot.x(x = gro$Sex, freq = \"proportions\", plot.type = \"bars\", ord.freq = \"decreasing\")"))
+               c("distr.table.x(x = gro$Sex, freq = c(\"counts\", \"proportions\"))", "distr.plot.x(x = gro$Sex, freq = \"proportions\", plot.type = \"bars\", ord.freq = \"decreasing\")"))
   expect_equal(q(desc_freq(c(A = 10, B = 20)))$ubstats, statcram:::.ub_raw_note)
   expect_equal(q(desc_classes(gro$TotVisits, breaks = c(0, 30, 40, 50, 80), plot = "hist"))$ubstats,
                c("distr.table.x(x = gro$TotVisits, freq = c(\"counts\", \"proportions\", \"densities\", \"cumulative\"), breaks = c(0, 30, 40, 50, 80))",

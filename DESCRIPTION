@@ -1,21 +1,22 @@
 Package: statcram
 Type: Package
-Title: Exam-Friendly Statistics Toolkit with a Numbered Menu
-Version: 0.8.9
+Title: Study Companion for Introductory Statistics with R and UBStats
+Version: 0.9.0
 Authors@R: person("OpenAI","Prototype",email="noreply@example.com",role=c("aut","cre"))
-Description: An offline statistics exam toolkit. A numbered menu (sc()) and
-    consistently named functions cover descriptive statistics, probability,
-    confidence intervals, hypothesis tests, power and sample size,
-    chi-square tests and linear regression. Every procedure accepts raw data
-    (any vector or expression, including variables created during the exam)
-    or the summary numbers given in the question, and prints the formulas
-    with the numbers plugged in, the decision, exam wording and the call to
-    re-run it. sc_table() rebuilds tables printed on paper as data frames.
+Description: A study companion for an introductory statistics course taught
+    with R and UBStats. A numbered menu (sc()), a point-and-click panel
+    (sc_app()) and consistently named functions cover descriptive statistics,
+    probability, confidence intervals, hypothesis tests, power and sample
+    size, chi-square tests and linear regression. Every procedure accepts raw
+    data or the summary numbers given in a question, and prints the formulas
+    with the numbers plugged in, the decision, a model answer to compare with
+    your own and the UBStats call that produces the result. sc_table()
+    rebuilds tables printed on paper as data frames.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Depends: R (>= 3.6.0)
 Imports: graphics, grDevices, stats, utils
-Suggests: testthat (>= 3.0.0)
+Suggests: testthat (>= 3.0.0), shiny, miniUI, rstudioapi
 Config/testthat/edition: 3
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.1

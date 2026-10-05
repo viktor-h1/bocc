@@ -130,6 +130,11 @@
 # ---------- topic 1: describe ----------
 
 .ask_value_check <- function() .ask_num("Is a specific value extreme? Type it (Enter = skip)", allow_empty = TRUE)
+.m_desc_vars <- function() {
+  dfs <- Filter(function(nm) is.data.frame(get(nm, envir = .GlobalEnv)), ls(envir = .GlobalEnv))
+  if (!length(dfs)) stop("No data frame is loaded: load(\"file.RData\") first.", call. = FALSE)
+  .mk("desc_vars", list(data = .code(dfs[.ask_choice("Which data frame?", dfs)])))
+}
 .m_desc_summary <- function() {
   x <- .code(.ask_data("a numeric variable", "vector")$expr)
   .mk("desc_summary", list(x = x, value = .ask_value_check()))
@@ -768,7 +773,8 @@
     list("Compare dispersion of variables (SD vs coefficient of variation)", .m_desc_cv),
     list("Sample proportion of one category + its estimated standard error", .m_desc_prop),
     list("Two variables with few values: joint / conditional distributions, chi-square, Cramer's V", .m_desc_crosstab),
-    list("Two numerical variables: scatterplot, covariance, correlation, regression line", .m_desc_cor))),
+    list("Two numerical variables: scatterplot, covariance, correlation, regression line", .m_desc_cor),
+    list("What type is each variable? Overview of a data frame (qualitative / quantitative, graphs, measures)", .m_desc_vars))),
   list(title = "Probability & random variables", items = list(
     list("Events: union, intersection, conditional probability, independence", .m_prob_events),
     list("Law of total probability and Bayes' theorem", .m_prob_bayes),

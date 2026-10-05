@@ -53,7 +53,7 @@ print.sc_result <- function(x, ...) {
     }
   }
   if (length(x$ubstats) && isTRUE(.opt("ubstats", TRUE))) {
-    cat(.rule("-- UBStats (course package) ", w), "\n", sep = "")
+    cat(.rule("-- UBStats (course package): the call to practise ", w), "\n", sep = "")
     cat(x$ubstats, sep = "\n")
   }
   if (length(x$rbase) && isTRUE(.opt("ubstats", TRUE))) {

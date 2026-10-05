@@ -3,9 +3,9 @@
 \docType{package}
 \name{statcram-package}
 \alias{statcram-package}
-\title{statcram: exam-friendly statistics toolkit}
+\title{statcram: study companion for introductory statistics with R and UBStats}
 \description{
-Start with \code{sc()} (numbered menu), \code{sc_guide()} (which test?) or
+Start with \code{sc()} (numbered menu), \code{sc_app()} (panel), \code{sc_guide()} (which test?) or
 \code{sc_index()} (all functions). Tables printed on paper: \code{sc_table()}.
 What is loaded: \code{sc_data()}. After installing: \code{sc_selftest()}.
 }

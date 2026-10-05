@@ -34,7 +34,7 @@ the index data frame (\code{sc_index}), or \code{TRUE}/\code{FALSE} (\code{sc_se
 the right function / menu number.
 \item \code{sc_index()}   every function by topic, with its menu shortcut.
 \item \code{sc_recipes()} R one-liners for making variables, subsets, factors,
-classes and tables during the exam.
+classes and tables.
 \item \code{sc_notes()}   course rules (estimation, CIs, tests, chi-square,
 regression, past-paper wording). Call without a topic to list topics.
 \item \code{sc_selftest()} checks the installed package against base R.

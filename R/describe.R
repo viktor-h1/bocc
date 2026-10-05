@@ -13,6 +13,9 @@
 #'   summaries (n, n.a, min, Q1, median, mean, Q3, max, sd, CV, percentiles)
 #'   and side-by-side boxplots (or histograms); optional second grouping variable.
 #' * `desc_cv()`       compare dispersion of variables (SD vs coefficient of variation).
+#' * `desc_vars()`     overview of a data frame: the statistical type of each
+#'   column (identifier, qualitative nominal / ordinal, quantitative discrete /
+#'   continuous) and the graphs and measures that fit it.
 #' * `desc_freq()`     frequency distribution of a variable with few distinct
 #'   values: counts f_k, proportions p_k, percentages, cumulative F_k;
 #'   Freq(X <= x), Freq(X >= x), Freq(a <= X <= b); bar / pie / spike /
@@ -61,8 +64,20 @@
 #'   n / (n - 1) correction of the variance).
 #' @param at_most,at_least,between Optional: proportion of values
 #'   `<= at_most`, `>= at_least`, or within `between = c(a, b)`. Exact for
-#'   raw values (`desc_freq`), approximate for classes (`desc_classes`).
-#'   For ordered categories give level names, e.g. `at_least = "High"`.
+#'   raw values (`desc_freq`; `desc_summary`, where `between` means
+#'   a <= X < b), approximate for classes (`desc_classes`, where several
+#'   values or a list of pairs are allowed). For ordered categories give
+#'   level names, e.g. `at_least = "High"`.
+#' @param below,above `desc_summary()`: exact share of raw values `< below`
+#'   or `> above` (with the `mean(condition)` line that gives it in R).
+#' @param compare `desc_freq()`: a second distribution (raw values or a
+#'   typed table) shown side by side in percentages, with mode, median and mean.
+#' @param density `desc_classes()`: densities read off a histogram, one per
+#'   class (`breaks =` gives the limits); one `NA` is obtained as 1 minus
+#'   the other proportions.
+#' @param split `desc_classes()`: a class limit; the classes below and above
+#'   it are analysed as two subgroups (median and mean of each).
+#' @param data `desc_vars()`: a data frame.
 #' @param order `desc_freq()`: the levels in their substantive order, e.g.
 #'   `c("VLow", "Low", "Med", "High")` (needed for cumulative frequencies of
 #'   an ordinal character variable).
@@ -85,7 +100,8 @@
 #'   column variable into intervals first (K or the class limits).
 #' @param line `desc_cor()`: add the regression line to the scatterplot.
 #' @param color `desc_cor()`: a third variable used to colour the points.
-#' @param event Category of interest for `desc_prop()`.
+#' @param event Category of interest for `desc_prop()`; for `desc_freq()`,
+#'   one or more categories whose combined share is reported.
 #' @param count Number of successes for `desc_prop()` (with `n`).
 #' @return An `sc_result` (prints itself).
 #' @examples
@@ -184,11 +200,35 @@ NULL
   "no clear skewness (the box and the whiskers point in different directions)"
 }
 
+# Exact shares of raw values satisfying a condition, with the R line that gives them.
+.share_lines <- function(v, expr, xlab, at_most, below, at_least, above, between) {
+  lines <- character(); words <- character(); vals <- list()
+  add <- function(key, cond, lab, rcode, txt) {
+    k <- sum(cond); sh <- k / length(v)
+    lines <<- c(lines, sprintf("  Freq(%s) = %s / %s = %s      in R: mean(%s)", lab, k, length(v), .f(sh), rcode))
+    words <<- c(words, sprintf("%s of the units (%s of %s) have %s %s.", .pct(sh, 1), k, length(v), xlab, txt))
+    vals[[key]] <<- c(vals[[key]], sh)
+  }
+  for (a in at_most) add("at_most", v <= a, sprintf("X <= %s", .f(a)), sprintf("%s <= %s", expr, .f(a)), sprintf("at most %s", .f(a)))
+  for (a in below) add("below", v < a, sprintf("X < %s", .f(a)), sprintf("%s < %s", expr, .f(a)), sprintf("below %s", .f(a)))
+  for (a in at_least) add("at_least", v >= a, sprintf("X >= %s", .f(a)), sprintf("%s >= %s", expr, .f(a)), sprintf("at least %s", .f(a)))
+  for (a in above) add("above", v > a, sprintf("X > %s", .f(a)), sprintf("%s > %s", expr, .f(a)), sprintf("above %s", .f(a)))
+  if (!is.null(between)) {
+    if (length(between) != 2) stop("between must be two values: c(a, b) for a <= X < b.", call. = FALSE)
+    a <- min(between); b <- max(between)
+    add("between", v >= a & v < b, sprintf("%s <= X < %s", .f(a), .f(b)), sprintf("%s >= %s & %s < %s", expr, .f(a), expr, .f(b)),
+        sprintf("at least %s and below %s", .f(a), .f(b)))
+  }
+  list(lines = lines, words = words, values = vals)
+}
+
 #' @rdname describe
 #' @export
-desc_summary <- function(x, probs = c(0.05, 0.10, 0.90, 0.95, 0.99), population = FALSE, value = NULL) {
+desc_summary <- function(x, probs = c(0.05, 0.10, 0.90, 0.95, 0.99), population = FALSE, value = NULL,
+                         at_most = NULL, below = NULL, at_least = NULL, above = NULL, between = NULL) {
   sx <- substitute(x); xlab <- .label(sx)
   v <- .num(x, xlab)
+  sh <- .share_lines(v, paste(deparse(sx), collapse = ""), xlab, at_most, below, at_least, above, between)
   n <- length(v); m <- mean(v); md <- median(v)
   dev2 <- sum((v - m)^2)
   if (population) { s2 <- dev2 / n; s2_txt <- sprintf("sigma^2 = sum(x_i - mu)^2 / N = %s / %s = %s", .f(dev2), n, .f(s2)) }
@@ -234,7 +274,8 @@ desc_summary <- function(x, probs = c(0.05, 0.10, 0.90, 0.95, 0.99), population 
     sprintf("Shape: Q2 - Q1 = %s vs Q3 - Q2 = %s;  lower whisker %s vs upper whisker %s",
             .f(md - q[1]), .f(q[2] - md), .f(q[1] - wlo), .f(whi - q[2])),
     sprintf("  -> %s; %s", shape, mm),
-    if (length(value)) c("", .value_check_lines(value, q, xlab)))
+    if (length(value)) c("", .value_check_lines(value, q, xlab)),
+    if (length(sh$lines)) c("", "Exact shares from the raw data (count of the units satisfying the condition / n):", sh$lines))
   .with_plot(function() {
     op <- par(mfrow = c(1, 2)); on.exit(par(op))
     boxplot(v, main = paste("Boxplot:", xlab), ylab = xlab, col = "grey90")
@@ -248,6 +289,7 @@ desc_summary <- function(x, probs = c(0.05, 0.10, 0.90, 0.95, 0.99), population 
     sprintf("The standard deviation is %s, i.e. on average the values deviate from the mean by about %s (CV = %s of the mean). The boxplot suggests a %s distribution.%s",
             .f(s), .f(s), .pct(s / abs(m)), sub(" \\(.*", "", shape),
             if (length(outl)) sprintf(" %d value(s) lie more than 1.5 IQR beyond the box and are flagged as extreme: %s.", length(outl), paste(.f(outl), collapse = ", ")) else " No value is flagged as extreme."),
+    if (!grepl("close", mm)) "With a skewed distribution the median, which is robust to extreme values, describes the centre better than the mean (the mean is attracted by the values in the long tail).",
     .pct_reading(probs, pr, xlab, max(v), min(v)),
     if (any(abs(probs - 0.95) < 1e-9)) {
       p95 <- pr[which.min(abs(probs - 0.95))]
@@ -255,16 +297,79 @@ desc_summary <- function(x, probs = c(0.05, 0.10, 0.90, 0.95, 0.99), population 
               if (p95 > fe[2]) "P95 is above the fence, so MORE than 5% of the values are anomalously high (upper outliers)."
               else "P95 is not above the fence, so at most 5% of the values are anomalously high.")
     },
-    if (length(value)) .value_check_words(value, q, xlab))
+    if (length(value)) .value_check_words(value, q, xlab), sh$words)
   .result("Descriptive summary", lines, wording,
           c(.dropped_note(v), if (population) "Population formulas used (divisor N)."), match.call(),
           n = n, mean = m, median = md, mode = mo$values, variance = s2, sd = s, quartiles = q, hand_quartiles = hq,
           fivenum = c(min = min(v), q1 = q[1], median = md, q3 = q[2], max = max(v)),
           range = max(v) - min(v), iqr = q[2] - q[1], cv = s / abs(m), whiskers = c(wlo, whi), outliers = outl,
-          percentiles = stats::setNames(pr, paste0("p", round(100 * probs))),
+          percentiles = stats::setNames(pr, paste0("p", round(100 * probs))), shares = sh$values,
           ubstats = c(.ub_call("distr.summary.x", x = sx, stats = c("central", "fivenumbers", "dispersion", .ub_pcts(probs))),
                       .ub_call("distr.plot.x", x = sx, plot.type = "boxplot"),
                       if (population) "# UBStats uses the sample formulas (divisor n - 1)"))
+}
+
+# Statistical type of one column (course terms) and what fits it.
+.var_info <- function(v, nm) {
+  vv <- v[!is.na(v)]; k <- length(unique(vv)); flag <- ""
+  lnm <- tolower(nm)
+  if (grepl("^(id|index|idx|code|row|rownum|obs)$", lnm) ||
+      (is.numeric(vv) && length(vv) > 10 && k == length(vv) && all(abs(vv - round(vv)) < 1e-9) && all(diff(sort(vv)) == 1))) {
+    type <- "identifier"
+  } else if (is.numeric(vv) && grepl("^(year|anno|yr)$", lnm)) {
+    type <- "qualitative ordinal"; flag <- "numbers used as labels (years)"
+  } else if (is.logical(vv)) {
+    type <- "qualitative nominal"; flag <- "binary"
+  } else if (is.numeric(vv)) {
+    int <- all(abs(vv - round(vv)) < 1e-9)
+    type <- if (int && (k <= 15 || diff(range(vv)) <= 100)) "quantitative discrete" else "quantitative continuous"
+    if (int && type == "quantitative continuous") flag <- "integers, but many distinct values"
+  } else {
+    lv <- .cats(vv)
+    if (is.ordered(v) || (is.factor(v) && !.alphabetical(levels(droplevels(v))))) type <- "qualitative ordinal"
+    else if (!is.null(.ordinal_guess(lv))) { type <- "qualitative ordinal"; g <- .ordinal_guess(lv); if (length(g) > 4) g <- c(g[1:3], "...", g[length(g)])
+      flag <- sprintf("stored as text (alphabetical): order %s", paste(g, collapse = " < ")) }
+    else if (all(grepl("^[0-9]{1,4}[-/.][0-9]{1,2}[-/.][0-9]{1,4}$", head(as.character(vv), 50)))) { type <- "qualitative ordinal"; flag <- "dates" }
+    else { type <- "qualitative nominal"; if (k == 2) flag <- "binary" else if (k > 30) flag <- sprintf("%d categories", k) }
+  }
+  list(variable = nm, r_type = class(v)[1], distinct = k, type = type, note = flag)
+}
+
+#' @rdname describe
+#' @export
+desc_vars <- function(data) {
+  sd <- substitute(data); dlab <- paste(deparse(sd), collapse = "")
+  if (!is.data.frame(data)) stop("desc_vars() needs a data frame, e.g. desc_vars(pizzerie).", call. = FALSE)
+  info <- lapply(names(data), function(nm) .var_info(data[[nm]], nm))
+  tab <- data.frame(variable = vapply(info, `[[`, "", "variable"), R_class = vapply(info, `[[`, "", "r_type"),
+                    distinct = vapply(info, `[[`, 0, "distinct"), type = vapply(info, `[[`, "", "type"),
+                    note = vapply(info, `[[`, "", "note"), stringsAsFactors = FALSE)
+  fits <- c("qualitative nominal" = "bar chart or pie chart; mode only",
+            "qualitative ordinal" = "bar chart with the levels in order; mode, median, quartiles, cumulative frequencies",
+            "quantitative discrete" = "spike plot (histogram if many values); mode, median, mean, quartiles, variance, SD",
+            "quantitative continuous" = "histogram (classes) and boxplot; median, mean, quartiles, variance, SD, CV",
+            "identifier" = "not a statistical variable (it only labels the units)")
+  by_type <- function(t) tab$variable[tab$type == t]
+  lines <- c(sprintf("Data frame %s: %d units (rows) and %d columns", dlab, nrow(data), ncol(data)), "",
+             .table_lines(tab), "", "What fits each type:")
+  for (t in names(fits)) if (length(by_type(t)))
+    lines <- c(lines, sprintf("  %s (%s): %s", t, paste(by_type(t), collapse = ", "), fits[[t]]))
+  qual <- tab$variable[grepl("^qualitative", tab$type)]; quan <- tab$variable[grepl("^quantitative", tab$type)]
+  ids <- by_type("identifier"); disc <- by_type("quantitative discrete")
+  wording <- c(
+    sprintf("%s contains %d columns observed on %d units.%s So there are %d statistical variables: %d qualitative (%s) and %d quantitative (%s).",
+            dlab, ncol(data), nrow(data),
+            if (length(ids)) sprintf(" %s %s an identifier, not a statistical variable.", paste(ids, collapse = ", "), if (length(ids) > 1) "are" else "is") else "",
+            length(qual) + length(quan), length(qual), paste(qual, collapse = ", "), length(quan), paste(quan, collapse = ", ")),
+    if (length(quan)) sprintf("Among the quantitative variables, %s.",
+                              if (!length(disc)) "all are continuous"
+                              else if (length(disc) == length(quan)) "all are discrete"
+                              else sprintf("%s %s discrete and the others continuous", paste(disc, collapse = ", "), if (length(disc) > 1) "are" else "is")),
+    if (any(tab$note != "" & grepl("text", tab$note)))
+      sprintf("%s: ordinal but stored as text, so R sorts the categories alphabetically; define a factor with the levels in their natural order before tables and graphs.",
+              paste(tab$variable[grepl("text", tab$note)], collapse = ", ")))
+  .result("Variables in the data frame", lines, wording, NULL, match.call(),
+          table = tab, rbase = sprintf("str(%s)", dlab), ubstats = NULL)
 }
 
 #' @rdname describe

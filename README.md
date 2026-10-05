@@ -1,10 +1,19 @@
-# statcram 0.8.9
+# statcram 0.9.0
 
-An offline statistics exam toolkit for R / RStudio. One numbered menu, plus plain functions
-with consistent names. Every procedure works with **raw data** (including data frames and
-variables you create during the exam) **or the summary numbers printed in the question**, and
-prints the formula with your numbers plugged in, the decision, exam wording and the one-line
-call to re-run it.
+A study companion for 30001 Statistics (R, RStudio and UBStats). Practise with the course data
+and the past papers, check your answers against the official solutions, and learn the UBStats and
+base-R calls you will type yourself at the exam. One numbered menu (`sc()`), a point-and-click
+panel (`sc_app()`), and plain functions with consistent names. Every procedure works with **raw
+data** or **the summary numbers printed in a question**, and prints the formula with the numbers
+plugged in, the decision, a model answer ("exam wording") and the UBStats call.
+
+## At the exam: statcram is for studying only
+
+The 2026/27 syllabus allows R, RStudio, UBStats and the Manual on R at the exam. It forbids
+"using R scripts prepared before the exam" and AI tools, and a violation means the exam is
+cancelled and reported to the Disciplinary Committee. statcram is prepared in advance, so do not
+use it during an exam: use it while studying to understand each procedure and to practise the
+UBStats calls shown under every result.
 
 ## Install
 
@@ -12,7 +21,7 @@ Pure R, no compilation, no internet needed after installing.
 
 ```r
 # from the built file
-install.packages("statcram_0.8.9.tar.gz", repos = NULL, type = "source")
+install.packages("statcram_0.9.0.tar.gz", repos = NULL, type = "source")
 # or from GitHub
 remotes::install_github("viktor-h1/bocc", ref = "claude/quirky-gates-9i7hvr")
 
@@ -20,13 +29,17 @@ library(statcram)
 sc_selftest()        # checks every procedure against base R
 ```
 
-## Exam quick card
+For the panel also: `install.packages(c("shiny", "miniUI"))`.
+
+## Practice session
 
 ```r
-load("EXAM.RData")
+load("Exe1_Data.Rdata")   # course data, e.g. the Module 1 exercises
 library(statcram)
 
+sc_app()         # point-and-click panel in the Viewer pane (also Addins > statcram panel)
 sc()             # the menu                         sc(4, 1) = straight to "one-mean test"
+desc_vars(pizzerie)   # type of each variable: qualitative / quantitative, graphs, measures
 sc_table()       # rebuild a table printed on paper  (numbered placeholders)
 sc_data()        # what is loaded right now
 sc_guide()       # which test do I need?
@@ -42,11 +55,20 @@ now*. Type a number, or **any R expression** (`df$after - df$before`, `df$loyalt
 `subset(df, region == "North")$spend`), or **s** to enter summary numbers, or **t** to type a
 table from paper first.
 
+## The panel
+
+`sc_app()` opens a standard RStudio gadget in the Viewer pane (or Addins > statcram panel) with
+the procedures of the first partial: describing data, random variables and the CLT, and
+estimation of one mean and one proportion. Pick a procedure, choose the variables from the data
+loaded now (or type any R expression) and fill in the form. The Result tab shows exactly what the
+console prints, and the Plot tab shows the graph. Change a field and the result updates.
+"Print to console" closes the panel and prints the result and its call in the console.
+
 ## The menu
 
 | # | Topic | Functions |
 |---|---|---|
-| 1 | Describe data | `desc_freq` `desc_classes` `desc_summary` `desc_compare` `desc_cv` `desc_prop` `desc_crosstab` `desc_cor` |
+| 1 | Describe data | `desc_freq` `desc_classes` `desc_summary` `desc_compare` `desc_cv` `desc_prop` `desc_crosstab` `desc_cor` `desc_vars` |
 | 2 | Probability & random variables | `prob_events` `prob_bayes` `rv_discrete` `prob_binom` `prob_unif` `prob_normal` `prob_t` `prob_chisq` `rv_lincomb` `rv_joint` `rv_iid` `rv_prop` |
 | 3 | Estimation and confidence intervals | `ci_mean` `ci_prop` `ci_paired` `ci_2means` `ci_2props` `est_mean` |
 | 4 | Hypothesis tests | `test_mean` `test_prop` `test_paired` `test_2means` `test_2props` `test_levene` |
@@ -84,6 +106,23 @@ desc_classes(df$TotVisits, breaks = 10)                 # 10 equal-width classes
 desc_classes(df$TotVisits, breaks = c(0, 5, 10, 15, 25, 45, 60, 100, 150, 220))
 desc_classes(df$MonthExp, at_most = 250)                # variable measured in classes "[0,50)", ...
 ```
+
+The Module 1 exercises (graphs and central tendency) are reproduced with their official solutions:
+- `desc_vars(df)` gives the type of every column (identifier, qualitative nominal / ordinal,
+  quantitative discrete / continuous) and the graphs and measures that fit.
+- `desc_freq()`:
+  - gives a nominal variable only its mode, with a note on how representative it is;
+  - recognises ordinal labels stored as text (Young / Middle / Senior) and prints the
+    `factor(levels =)` line;
+  - says which graph to use and why (spike plot for discrete values);
+  - `event =` gives the combined share of several categories, `compare =` puts two
+    distributions side by side in percentages.
+- `desc_summary()` gives exact shares from raw data (`between =`, `below =`, ...) with the
+  `mean(condition)` line.
+- `desc_classes()`:
+  - takes several cut-offs at once, densities read off a histogram (`density =`, one `NA` = the
+    rest), and `split =` for two subgroups;
+  - explains the modal class, two peaks and skewness.
 
 Summaries follow chapter 3: `desc_summary()` gives the mode(s), median, mean, five-number summary
 (R's quartiles and the book's hand rule "smallest value with F >= 0.25"), percentiles, range, IQR,

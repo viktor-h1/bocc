@@ -9,7 +9,7 @@
 #'   the right function / menu number.
 #' * `sc_index()`   every function by topic, with its menu shortcut.
 #' * `sc_recipes()` R one-liners for making variables, subsets, factors,
-#'   classes and tables during the exam.
+#'   classes and tables.
 #' * `sc_notes()`   course rules (estimation, CIs, tests, chi-square,
 #'   regression, past-paper wording). Call without a topic to list topics.
 #' * `sc_selftest()` checks the installed package against base R.
@@ -52,6 +52,7 @@ sc_guide <- function() {
     "  two variables with few values: joint / conditional ........ desc_crosstab()  sc(1,7)",
     "     distributions, conditional summaries, chi-square, Cramer's V",
     "  two numerical variables: scatter, cov, r, regression line .. desc_cor()       sc(1,8)",
+    "  type of each variable in a data frame (qualitative / quantitative) .. desc_vars()  sc(1,9)",
     "",
     "Estimation (chapter 6): point estimate + SE ..... est_mean() / desc_prop()   sc(3,6)",
     "  sample size for a margin / width / SE .......... n_mean() n_prop() n_2props()   sc(5,3..5)",
@@ -83,7 +84,7 @@ sc_guide <- function() {
     "  P(A or B), P(A | B), independence of events ................ prob_events()  sc(2,1)",
     "  total probability, Bayes (test positive -> disease?) ...... prob_bayes()   sc(2,2)",
     "  discrete r.v.: E, Var, median from p(x) ................... rv_discrete()  sc(2,3)",
-    "  number of successes in m independent trials ............... prob_binom()   sc(2,4)",
+    "  number of successes in m independent trials ............... prob_binom()   sc(2,4)   (not in the 2026/27 syllabus)",
     "  Uniform / Normal / t / chi-square probabilities, quantiles .. prob_unif() prob_normal() prob_t() prob_chisq()   sc(2,5..8)",
     "  a + bX, aX + bY + c, portfolios, sums of variables ........ rv_lincomb()   sc(2,9)",
     "  joint table of two r.v.s: covariance, independence ....... rv_joint()     sc(2,10)",
@@ -105,13 +106,13 @@ sc_guide <- function() {
 }
 
 .index <- data.frame(
-  topic = c(rep("1 Describe", 8), rep("2 Probability", 12), rep("3 Estimation / CIs", 6),
+  topic = c(rep("1 Describe", 9), rep("2 Probability", 12), rep("3 Estimation / CIs", 6),
             rep("4 Hypothesis tests", 6), rep("5 Power / sample size", 6), rep("6 Chi-square", 2),
             rep("7 Regression", 6), rep("8 Data tools", 3), rep("9 Guide", 5)),
-  menu = c(paste0("sc(1,", 1:8, ")"), paste0("sc(2,", 1:12, ")"), paste0("sc(3,", 1:6, ")"), paste0("sc(4,", 1:6, ")"),
+  menu = c(paste0("sc(1,", 1:9, ")"), paste0("sc(2,", 1:12, ")"), paste0("sc(3,", 1:6, ")"), paste0("sc(4,", 1:6, ")"),
            paste0("sc(5,", 1:6, ")"), paste0("sc(6,", 1:2, ")"), paste0("sc(7,", 1:6, ")"),
            "sc(8,1)", "sc(8,3)", "sc(8,6)", "sc(9,1)", "sc(9,2)", "sc(9,3)", "", ""),
-  fun = c("desc_freq", "desc_classes", "desc_summary", "desc_compare", "desc_cv", "desc_prop", "desc_crosstab", "desc_cor",
+  fun = c("desc_freq", "desc_classes", "desc_summary", "desc_compare", "desc_cv", "desc_prop", "desc_crosstab", "desc_cor", "desc_vars",
           "prob_events", "prob_bayes", "rv_discrete", "prob_binom", "prob_unif", "prob_normal", "prob_t", "prob_chisq",
           "rv_lincomb", "rv_joint", "rv_iid", "rv_prop",
           "ci_mean", "ci_prop", "ci_paired", "ci_2means", "ci_2props", "est_mean",
@@ -129,11 +130,12 @@ sc_guide <- function() {
            "p-hat of one category + estimated SE",
            "joint / conditional distributions, chi-square, Cramer's V",
            "scatter, covariance, correlation, regression line",
+           "type of each variable in a data frame; graphs and measures that fit",
            "P(A or B), P(A and B), P(A | B), independence",
            "total probability, Bayes' theorem",
            "E(X), Var(X), F(x), median of a discrete r.v.",
-           "Binomial / Bernoulli probabilities and quantiles",
-           "Uniform probabilities and quantiles",
+           "Binomial / Bernoulli probabilities (binomial: not in the 2026/27 syllabus)",
+           "Uniform probabilities (not in the 2026/27 syllabus)",
            "P(X<a), P(X>a), P(a<X<b), quantiles, central interval of N(mu, sigma^2)",
            "same for Student t", "same for chi-square",
            "a_1 X_1 + ... + a_k X_k + c: E, Var, normal probabilities",
@@ -149,7 +151,7 @@ sc_guide <- function() {
            "goodness of fit", "independence",
            "fit lm + all tests + interpretation", "CI mean response + PI individual", "H0: beta = value",
            "diagnostics + multicollinearity", "adjusted R2 + partial F", "CI for beta / for a change of c units",
-           "enter a table from paper", "what is loaded now", "R one-liners for the exam",
+           "enter a table from paper", "what is loaded now", "R one-liners",
            "which test? decision tree", "this list", "course notes", "check the installation", "the menu"),
   stringsAsFactors = FALSE)
 
