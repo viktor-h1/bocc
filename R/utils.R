@@ -1,0 +1,168 @@
+# ------------------------------------------------------------
+# Small shared helpers: options, number formatting, argument
+# normalisation, p-values / critical values, scripted input.
+# ------------------------------------------------------------
+
+`%||%` <- function(x, y) if (is.null(x)) y else x
+
+.opt <- function(name, default) getOption(paste0("statcram.", name), default)
+
+.digits <- function() .opt("digits", 4)
+
+.plots_on <- function() isTRUE(.opt("plot", TRUE))
+
+# Format numbers for display: fixed decimals, trailing zeros dropped,
+# tiny non-zero values in scientific notation.
+.f <- function(x, d = .digits()) {
+  if (is.null(x) || !length(x)) return("NA")
+  vapply(x, function(v) {
+    if (is.na(v)) return("NA")
+    if (is.infinite(v)) return(if (v > 0) "Inf" else "-Inf")
+    if (v != 0 && abs(v) < 10^(-d)) return(formatC(v, digits = 3, format = "e"))
+    out <- formatC(round(v, d), format = "f", digits = d, drop0trailing = TRUE)
+    if (out == "-0") "0" else out
+  }, character(1))
+}
+
+# p-values: more precision, scientific when very small.
+.fp <- function(p) {
+  vapply(p, function(v) {
+    if (is.na(v)) return("NA")
+    if (v < 1e-4) formatC(v, digits = 3, format = "e") else formatC(v, digits = 4, format = "f")
+  }, character(1))
+}
+
+.pct <- function(x, d = 2) paste0(.f(100 * x, d), "%")
+
+# Accept 0.95 or 95 (or "95%"); always return a probability in (0, 1).
+.prob <- function(x, what = "value") {
+  if (is.character(x)) x <- as.numeric(sub("%", "", x, fixed = TRUE))
+  if (is.null(x) || length(x) != 1 || is.na(x)) stop(what, " must be a single number.", call. = FALSE)
+  if (x >= 1 && x < 100) x <- x / 100
+  if (x <= 0 || x >= 1) stop(what, " must be between 0 and 1 (or 0 and 100 as a percentage).", call. = FALSE)
+  x
+}
+
+# Normalise the alternative hypothesis. Accepts symbols and words.
+.alt <- function(alt) {
+  if (is.null(alt) || !length(alt)) stop("Give alt = \"<\", \">\" or \"!=\".", call. = FALSE)
+  a <- tolower(gsub("\\s+", "", as.character(alt[1])))
+  if (a %in% c("two.sided", "twosided", "two-sided", "two", "2", "!=", "<>", "=/=", "ne",
+               "different", "differs", "neq", "two.tailed", "twotailed"))
+    return("two.sided")
+  if (a %in% c("less", "<", "l", "lower", "lt", "smaller", "left", "decrease", "less.than"))
+    return("less")
+  if (a %in% c("greater", ">", "g", "higher", "gt", "larger", "more", "right", "increase", "greater.than"))
+    return("greater")
+  stop("alt must be \"<\", \">\" or \"!=\" (or less / greater / two.sided).", call. = FALSE)
+}
+
+.alt_sym <- function(alt) switch(alt, less = "<", greater = ">", two.sided = "!=")
+
+# Two-sided p-value etc. for z / t / chisq / F statistics.
+.pval <- function(stat, alt, dist = c("z", "t"), df = NULL) {
+  dist <- match.arg(dist)
+  cdf <- if (dist == "z") function(q) pnorm(q) else function(q) pt(q, df)
+  switch(alt,
+    less = cdf(stat),
+    greater = 1 - cdf(stat),
+    two.sided = 2 * (1 - cdf(abs(stat))))
+}
+
+.crit <- function(alt, alpha, dist = c("z", "t"), df = NULL) {
+  dist <- match.arg(dist)
+  qf <- if (dist == "z") function(p) qnorm(p) else function(p) qt(p, df)
+  switch(alt,
+    less = qf(alpha),
+    greater = qf(1 - alpha),
+    two.sided = c(-qf(1 - alpha / 2), qf(1 - alpha / 2)))
+}
+
+.dist_label <- function(dist, df = NULL) {
+  if (dist == "z") "Z" else sprintf("t(%s)", .f(df, 2))
+}
+
+# Text for the critical value and rejection region.
+.reject_region <- function(alt, crit, stat_name = "stat") {
+  switch(alt,
+    less = sprintf("reject H0 if %s < %s", stat_name, .f(crit)),
+    greater = sprintf("reject H0 if %s > %s", stat_name, .f(crit)),
+    two.sided = sprintf("reject H0 if %s < %s or %s > %s", stat_name, .f(crit[1]), stat_name, .f(crit[2])))
+}
+
+.p_text <- function(alt, stat_name, stat) {
+  switch(alt,
+    less = sprintf("P(%s < %s)", stat_name, .f(stat)),
+    greater = sprintf("P(%s > %s)", stat_name, .f(stat)),
+    two.sided = sprintf("2 * P(%s > |%s|)", stat_name, .f(stat)))
+}
+
+.decision_lines <- function(p, alpha) {
+  rej <- p < alpha
+  c(sprintf("p-value = %s %s alpha = %s  ->  %s",
+            .fp(p), if (rej) "<" else ">=", .f(alpha), if (rej) "REJECT H0" else "FAIL TO REJECT H0"))
+}
+
+.decision_words <- function(p, alpha) {
+  rej <- p < alpha
+  sprintf("Since the p-value (%s) is %s the significance level alpha = %s, we %s. There is %s empirical evidence",
+          .fp(p), if (rej) "below" else "not below", .f(alpha),
+          if (rej) "reject H0" else "fail to reject H0 (we do not 'accept' H0)",
+          if (rej) "sufficient" else "insufficient")
+}
+
+# Readable label for an argument expression: df$spend -> "spend".
+.label <- function(expr, default = "x") {
+  if (is.null(expr)) return(default)
+  if (is.call(expr)) {
+    fn <- as.character(expr[[1]])[1]
+    if (fn == "$" && length(expr) == 3) return(as.character(expr[[3]]))
+    if (fn == "[[" && length(expr) == 3 && is.character(expr[[3]])) return(expr[[3]])
+  }
+  out <- paste(deparse(expr, width.cutoff = 60L), collapse = " ")
+  if (nchar(out) > 40) out <- paste0(substr(out, 1, 37), "...")
+  out
+}
+
+# Text of the call used to produce a result, for the "Re-run" line.
+.call_text <- function(cl) {
+  if (is.null(cl)) return(NULL)
+  txt <- paste(deparse(cl, width.cutoff = 500L), collapse = " ")
+  txt <- gsub("\\s+", " ", txt)
+  sub("^statcram::", "", txt)
+}
+
+.rule <- function(text = "", width = 70, char = "-") {
+  n <- max(3, width - nchar(text))
+  paste0(text, strrep(char, n))
+}
+
+.width <- function() min(max(getOption("width", 80), 50), 90)
+
+# Read one line of input. Tests (and scripted demos) can queue answers in
+# options(statcram.input = c("4", "1", ...)); otherwise readline() is used.
+.read_line <- function(prompt = "") {
+  q <- getOption("statcram.input")
+  if (!is.null(q)) {
+    if (!length(q)) stop("statcram: scripted input exhausted.", call. = FALSE)
+    ans <- as.character(q[[1]])
+    options(statcram.input = q[-1])
+    cat(prompt, ans, "\n", sep = "")
+    return(ans)
+  }
+  if (!interactive())
+    stop("statcram menus need an interactive R session (RStudio console).", call. = FALSE)
+  readline(prompt)
+}
+
+# Run plotting code safely: never let a plotting problem kill a result.
+.with_plot <- function(expr_fun) {
+  if (!.plots_on()) return(invisible(NULL))
+  tryCatch(expr_fun(), error = function(e) message("(plot skipped: ", conditionMessage(e), ")"))
+  invisible(NULL)
+}
+
+.need <- function(..., msg) {
+  vals <- list(...)
+  if (any(vapply(vals, is.null, logical(1)))) stop(msg, call. = FALSE)
+}
