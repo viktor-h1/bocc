@@ -1,4 +1,4 @@
-# statcram 0.8.5
+# statcram 0.8.6
 
 An offline statistics exam toolkit for R / RStudio. One numbered menu, plus plain functions
 with consistent names. Every procedure works with **raw data** (including data frames and
@@ -12,7 +12,7 @@ Pure R, no compilation, no internet needed after installing.
 
 ```r
 # from the built file
-install.packages("statcram_0.8.5.tar.gz", repos = NULL, type = "source")
+install.packages("statcram_0.8.6.tar.gz", repos = NULL, type = "source")
 # or from GitHub
 remotes::install_github("viktor-h1/bocc", ref = "claude/quirky-gates-9i7hvr")
 
@@ -48,8 +48,8 @@ table from paper first.
 | 1 | Describe data | `desc_freq` `desc_classes` `desc_summary` `desc_compare` `desc_cv` `desc_prop` `desc_crosstab` `desc_cor` |
 | 2 | Probability & random variables | `prob_events` `prob_bayes` `rv_discrete` `prob_binom` `prob_unif` `prob_normal` `prob_t` `prob_chisq` `rv_lincomb` `rv_joint` `rv_iid` `rv_prop` |
 | 3 | Estimation and confidence intervals | `ci_mean` `ci_prop` `ci_paired` `ci_2means` `ci_2props` `est_mean` |
-| 4 | Hypothesis tests | `test_mean` `test_prop` `test_paired` `test_2means` `test_2props` |
-| 5 | Power / Type II error / sample size | `power_mean` `power_prop` `n_mean` `n_prop` `n_2props` |
+| 4 | Hypothesis tests | `test_mean` `test_prop` `test_paired` `test_2means` `test_2props` `test_levene` |
+| 5 | Power / Type II error / sample size | `power_mean` `power_prop` `n_mean` `n_prop` `n_2props` `power_2means` |
 | 6 | Chi-square | `chisq_gof` `chisq_indep` |
 | 7 | Regression | `reg_fit` `reg_predict` `reg_test` `reg_check` `reg_compare` |
 | 8 | Enter a table from paper / data tools | `sc_table` `sc_data` `sc_recipes` |
@@ -115,15 +115,27 @@ in the question, and `ci_paired(sigma_d =)` from a known sigma_D. `n_mean()` / `
 group for p_x - p_y. Each interval also prints the matching UBStats call, e.g.
 `CI.diffmean(x = df$spend, by = df$loyalty, conf.level = 0.95)`.
 
+Tests follow chapter 7. A one-sided H0 is written with its equality ("H0: mu <= 15 (or mu = 15)")
+and tested at the boundary value, and every test reads the p-value as "the smallest alpha that
+rejects". As in UBStats `TEST.mean` / `TEST.diffmean`, a variance that is unknown gives both
+Normal.Approx and Student-t rows. Without `case`, `test_2means()` shows all four tests, and with
+raw data `ci_2means()` / `test_2means()` add Levene's test for equal variances (deviations from
+the medians, as UBStats `var.test = TRUE`; also `test_levene()`). `test_paired(sigma_d =)` covers
+a known sigma_D. `test_2props(d0 = 0.05)` tests "more than 5 points higher" with the unpooled se,
+while d0 = 0 uses the pooled p. `power_2means()` gives beta for two means with known sigmas. A
+true value inside H0 is reported as P(reject) = alpha(mu1), not as beta. Chi-square tests add
+the residuals (O - E) / sqrt(E), Cramer's V, the E >= 5 rule and the base R call (2 x 2:
+`chisq.test(..., correct = FALSE)`).
+
 Classes are `[a, b)` with the last one closed, densities are c_k = p_k / w_k, histograms use
 densities, and proportions inside a class are approximated assuming values are spread uniformly
 (Freq(X <= 250) = Freq(X < 200) + c_k x 50). Columns holding interval labels such as `"[0,50)"` are
 recognised and sorted by their limits, not alphabetically.
 
 `alt` takes `"<"`, `">"`, `"!="` (or less / greater / two.sided). `alpha` and `conf` take
-`0.05` or `5`, `0.95` or `95`. The two-means test requires `case =` `"pooled"`, `"welch"`,
-`"large"` or `"known"`: the package never guesses an assumption the question did not state (the CI
-shows all four intervals instead).
+`0.05` or `5`, `0.95` or `95`. For two means, `case =` (`"pooled"`, `"welch"`, `"large"` or
+`"known"`) picks the procedure that is worked step by step. The package never guesses an
+assumption the question did not state: without `case` it shows all four intervals or tests.
 Turn parts of the output off with `options(statcram.plot = FALSE)`,
 `options(statcram.wording = FALSE)`, `options(statcram.ubstats = FALSE)`; change decimals with
 `options(statcram.digits = 6)`.

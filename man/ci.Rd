@@ -64,7 +64,8 @@ ci_2means(
   s2 = NULL,
   n2 = NULL,
   sigma1 = NULL,
-  sigma2 = NULL
+  sigma2 = NULL,
+  var_test = NULL
 )
 
 ci_prop(
@@ -124,12 +125,16 @@ means/SDs and their covariance or correlation are given.}
 \item{case}{Two independent means: \code{"pooled"} (variances unknown but
 assumed equal), \code{"welch"} (unknown, not assumed equal), \code{"large"}
 (non-normal / unknown distribution, large samples, Z) or \code{"known"}
-(population sigmas known, give \code{sigma1}, \code{sigma2}).}
+(population sigmas known, give \code{sigma1}, \code{sigma2}). Omit it to see all
+four tests.}
 
 \item{group, levels}{Grouping variable and the two groups to compare,
 e.g. \verb{group = df$loyalty, levels = c("High", "Medium")}.}
 
 \item{xbar1, n1, xbar2, n2, sigma1, sigma2}{Summary numbers for two samples.}
+
+\item{var_test}{\code{ci_2means()}: with raw data Levene's test for equal variances is
+shown automatically (\code{NULL}); \code{FALSE} hides it.}
 
 \item{event}{Category of \code{x} that counts as a "success", e.g. \code{"High"}.}
 

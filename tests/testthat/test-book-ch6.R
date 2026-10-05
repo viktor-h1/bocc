@@ -80,8 +80,10 @@ test_that("T&E 6.4: the four UBStats intervals for two means", {
                c(iv$Lower[2], iv$Upper[2]))
   expect_equal(q(ci_2means(xbar1 = 1120, s1 = 310, n1 = 85, xbar2 = 970, s2 = 280, n2 = 100, case = "large"))$ci,
                c(iv$Lower[3], iv$Upper[3]))
-  # the test still needs a case
-  expect_error(test_2means(xbar1 = 1120, s1 = 310, n1 = 85, xbar2 = 970, s2 = 280, n2 = 100), "Choose case")
+  # the test without a case shows the same four rows (chapter 7)
+  tt <- q(test_2means(xbar1 = 1120, s1 = 310, n1 = 85, xbar2 = 970, s2 = 280, n2 = 100))$tests
+  expect_equal(tt$se, iv$se)
+  expect_equal(tt$stat, 150 / iv$se)
 })
 
 test_that("Example 6.4: Area A vs B and Push, 99% intervals", {
@@ -164,9 +166,9 @@ test_that("UBStats calls printed under each result", {
   expect_equal(q(ci_prop(df$loy, event = c("H", "M")))$ubstats, "CI.prop(x = df$loy %in% c(\"H\", \"M\"), conf.level = 0.95)")
   expect_equal(q(ci_paired(df$after, df$spend))$ubstats,
                "CI.diffmean(x = df$after, y = df$spend, type = \"paired\", conf.level = 0.95)")
-  expect_equal(q(ci_2means(df$spend, group = df$Banner))$ubstats, "CI.diffmean(x = df$spend, by = df$Banner, conf.level = 0.95)")
+  expect_equal(q(ci_2means(df$spend, group = df$Banner))$ubstats, "CI.diffmean(x = df$spend, by = df$Banner, conf.level = 0.95, var.test = TRUE)")
   expect_equal(q(ci_2means(df$spend, group = df$Banner, levels = c("Redesigned", "Original"), case = "welch"))$ubstats,
-               "CI.diffmean(x = df$spend[df$Banner == \"Redesigned\"], y = df$spend[df$Banner == \"Original\"], conf.level = 0.95)")
+               "CI.diffmean(x = df$spend[df$Banner == \"Redesigned\"], y = df$spend[df$Banner == \"Original\"], conf.level = 0.95, var.test = TRUE)")
   expect_equal(q(ci_2props(df$Click, group = df$Banner))$ubstats, "CI.diffprop(x = df$Click, by = df$Banner, conf.level = 0.95)")
   expect_equal(q(ci_2props(df$loy, group = df$Banner, event = "H", conf = 0.99))$ubstats,
                "CI.diffprop(x = df$loy, by = df$Banner, success.x = \"H\", conf.level = 0.99)")

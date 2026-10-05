@@ -6,8 +6,15 @@
 #'
 #' * `power_mean()` beta and power of a one-mean Z test (sigma known) when
 #'   the true mean is `mu1`; shows the decision cut-off(s) on the xbar scale.
+#' * `power_2means()` the same for the difference of two means with known
+#'   sigmas, when the true difference is `d1` (Z test on xbar - ybar).
 #' * `power_prop()` the same for a one-proportion Z test when the true
 #'   proportion is `p1`.
+#'
+#' If the "true" value lies inside H0 (e.g. mu1 = 10 for H0: mu >= 8), the
+#' result is P(reject H0) = alpha(mu1) and P(fail to reject) = 1 - alpha(mu1)
+#' instead of beta and power. With sigma unknown beta cannot be computed
+#' before sampling (book section 7.2.2).
 #' * `n_mean()`     sample size so that the margin of error (or the SE) of a
 #'   mean is at most a target. Always rounded UP.
 #' * `n_prop()`     the same for a proportion (p = 0.5 if no prior guess).
@@ -15,6 +22,10 @@
 #'   margin of error / width.
 #'
 #' @param mu0,mu1 Mean under H0 and the true (alternative) mean.
+#' @param d0,d1 `power_2means()`: difference mu_x - mu_y under H0 (default 0)
+#'   and the true difference.
+#' @param sigma1,sigma2,n1,n2 `power_2means()`: known population SDs and the
+#'   two sample sizes.
 #' @param p0 Proportion under H0 (`power_prop()`).
 #' @param sigma Population standard deviation.
 #' @param n Sample size.
@@ -32,6 +43,8 @@
 #' @return An `sc_result` (prints itself).
 #' @examples
 #' power_mean(mu0 = 2500, mu1 = 2400, sigma = 850, n = 100, alt = "<")
+#' power_2means(d1 = 0.21, sigma1 = sqrt(0.18), sigma2 = sqrt(0.3), n1 = 44, n2 = 42,
+#'              alpha = 0.025, alt = ">")
 #' n_mean(margin = 3, sigma = 12, conf = 0.95)
 #' n_prop(margin = 0.03)
 #' n_prop(width = 0.01)
@@ -69,6 +82,41 @@ NULL
   list(cut = cut, power = power, beta = 1 - power)
 }
 
+# Text for beta / P(not reject) given the cut-off(s) and the true value.
+.beta_txt <- function(cut, true, se, alt, est, par) {
+  switch(alt,
+    less = sprintf("P(%s >= %s | %s = %s) = P(Z >= (%s - %s) / %s) = P(Z >= %s)", est, .f(cut), par, .f(true), .f(cut), .f(true), .f(se), .f((cut - true) / se)),
+    greater = sprintf("P(%s <= %s | %s = %s) = P(Z <= (%s - %s) / %s) = P(Z <= %s)", est, .f(cut), par, .f(true), .f(cut), .f(true), .f(se), .f((cut - true) / se)),
+    two.sided = sprintf("P(%s <= %s <= %s | %s = %s)", .f(cut[1]), est, .f(cut[2]), par, .f(true)))
+}
+
+.acc_txt <- function(cut, alt, est) {
+  switch(alt, less = sprintf("%s >= %s", est, .f(cut)), greater = sprintf("%s <= %s", est, .f(cut)),
+         two.sided = sprintf("%s <= %s <= %s", .f(cut[1]), est, .f(cut[2])))
+}
+
+.in_h0 <- function(true, null, alt) {
+  switch(alt, less = true >= null, greater = true <= null, two.sided = abs(true - null) < 1e-12)
+}
+
+# beta and power lines, or (true value inside H0) P(reject) = alpha(true) and 1 - alpha(true).
+.power_lines <- function(P, true, null, alt, alpha, se1, est, par) {
+  if (!.in_h0(true, null, alt)) {
+    return(list(in_h0 = FALSE, lines = c(
+      sprintf("beta = %s = %s", .beta_txt(P$cut, true, se1, alt, est, par), .f(P$beta, 6)),
+      sprintf("Power = 1 - beta = %s", .f(P$power, 6))),
+      wording = sprintf("The Type II error probability is the probability of failing to reject H0 when the true value is %s = %s: beta = %s. The power of the test, the probability of correctly rejecting H0 when %s = %s, is 1 - beta = %s. These probabilities describe the testing procedure over all possible samples, not the correctness of the decision taken on one specific sample.",
+                        par, .f(true), .f(P$beta), par, .f(true), .f(P$power))))
+  }
+  list(in_h0 = TRUE, lines = c(
+    sprintf("The value %s = %s satisfies H0: here rejecting H0 would be a Type I error and not rejecting is the CORRECT decision (no Type II error).", par, .f(true)),
+    sprintf("P(reject H0 | %s = %s) = alpha(%s) = %s   (<= alpha = %s, reached at the boundary %s = %s)",
+            par, .f(true), .f(true), .f(P$power, 6), .f(alpha), par, .f(null)),
+    sprintf("P(fail to reject H0 | %s = %s) = 1 - alpha(%s) = %s", par, .f(true), .f(true), .f(P$beta, 6))),
+    wording = sprintf("Since %s = %s is a value of H0, failing to reject H0 is the correct decision: its probability is 1 - alpha(%s) = %s, at least 1 - alpha = %s because the Type I error probability is largest at the boundary value %s = %s.",
+                      par, .f(true), .f(true), .f(P$beta), .f(1 - alpha), par, .f(null)))
+}
+
 #' @rdname power
 #' @export
 power_mean <- function(mu0, mu1, sigma, n, alpha = 0.05, alt) {
@@ -77,25 +125,44 @@ power_mean <- function(mu0, mu1, sigma, n, alpha = 0.05, alt) {
   se <- sigma / sqrt(n)
   P <- .power_core(mu0, mu1, se, se, alpha, alt)
   z <- .crit(alt, alpha, "z")
-  acc <- switch(alt, less = sprintf("xbar >= %s", .f(P$cut)), greater = sprintf("xbar <= %s", .f(P$cut)),
-                two.sided = sprintf("%s <= xbar <= %s", .f(P$cut[1]), .f(P$cut[2])))
-  beta_txt <- switch(alt,
-    less = sprintf("P(Xbar >= %s | mu = %s) = P(Z >= (%s - %s) / %s) = P(Z >= %s)", .f(P$cut), .f(mu1), .f(P$cut), .f(mu1), .f(se), .f((P$cut - mu1) / se)),
-    greater = sprintf("P(Xbar <= %s | mu = %s) = P(Z <= (%s - %s) / %s) = P(Z <= %s)", .f(P$cut), .f(mu1), .f(P$cut), .f(mu1), .f(se), .f((P$cut - mu1) / se)),
-    two.sided = sprintf("P(%s <= Xbar <= %s | mu = %s)", .f(P$cut[1]), .f(P$cut[2]), .f(mu1)))
+  O <- .power_lines(P, mu1, mu0, alt, alpha, se, "Xbar", "mu")
   lines <- c(
-    sprintf("Test: H0: mu = %s vs H1: mu %s %s, sigma = %s, n = %s, alpha = %s", .f(mu0), .alt_sym(alt), .f(mu0), .f(sigma), n, .f(alpha)),
+    sprintf("Test: %s,  sigma = %s, n = %s, alpha = %s", .hyp_text("mu", .f(mu0), alt), .f(sigma), n, .f(alpha)),
     sprintf("True mean mu1 = %s", .f(mu1)), "",
     sprintf("SE = sigma / sqrt(n) = %s / sqrt(%s) = %s", .f(sigma), n, .f(se)),
     sprintf("Cut-off(s) on the xbar scale: mu0 + z x SE = %s + %s x %s = %s", .f(mu0), paste(.f(z), collapse = " / "), .f(se), paste(.f(P$cut), collapse = " and ")),
-    sprintf("We fail to reject H0 when %s", acc),
-    sprintf("beta = %s = %s", beta_txt, .f(P$beta, 6)),
-    sprintf("Power = 1 - beta = %s", .f(P$power, 6)))
+    sprintf("We fail to reject H0 when %s", .acc_txt(P$cut, alt, "xbar")),
+    O$lines)
   .plot_power(mu0, mu1, se, se, P$cut, alt, "xbar")
-  .result("Type II error and power (mean, sigma known)", lines,
-          sprintf("The Type II error probability is the probability of failing to reject H0 when the true mean is %s: beta = %s. The power of the test, the probability of correctly rejecting H0 when mu = %s, is 1 - beta = %s.",
-                  .f(mu1), .f(P$beta), .f(mu1), .f(P$power)),
-          NULL, match.call(), beta = P$beta, power = P$power, cutoff = P$cut, se = se)
+  .result(if (O$in_h0) "Probability of rejecting H0 (mean, sigma known)" else "Type II error and power (mean, sigma known)",
+          lines, O$wording,
+          "With sigma unknown, beta cannot be computed before sampling: the statistic's denominator S varies from sample to sample (book 7.2.2).",
+          match.call(), beta = if (O$in_h0) NA else P$beta, power = if (O$in_h0) NA else P$power,
+          p_reject = P$power, p_not_reject = P$beta, in_h0 = O$in_h0, cutoff = P$cut, se = se)
+}
+
+#' @rdname power
+#' @export
+power_2means <- function(d1, sigma1, sigma2, n1, n2, d0 = 0, alpha = 0.05, alt) {
+  if (missing(alt)) stop("Give the test's alternative: alt = \"<\", \">\" or \"!=\".", call. = FALSE)
+  alt <- .alt(alt); alpha <- .prob(alpha, "alpha")
+  se <- sqrt(sigma1^2 / n1 + sigma2^2 / n2)
+  P <- .power_core(d0, d1, se, se, alpha, alt)
+  z <- .crit(alt, alpha, "z")
+  O <- .power_lines(P, d1, d0, alt, alpha, se, "Xbar - Ybar", "mu_x - mu_y")
+  lines <- c(
+    sprintf("Test: %s,  sigma_x = %s, sigma_y = %s, n_x = %s, n_y = %s, alpha = %s",
+            .hyp_text("mu_x - mu_y", .f(d0), alt), .f(sigma1), .f(sigma2), n1, n2, .f(alpha)),
+    sprintf("True difference mu_x - mu_y = %s", .f(d1)), "",
+    sprintf("SE = sqrt(sigma_x^2/n_x + sigma_y^2/n_y) = sqrt(%s/%s + %s/%s) = %s", .f(sigma1^2), n1, .f(sigma2^2), n2, .f(se)),
+    sprintf("Cut-off(s) on the (xbar - ybar) scale: d0 + z x SE = %s + %s x %s = %s", .f(d0), paste(.f(z), collapse = " / "), .f(se), paste(.f(P$cut), collapse = " and ")),
+    sprintf("We fail to reject H0 when %s", .acc_txt(P$cut, alt, "xbar - ybar")),
+    O$lines)
+  .plot_power(d0, d1, se, se, P$cut, alt, "xbar - ybar")
+  .result(if (O$in_h0) "Probability of rejecting H0 (two means, sigmas known)" else "Type II error and power (two means, sigmas known)",
+          lines, O$wording, NULL, match.call(),
+          beta = if (O$in_h0) NA else P$beta, power = if (O$in_h0) NA else P$power,
+          p_reject = P$power, p_not_reject = P$beta, in_h0 = O$in_h0, cutoff = P$cut, se = se)
 }
 
 #' @rdname power
@@ -105,19 +172,21 @@ power_prop <- function(p0, p1, n, alpha = 0.05, alt) {
   alt <- .alt(alt); alpha <- .prob(alpha, "alpha"); p0 <- .prob(p0, "p0"); p1 <- .prob(p1, "p1")
   se0 <- sqrt(p0 * (1 - p0) / n); se1 <- sqrt(p1 * (1 - p1) / n)
   P <- .power_core(p0, p1, se0, se1, alpha, alt)
+  z <- .crit(alt, alpha, "z")
+  O <- .power_lines(P, p1, p0, alt, alpha, se1, "P-hat", "p")
   lines <- c(
-    sprintf("Test: H0: p = %s vs H1: p %s %s, n = %s, alpha = %s; true p1 = %s", .f(p0), .alt_sym(alt), .f(p0), n, .f(alpha), .f(p1)), "",
-    sprintf("SE under H0 = sqrt(p0 (1 - p0) / n) = %s", .f(se0)),
-    sprintf("SE under p1 = sqrt(p1 (1 - p1) / n) = %s", .f(se1)),
-    sprintf("Cut-off(s) on the p-hat scale: %s", paste(.f(P$cut), collapse = " and ")),
-    sprintf("beta = P(fail to reject H0 | p = %s) = %s", .f(p1), .f(P$beta, 6)),
-    sprintf("Power = 1 - beta = %s", .f(P$power, 6)))
+    sprintf("Test: %s,  n = %s, alpha = %s;  true p1 = %s", .hyp_text("p", .f(p0), alt), n, .f(alpha), .f(p1)), "",
+    sprintf("SE under H0 = sqrt(p0 (1 - p0) / n) = sqrt(%s x %s / %s) = %s", .f(p0), .f(1 - p0), n, .f(se0)),
+    sprintf("Cut-off(s) on the p-hat scale: p0 + z x SE0 = %s + %s x %s = %s", .f(p0), paste(.f(z), collapse = " / "), .f(se0), paste(.f(P$cut), collapse = " and ")),
+    sprintf("We fail to reject H0 when %s", .acc_txt(P$cut, alt, "p-hat")),
+    sprintf("SE under p1 = sqrt(p1 (1 - p1) / n) = sqrt(%s x %s / %s) = %s", .f(p1), .f(1 - p1), n, .f(se1)),
+    O$lines)
   .plot_power(p0, p1, se0, se1, P$cut, alt, "p-hat")
-  .result("Type II error and power (one proportion)", lines,
-          sprintf("If the true proportion is %s, the probability of failing to reject H0 (Type II error) is beta = %s and the power is %s.",
-                  .f(p1), .f(P$beta), .f(P$power)),
+  .result(if (O$in_h0) "Probability of rejecting H0 (one proportion)" else "Type II error and power (one proportion)",
+          lines, O$wording,
           "Normal approximation; the SE under the true p1 is used for beta.", match.call(),
-          beta = P$beta, power = P$power, cutoff = P$cut)
+          beta = if (O$in_h0) NA else P$beta, power = if (O$in_h0) NA else P$power,
+          p_reject = P$power, p_not_reject = P$beta, in_h0 = O$in_h0, cutoff = P$cut)
 }
 
 #' @rdname power

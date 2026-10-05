@@ -14,6 +14,7 @@
 
 # Capture a printed table (data.frame or matrix) as indented lines.
 .table_lines <- function(tab, row.names = FALSE, indent = "  ") {
+  old <- options(width = max(getOption("width", 80), 120)); on.exit(options(old))
   out <- utils::capture.output(print(tab, row.names = row.names))
   paste0(indent, out)
 }
@@ -28,8 +29,9 @@
 #'
 #' Results print as: the hypotheses / inputs, each formula with the numbers
 #' plugged in, the decision, an exam-wording paragraph and the one-line call
-#' that re-runs the procedure. Confidence intervals also show the matching
-#' call of the course package UBStats. Turn parts off with
+#' that re-runs the procedure. Intervals and tests also show the matching
+#' call of the course package UBStats (chi-square tests: base R
+#' `chisq.test()`). Turn parts off with
 #' `options(statcram.wording = FALSE)`, `options(statcram.plot = FALSE)` or
 #' `options(statcram.ubstats = FALSE)`;
 #' change decimals with `options(statcram.digits = 6)`.
@@ -53,6 +55,10 @@ print.sc_result <- function(x, ...) {
   if (length(x$ubstats) && isTRUE(.opt("ubstats", TRUE))) {
     cat(.rule("-- UBStats (course package) ", w), "\n", sep = "")
     cat(x$ubstats, sep = "\n")
+  }
+  if (length(x$rbase) && isTRUE(.opt("ubstats", TRUE))) {
+    cat(.rule("-- Base R (as in the book) ", w), "\n", sep = "")
+    cat(x$rbase, sep = "\n")
   }
   if (!is.null(x$call)) {
     cat(.rule("-- Re-run ", w), "\n", sep = "")

@@ -476,16 +476,34 @@
                        a[setdiff(names(a), c("x", "y"))]))
 }
 .m_test_2means <- function() {
-  o <- .two_means_args()
+  o <- .two_means_args(allow_all = TRUE)
   first <- o$args[intersect(c("x", "y"), names(o$args))]
-  .mk("test_2means", c(first, list(case = o$case, alt = .ask_alt("mu1 - mu2", "0"), alpha = .ask_prob("Significance level alpha", 0.05)),
+  .mk("test_2means", c(first, list(case = if (o$case %in% c("all", "known")) NULL else o$case,
+                                   alt = .ask_alt("mu1 - mu2", "0"), alpha = .ask_prob("Significance level alpha", 0.05)),
                        o$args[setdiff(names(o$args), names(first))]))
 }
 .m_test_2props <- function() {
   t <- .two_sample_args("prop")
   first <- t$args[intersect(c("x", "y", "event"), names(t$args))]
-  .mk("test_2props", c(first, list(alt = .ask_alt("p1 - p2", "0"), alpha = .ask_prob("Significance level alpha", 0.05)),
-                       t$args[setdiff(names(t$args), names(first))]))
+  d0 <- .ask_num("Null value of p1 - p2 (Enter = 0; e.g. 0.05 for 'more than 5 points higher')", 0, allow_empty = TRUE) %||% 0
+  .mk("test_2props", c(first, list(alt = .ask_alt("p1 - p2", .f(d0)), alpha = .ask_prob("Significance level alpha", 0.05)),
+                       t$args[setdiff(names(t$args), names(first))], list(d0 = if (d0 != 0) d0)))
+}
+.m_levene <- function() {
+  i <- .ask_choice("How are the two groups given?", c(
+    "one numeric column + a grouping column (e.g. time by area)",
+    "two separate vectors (one per group)"))
+  a <- list()
+  if (i == 1) {
+    a$x <- .code(.ask_data("the numeric variable", "vector")$expr)
+    g <- .ask_data("the grouping variable", "vector")
+    a$group <- .code(g$expr)
+    a$levels <- .ask_two_levels(g$expr)
+  } else {
+    a$x <- .code(.ask_data("group 1", "vector")$expr)
+    a$y <- .code(.ask_data("group 2", "vector")$expr)
+  }
+  .mk("test_levene", c(a, list(alpha = .ask_prob("Significance level alpha", 0.05))))
 }
 
 # ---------- topic 5: power / sample size ----------
@@ -494,6 +512,14 @@
   mu0 <- .ask_num("mu0 (value under H0)")
   .mk("power_mean", list(mu0 = mu0, mu1 = .ask_num("mu1 (the true mean)"), sigma = .ask_num("Population sigma"),
                          n = .ask_num("Sample size n"), alpha = .ask_prob("alpha", 0.05), alt = .ask_alt("mu", .f(mu0))))
+}
+.m_power_2means <- function() {
+  d0 <- .ask_num("Difference mu1 - mu2 under H0 (Enter = 0)", 0, allow_empty = TRUE) %||% 0
+  .mk("power_2means", list(d1 = .ask_num("True difference mu1 - mu2"),
+                           sigma1 = .ask_num("Group 1: population sigma (type sqrt(v) for a variance)"),
+                           sigma2 = .ask_num("Group 2: population sigma (type sqrt(v) for a variance)"),
+                           n1 = .ask_num("Group 1: sample size"), n2 = .ask_num("Group 2: sample size"),
+                           d0 = if (d0 != 0) d0, alpha = .ask_prob("alpha", 0.05), alt = .ask_alt("mu1 - mu2", .f(d0))))
 }
 .m_power_prop <- function() {
   p0 <- .ask_prob("p0 (value under H0)", NULL)
@@ -734,13 +760,15 @@
     list("One proportion", .m_test_prop),
     list("Paired means (same units twice, before / after)", .m_test_paired),
     list("Two independent means", .m_test_2means),
-    list("Two proportions", .m_test_2props))),
+    list("Two proportions", .m_test_2props),
+    list("Equal variances? Levene test (two groups, raw data)", .m_levene))),
   list(title = "Type II error / power / sample size", items = list(
     list("Type II error (beta) and power: mean test, sigma known", .m_power_mean),
     list("Type II error (beta) and power: proportion test", .m_power_prop),
     list("Sample size for a mean", .m_n_mean),
     list("Sample size for a proportion", .m_n_prop),
-    list("Sample size for the difference of two proportions", .m_n_2props))),
+    list("Sample size for the difference of two proportions", .m_n_2props),
+    list("Type II error (beta) and power: difference of two means, sigmas known", .m_power_2means))),
   list(title = "Chi-square tests", items = list(
     list("Goodness of fit (one variable vs stated shares)", .m_chisq_gof),
     list("Independence (are two categorical variables associated?)", .m_chisq_indep))),

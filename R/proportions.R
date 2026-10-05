@@ -34,15 +34,22 @@ test_prop <- function(x = NULL, p0, event = NULL, alt = "two.sided", alpha = 0.0
                       count = NULL, n = NULL, phat = NULL) {
   if (missing(p0)) stop("Give the null value: p0 = ...", call. = FALSE)
   alt <- .alt(alt); alpha <- .prob(alpha, "alpha"); p0 <- .prob(p0, "p0")
-  P <- .one_prop(x, event, count, n, phat, .label(substitute(x)))
+  sx <- substitute(x)
+  P <- .one_prop(x, event, count, n, phat, .label(sx))
   se0 <- sqrt(p0 * (1 - p0) / P$n)
   stat <- (P$phat - p0) / se0
   p <- .pval(stat, alt, "z"); crit <- .crit(alt, alpha, "z")
   notes <- c(P$note, if (P$n * p0 < 5 || P$n * (1 - p0) < 5)
     sprintf("n p0 = %s and n (1 - p0) = %s: at least one is below 5, so the normal approximation may be poor.",
             .f(P$n * p0), .f(P$n * (1 - p0))))
+  tab <- data.frame(row.names = "", n = P$n, phat = P$phat, s_X = sqrt(p0 * (1 - p0)), se = se0, stat = stat,
+                    `p-value` = .p_cells(p), check.names = FALSE)
   lines <- c(
-    sprintf("H0: p = %s      H1: p %s %s", .f(p0), .alt_sym(alt), .f(p0)),
+    .hyp_lines("p", .f(p0), alt),
+    "",
+    "Test on the proportion   (s_X and se computed under H0, with p0, as in UBStats)",
+    .ci_table_lines(tab),
+    "",
     P$inputs,
     "Case: large-sample Z test for one proportion (SE computed under H0, using p0)",
     "",
@@ -52,15 +59,21 @@ test_prop <- function(x = NULL, p0, event = NULL, alt = "two.sided", alpha = 0.0
     sprintf("  on the p-hat scale: %s", .reject_region(alt, p0 + crit * se0, "p-hat")),
     sprintf("p-value = %s = %s", .p_text(alt, "Z", stat), .fp(p)),
     "",
-    .decision_lines(p, alpha))
+    .decision_lines(p, alpha),
+    .p_reading(p))
   wording <- sprintf(
-    "Let p denote the population proportion of %s. We test H0: p = %s against H1: p %s %s. The sample proportion is p-hat = %s/%s = %s. Under H0 the standard error is sqrt[p0(1 - p0)/n] = %s, giving Z = %s. %s to conclude that the population proportion is %s %s.",
-    P$ev, .f(p0), .alt_sym(alt), .f(p0), .f(P$count), .f(P$n), .f(P$phat), .f(se0), .f(stat),
+    "Let p denote the population proportion of %s. We test %s. The sample proportion is p-hat = %s/%s = %s. Under H0 (at the boundary value p0 = %s) the standard error is sqrt[p0(1 - p0)/n] = %s, giving Z = %s. %s to conclude that the population proportion is %s %s.",
+    P$ev, .hyp_text("p", .f(p0), alt), .f(P$count), .f(P$n), .f(P$phat), .f(p0), .f(se0), .f(stat),
     .decision_words(p, alpha), .alt_words(alt), .f(p0))
+  ub <- if (is.null(x)) .ub_raw_note
+        else if (is.null(event)) .ub_call("TEST.prop", x = sx, p0 = p0, alternative = .ub_alt(alt))
+        else if (length(event) == 1) .ub_call("TEST.prop", x = sx, success = event, p0 = p0, alternative = .ub_alt(alt))
+        else .ub_call("TEST.prop", x = call("%in%", sx, event), p0 = p0, alternative = .ub_alt(alt))
   .plot_test(stat, alt, alpha, "z", main = "One-proportion test")
   .result("One-proportion test", lines, wording, notes, match.call(),
           statistic = stat, p_value = p, critical = crit, se = se0, estimate = P$phat, n = P$n,
-          decision = if (p < alpha) "reject H0" else "fail to reject H0")
+          decision = if (p < alpha) "reject H0" else "fail to reject H0",
+          cutoff = p0 + crit * se0, table = tab, ubstats = ub)
 }
 
 #' @rdname ci
@@ -122,37 +135,67 @@ ci_prop <- function(x = NULL, event = NULL, conf = 0.95, count = NULL, n = NULL,
 #' @export
 test_2props <- function(x = NULL, y = NULL, event = NULL, alt = "two.sided", alpha = 0.05,
                         group = NULL, levels = NULL,
-                        count1 = NULL, n1 = NULL, count2 = NULL, n2 = NULL, phat1 = NULL, phat2 = NULL) {
+                        count1 = NULL, n1 = NULL, count2 = NULL, n2 = NULL, phat1 = NULL, phat2 = NULL, d0 = 0) {
   alt <- .alt(alt); alpha <- .prob(alpha, "alpha")
-  P <- .two_props(x, y, event, group, levels, count1, n1, count2, n2, phat1, phat2,
-                  .label(substitute(x)), .label(substitute(y)))
-  pp <- (P$x1 + P$x2) / (P$n1 + P$n2)
-  se <- sqrt(pp * (1 - pp) * (1 / P$n1 + 1 / P$n2))
-  stat <- P$diff / se
+  sx <- substitute(x); sy <- substitute(y); sg <- substitute(group)
+  P <- .two_props(x, y, event, group, levels, count1, n1, count2, n2, phat1, phat2, .label(sx), .label(sy))
+  pooled <- d0 == 0
+  if (pooled) {
+    pp <- (P$x1 + P$x2) / (P$n1 + P$n2)
+    se <- sqrt(pp * (1 - pp) * (1 / P$n1 + 1 / P$n2))
+    se_steps <- c(
+      sprintf("Pooled proportion under H0 (p_x = p_y): p0-hat = (x_x + x_y) / (n_x + n_y) = (%s + %s) / (%s + %s) = %s",
+              .f(P$x1), .f(P$x2), .f(P$n1), .f(P$n2), .f(pp)),
+      sprintf("se_0 = sqrt(p0-hat (1 - p0-hat) (1/n_x + 1/n_y)) = sqrt(%s x %s x (1/%s + 1/%s)) = %s",
+              .f(pp), .f(1 - pp), .f(P$n1), .f(P$n2), .f(se)))
+  } else {
+    pp <- NULL
+    se <- sqrt(P$p1 * (1 - P$p1) / P$n1 + P$p2 * (1 - P$p2) / P$n2)
+    se_steps <- c(
+      sprintf("d0 = %s is not 0, so p_x and p_y differ under H0: no pooling, each p-hat in its own term", .f(d0)),
+      sprintf("se = sqrt(p_x-hat (1 - p_x-hat)/n_x + p_y-hat (1 - p_y-hat)/n_y) = sqrt(%s x %s/%s + %s x %s/%s) = %s",
+              .f(P$p1), .f(1 - P$p1), .f(P$n1), .f(P$p2), .f(1 - P$p2), .f(P$n2), .f(se)))
+  }
+  stat <- (P$diff - d0) / se
   p <- .pval(stat, alt, "z"); crit <- .crit(alt, alpha, "z")
+  tab <- data.frame(row.names = "", n_x = P$n1, n_y = P$n2, phat_x = P$p1, phat_y = P$p2, `phat_x-phat_y` = P$diff,
+                    s_X = sqrt(P$p1 * (1 - P$p1)), s_Y = sqrt(P$p2 * (1 - P$p2)), se = se, stat = stat,
+                    `p-value` = .p_cells(p), check.names = FALSE)
+  if (pooled) names(tab)[names(tab) == "se"] <- "se_0"
   lines <- c(
-    sprintf("H0: p1 - p2 = 0      H1: p1 - p2 %s 0", .alt_sym(alt)),
-    sprintf("Group 1 = %s,  Group 2 = %s   (independent samples)", P$labs[1], P$labs[2]),
-    P$table,
+    .hyp_lines("p_x - p_y", .f(d0), alt),
     "",
-    sprintf("Difference p1-hat - p2-hat = %s - %s = %s", .f(P$p1), .f(P$p2), .f(P$diff)),
-    sprintf("Pooled p under H0 = (x1 + x2) / (n1 + n2) = (%s + %s) / (%s + %s) = %s",
-            .f(P$x1), .f(P$x2), .f(P$n1), .f(P$n2), .f(pp)),
-    sprintf("SE0 = sqrt(p (1 - p) (1/n1 + 1/n2)) = sqrt(%s x %s x (1/%s + 1/%s)) = %s",
-            .f(pp), .f(1 - pp), .f(P$n1), .f(P$n2), .f(se)),
-    sprintf("Z = (p1-hat - p2-hat) / SE0 = %s / %s = %s", .f(P$diff), .f(se), .f(stat)),
+    sprintf("Test on p_x - p_y   (independent samples)   x = %s, y = %s", P$labs[1], P$labs[2]),
+    .ci_table_lines(tab),
+    "",
+    sprintf("Difference p_x-hat - p_y-hat = %s - %s = %s", .f(P$p1), .f(P$p2), .f(P$diff)),
+    se_steps,
+    sprintf("Z = (p_x-hat - p_y-hat - d0) / %s = (%s - %s) / %s = %s", if (pooled) "se_0" else "se", .f(P$diff), .f(d0), .f(se), .f(stat)),
     sprintf("Critical value: %s  ->  %s", paste(.f(crit), collapse = " and "), .reject_region(alt, crit, "Z")),
     sprintf("p-value = %s = %s", .p_text(alt, "Z", stat), .fp(p)),
     "",
-    .decision_lines(p, alpha))
+    .decision_lines(p, alpha),
+    .p_reading(p))
   wording <- sprintf(
-    "Let p1 and p2 denote the population proportions of %s for %s and %s. We test H0: p1 - p2 = 0 against H1: p1 - p2 %s 0. The sample proportions are %s and %s. Under H0 the pooled proportion is %s, giving a standard error of %s and Z = %s. %s to conclude that the population proportion for %s is %s that for %s.",
-    P$ev, P$labs[1], P$labs[2], .alt_sym(alt), .f(P$p1), .f(P$p2), .f(pp), .f(se), .f(stat),
-    .decision_words(p, alpha), P$labs[1], .alt_words(alt), P$labs[2])
+    "Let p_x and p_y denote the population proportions of %s for %s and %s (independent samples). We test %s. The sample proportions are %s and %s. %s, giving Z = %s. %s to conclude that the population proportion for %s is %s that for %s%s.",
+    P$ev, P$labs[1], P$labs[2], .hyp_text("p_x - p_y", .f(d0), alt), .f(P$p1), .f(P$p2),
+    if (pooled) sprintf("Under H0 the two proportions are equal and estimated by the pooled proportion %s, so the standard error is %s", .f(pp), .f(se))
+    else sprintf("Since d0 is not 0 the two proportions differ under H0, so each is estimated separately and the standard error is %s", .f(se)),
+    .f(stat), .decision_words(p, alpha), P$labs[1], .alt_words(alt), P$labs[2],
+    if (d0 != 0) sprintf(" by %s", .f(d0)) else "")
+  succ <- if (!is.null(event) && length(event) == 1) event else NULL
+  pd <- if (d0 != 0) d0
+  ub <- if (is.null(x)) .ub_raw_note
+        else if (!is.null(event) && length(event) > 1) "UBStats needs a single success category: build a TRUE/FALSE vector first, e.g. x %in% c(...)."
+        else if (!is.null(group)) {
+          if (.ub_by_ok(group, levels)) .ub_call("TEST.diffprop", x = sx, by = sg, success.x = succ, pdiff0 = pd, alternative = .ub_alt(alt))
+          else .ub_call("TEST.diffprop", x = .ub_subset(sx, sg, P$labs[1]), y = .ub_subset(sx, sg, P$labs[2]),
+                        success.x = succ, pdiff0 = pd, alternative = .ub_alt(alt))
+        } else .ub_call("TEST.diffprop", x = sx, y = sy, success.x = succ, pdiff0 = pd, alternative = .ub_alt(alt))
   .plot_test(stat, alt, alpha, "z", main = "Two-proportion test")
   .result("Two-proportion test", lines, wording, P$note, match.call(),
           statistic = stat, p_value = p, critical = crit, se = se, estimate = P$diff, pooled = pp,
-          decision = if (p < alpha) "reject H0" else "fail to reject H0")
+          decision = if (p < alpha) "reject H0" else "fail to reject H0", table = tab, ubstats = ub)
 }
 
 #' @rdname ci

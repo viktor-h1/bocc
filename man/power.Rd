@@ -3,6 +3,7 @@
 \name{power}
 \alias{power}
 \alias{power_mean}
+\alias{power_2means}
 \alias{power_prop}
 \alias{n_mean}
 \alias{n_prop}
@@ -10,6 +11,8 @@
 \title{Type II error, power and sample size}
 \usage{
 power_mean(mu0, mu1, sigma, n, alpha = 0.05, alt)
+
+power_2means(d1, sigma1, sigma2, n1, n2, d0 = 0, alpha = 0.05, alt)
 
 power_prop(p0, p1, n, alpha = 0.05, alt)
 
@@ -38,6 +41,12 @@ n_2props(margin = NULL, p1 = 0.5, p2 = 0.5, conf = 0.95, width = NULL)
 
 \item{alt}{Alternative of the test: \code{"<"}, \code{">"} or \code{"!="}.}
 
+\item{sigma1, sigma2, n1, n2}{\code{power_2means()}: known population SDs and the
+two sample sizes.}
+
+\item{d0, d1}{\code{power_2means()}: difference mu_x - mu_y under H0 (default 0)
+and the true difference.}
+
 \item{p0}{Proportion under H0 (\code{power_prop()}).}
 
 \item{p1, p2}{\code{power_prop()}: \code{p1} is the true (alternative) proportion.
@@ -63,8 +72,18 @@ An \code{sc_result} (prints itself).
 \itemize{
 \item \code{power_mean()} beta and power of a one-mean Z test (sigma known) when
 the true mean is \code{mu1}; shows the decision cut-off(s) on the xbar scale.
+\item \code{power_2means()} the same for the difference of two means with known
+sigmas, when the true difference is \code{d1} (Z test on xbar - ybar).
 \item \code{power_prop()} the same for a one-proportion Z test when the true
 proportion is \code{p1}.
+}
+}
+\details{
+If the "true" value lies inside H0 (e.g. mu1 = 10 for H0: mu >= 8), the
+result is P(reject H0) = alpha(mu1) and P(fail to reject) = 1 - alpha(mu1)
+instead of beta and power. With sigma unknown beta cannot be computed
+before sampling (book section 7.2.2).
+\itemize{
 \item \code{n_mean()}     sample size so that the margin of error (or the SE) of a
 mean is at most a target. Always rounded UP.
 \item \code{n_prop()}     the same for a proportion (p = 0.5 if no prior guess).
@@ -74,6 +93,8 @@ margin of error / width.
 }
 \examples{
 power_mean(mu0 = 2500, mu1 = 2400, sigma = 850, n = 100, alt = "<")
+power_2means(d1 = 0.21, sigma1 = sqrt(0.18), sigma2 = sqrt(0.3), n1 = 44, n2 = 42,
+             alpha = 0.025, alt = ">")
 n_mean(margin = 3, sigma = 12, conf = 0.95)
 n_prop(margin = 0.03)
 n_prop(width = 0.01)

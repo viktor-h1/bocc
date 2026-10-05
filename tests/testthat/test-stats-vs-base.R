@@ -39,7 +39,10 @@ test_that("two means: pooled and Welch match t.test; groups via group = work", {
   expect_equal(test_2means(df$y, group = df$g, case = "welch")$p_value, t0$p.value)
   s <- test_2means(xbar1 = mean(a), s1 = sd(a), n1 = 30, xbar2 = mean(b), s2 = sd(b), n2 = 25, case = "welch")
   expect_equal(s$p_value, t0$p.value)
-  expect_error(test_2means(a, b), "pooled")
+  all4 <- q(test_2means(a, b))$tests                     # no case: the four UBStats tests
+  expect_equal(all4$p[2], t.test(a, b, var.equal = TRUE)$p.value)
+  expect_equal(all4$p[4], t0$p.value)
+  expect_equal(all4$stat[2], unname(t.test(a, b, var.equal = TRUE)$statistic))
 })
 
 test_that("paired: raw, differences, summary numbers and covariance form agree with t.test", {
@@ -125,10 +128,32 @@ test_that("regression matches lm / predict", {
 
 test_that("results print hypotheses, steps, decision, wording and the re-run call", {
   out <- capture.output(print(test_mean(a, mu0 = 9, alt = ">")))
-  expect_true(any(grepl("H0: mu = 9", out)))
+  expect_true(any(grepl("H0: mu <= 9  (or mu = 9)", out, fixed = TRUE)))
   expect_true(any(grepl("SE = s / sqrt\\(n\\)", out)))
   expect_true(any(grepl("REJECT H0", out)))
   expect_true(any(grepl("Exam wording", out)))
   expect_true(any(grepl("^test_mean\\(x = a, mu0 = 9, alt = \">\"\\)$", out)))
   expect_output(expect_true(sc_selftest(verbose = FALSE)), "PASSED")
+})
+
+test_that("chapter 7 cross-checks: 2x2 chi-square, d0 tests vs CIs, Levene vs ANOVA", {
+  m <- matrix(c(20, 30, 25, 25), nrow = 2)
+  r <- q(chisq_indep(m))
+  expect_equal(r$statistic, unname(chisq.test(m, correct = FALSE)$statistic))
+  expect_equal(r$p_value, chisq.test(m, correct = FALSE)$p.value)
+  expect_true(any(grepl("Yates", r$notes)))
+  # two-sided test of p1 - p2 = d0 at alpha rejects exactly when d0 is outside the (1 - alpha) CI
+  ci <- q(ci_2props(count1 = 145, n1 = 200, count2 = 163, n2 = 250))$ci
+  for (d0 in c(-0.02, 0.15, 0.16)) {
+    t <- q(test_2props(count1 = 145, n1 = 200, count2 = 163, n2 = 250, d0 = d0))
+    expect_equal(t$p_value < 0.05, d0 < ci[1] || d0 > ci[2])
+  }
+  # same for a mean (t) and the paired test
+  set.seed(9); a <- rnorm(20, 10, 2); b <- a + rnorm(20, 0.5)
+  cm <- q(ci_mean(a))$ci
+  for (mu0 in c(cm[1] - 0.01, mean(a), cm[2] + 0.01)) expect_equal(q(test_mean(a, mu0 = mu0))$p_value < 0.05, mu0 < cm[1] || mu0 > cm[2])
+  expect_equal(q(test_paired(b, a, d0 = 0.3, alt = ">"))$p_t, t.test(b, a, paired = TRUE, mu = 0.3, alternative = "greater")$p.value)
+  g <- rep(c("x", "y"), c(12, 8)); v <- c(rnorm(12, 0, 1), rnorm(8, 0, 3))
+  z <- abs(v - ave(v, g, FUN = median))
+  expect_equal(q(test_levene(v, group = g))$p_value, anova(lm(z ~ g))$`Pr(>F)`[1])
 })

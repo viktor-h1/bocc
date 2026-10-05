@@ -28,7 +28,7 @@
 .fp <- function(p) {
   vapply(p, function(v) {
     if (is.na(v)) return("NA")
-    if (v < 1e-4) formatC(v, digits = 3, format = "e") else formatC(v, digits = 4, format = "f")
+    if (v < 2.2e-16) "< 2.2e-16" else if (v < 1e-4) formatC(v, digits = 3, format = "e") else formatC(v, digits = 4, format = "f")
   }, character(1))
 }
 
@@ -195,4 +195,52 @@
   g <- if (is.data.frame(group)) group[[1]] else group
   lv <- .cats(g[!is.na(g)])
   length(lv) == 2 && (is.null(levels) || identical(as.character(levels), lv))
+}
+
+# ---------- hypothesis-test helpers (book chapter 7) ----------
+
+# H0 always contains the equality; with a one-sided H1 it is composite and the
+# boundary value (the H0 value closest to H1) gives the critical value and p-value.
+.hyp_lines <- function(param, null_txt, alt) {
+  h0 <- switch(alt, less = sprintf("%s >= %s  (or %s = %s)", param, null_txt, param, null_txt),
+               greater = sprintf("%s <= %s  (or %s = %s)", param, null_txt, param, null_txt),
+               two.sided = sprintf("%s = %s", param, null_txt))
+  c(sprintf("H0: %s      H1: %s %s %s", h0, param, .alt_sym(alt), null_txt),
+    if (alt != "two.sided")
+      sprintf("    (critical value and p-value use the boundary value %s = %s, the H0 value closest to H1)", param, null_txt))
+}
+
+.hyp_text <- function(param, null_txt, alt) {
+  h0 <- switch(alt, less = ">=", greater = "<=", two.sided = "=")
+  sprintf("H0: %s %s %s against H1: %s %s %s", param, h0, null_txt, param, .alt_sym(alt), null_txt)
+}
+
+# p-value as the smallest alpha at which H0 is rejected.
+.p_reading <- function(p) {
+  a <- c(0.1, 0.05, 0.025, 0.01, 0.001)
+  rej <- a[p < a]; acc <- a[p >= a]
+  sprintf("Reading: the p-value is the smallest alpha at which H0 is rejected -> %s%s%s.",
+          if (length(rej)) paste0("rejected at alpha = ", paste(.f(rej), collapse = ", ")) else "",
+          if (length(rej) && length(acc)) "; " else "",
+          if (length(acc)) paste0("not rejected at alpha = ", paste(.f(acc), collapse = ", ")) else "")
+}
+
+# p-values in UBStats-style tables.
+.p_cells <- function(p) ifelse(p < 1e-4, "<0.0001", formatC(round(p, 4), format = "f", digits = 4, drop0trailing = TRUE))
+
+# UBStats-style rows for a mean-type test: Normal.Approx and Student-t.
+.test_rows <- function(est, se, null, alt, df) {
+  stat <- (est - null) / se
+  data.frame(row.names = c("Normal.Approx", "Student-t"), stat = stat,
+             p = c(.pval(stat, alt, "z"), .pval(stat, alt, "t", df)))
+}
+
+# UBStats alternative argument (omitted when two-sided, the default).
+.ub_alt <- function(alt) if (alt == "two.sided") NULL else alt
+
+# Extra wording when the z and t versions lead to different decisions.
+.zt_disagree <- function(p_z, p_t, alpha) {
+  if (is.null(p_z) || is.null(p_t) || (p_z < alpha) == (p_t < alpha)) return(NULL)
+  sprintf("At alpha = %s the normal approximation (p = %s) and the Student t version (p = %s) lead to different decisions: the t test is the more conservative one (heavier tails), so with a normal population or a moderate n use t.",
+          .f(alpha), .fp(p_z), .fp(p_t))
 }

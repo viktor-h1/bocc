@@ -5,6 +5,7 @@
 \alias{test_mean}
 \alias{test_paired}
 \alias{test_2means}
+\alias{test_levene}
 \alias{test_prop}
 \alias{test_2props}
 \title{Hypothesis tests}
@@ -38,7 +39,8 @@ test_paired(
   s1 = NULL,
   s2 = NULL,
   cov = NULL,
-  r = NULL
+  r = NULL,
+  sigma_d = NULL
 )
 
 test_2means(
@@ -57,8 +59,11 @@ test_2means(
   s2 = NULL,
   n2 = NULL,
   sigma1 = NULL,
-  sigma2 = NULL
+  sigma2 = NULL,
+  var_test = NULL
 )
+
+test_levene(x = NULL, y = NULL, group = NULL, levels = NULL, alpha = 0.05)
 
 test_prop(
   x = NULL,
@@ -84,7 +89,8 @@ test_2props(
   count2 = NULL,
   n2 = NULL,
   phat1 = NULL,
-  phat2 = NULL
+  phat2 = NULL,
+  d0 = 0
 )
 }
 \arguments{
@@ -112,22 +118,30 @@ squares (with \code{n}), when the question gives the sums.}
 \item{y}{Second sample (paired: second measurement, D = x - y;
 two-sample: the second group).}
 
-\item{d0}{Null value of the difference (default 0).}
+\item{d0}{Null value of the difference (default 0): mu_D, mu_x - mu_y or
+p_x - p_y under H0 (UBStats \code{mdiff0} / \code{pdiff0}).}
 
 \item{dbar, sd_d}{Mean and SD of the paired differences.}
 
 \item{mean1, mean2, s1, s2, cov, r}{Paired summary numbers when only the two
 means/SDs and their covariance or correlation are given.}
 
+\item{sigma_d}{\code{test_paired()}: known standard deviation of the
+differences (Z test).}
+
 \item{case}{Two independent means: \code{"pooled"} (variances unknown but
 assumed equal), \code{"welch"} (unknown, not assumed equal), \code{"large"}
 (non-normal / unknown distribution, large samples, Z) or \code{"known"}
-(population sigmas known, give \code{sigma1}, \code{sigma2}).}
+(population sigmas known, give \code{sigma1}, \code{sigma2}). Omit it to see all
+four tests.}
 
 \item{group, levels}{Grouping variable and the two groups to compare,
 e.g. \verb{group = df$loyalty, levels = c("High", "Medium")}.}
 
 \item{xbar1, n1, xbar2, n2, sigma1, sigma2}{Summary numbers for two samples.}
+
+\item{var_test}{Two means: Levene's test is shown automatically with raw
+data (\code{NULL}); \code{FALSE} hides it.}
 
 \item{p0}{Null value of the population proportion (0.25 or 25).}
 
@@ -142,20 +156,29 @@ An \code{sc_result} (prints itself) with \code{statistic}, \code{p_value},
 \code{critical}, \code{se}, \code{df}, \code{decision}.
 }
 \description{
-One function per test. Each accepts \strong{raw data} (any vector or R
-expression: \code{df$spend}, \code{c(12, 15, 9)}, \code{df$after - df$before},
+One function per test (book chapter 7). Each accepts \strong{raw data} (any
+vector or R expression: \code{df$spend}, \code{c(12, 15, 9)}, \code{df$after - df$before},
 \code{subset(df, region == "North")$spend}) \strong{or the summary numbers} given in
-the question. Output shows H0/H1, each formula with the numbers plugged
-in, the critical value / rejection region, the p-value, the decision, an
-exam-wording paragraph and the call to re-run it.
+the question. Output: H0 / H1 (a one-sided H0 is composite, e.g.
+"mu <= 15", and its boundary value is used), a table like the course
+package UBStats (Normal.Approx and Student-t rows when a variance is
+unknown), each formula with the numbers plugged in, the critical value /
+rejection region, the p-value and its reading, the decision, exam wording,
+the matching UBStats call and the call to re-run it.
 }
 \details{
 \itemize{
-\item \code{test_mean()}   one population mean (sigma known -> Z; unknown -> t, or Z for large samples).
-\item \code{test_paired()} paired / before-after mean difference, D = x - y.
-\item \code{test_2means()} two independent means (\code{case} = "pooled", "welch", "large" or "known").
+\item \code{test_mean()}   one population mean (sigma known -> Z; unknown -> z and t rows,
+\code{method} chooses the one worked through).
+\item \code{test_paired()} paired / before-after mean difference, D = x - y (sigma_D known -> Z).
+\item \code{test_2means()} two independent means. Without \code{case}, the four UBStats
+tests (variances equal or different x Normal or t); with raw data also
+Levene's test for equal variances.
+\item \code{test_levene()} Levene's test for equal variances of two groups (raw
+data; absolute deviations from the medians, as UBStats \code{var.test = TRUE}).
 \item \code{test_prop()}   one population proportion (Z test, SE uses p0).
-\item \code{test_2props()} two independent proportions (Z test, pooled p under H0).
+\item \code{test_2props()} two independent proportions (Z test; pooled p under H0
+when \code{d0 = 0}, separate p-hats otherwise).
 }
 }
 \examples{
@@ -163,4 +186,6 @@ x <- c(52, 48, 55, 60, 49, 53, 58, 51)
 test_mean(x, mu0 = 50, alt = ">")
 test_mean(xbar = 52.3, s = 6.1, n = 40, mu0 = 50, alt = ">")
 test_prop(count = 120, n = 400, p0 = 0.25, alt = ">")
+test_2means(xbar1 = 0.16, s1 = 0.35, n1 = 44, xbar2 = 0.06, s2 = 0.48, n2 = 42, alt = ">")
+test_2props(count1 = 138, n1 = 1150, count2 = 96, n2 = 1200, alt = ">")
 }

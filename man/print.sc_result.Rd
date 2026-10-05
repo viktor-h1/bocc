@@ -17,8 +17,9 @@
 \description{
 Results print as: the hypotheses / inputs, each formula with the numbers
 plugged in, the decision, an exam-wording paragraph and the one-line call
-that re-runs the procedure. Confidence intervals also show the matching
-call of the course package UBStats. Turn parts off with
+that re-runs the procedure. Intervals and tests also show the matching
+call of the course package UBStats (chi-square tests: base R
+\code{chisq.test()}). Turn parts off with
 \code{options(statcram.wording = FALSE)}, \code{options(statcram.plot = FALSE)} or
 \code{options(statcram.ubstats = FALSE)};
 change decimals with \code{options(statcram.digits = 6)}.

@@ -63,18 +63,27 @@
 
 #' Hypothesis tests
 #'
-#' One function per test. Each accepts **raw data** (any vector or R
-#' expression: `df$spend`, `c(12, 15, 9)`, `df$after - df$before`,
+#' One function per test (book chapter 7). Each accepts **raw data** (any
+#' vector or R expression: `df$spend`, `c(12, 15, 9)`, `df$after - df$before`,
 #' `subset(df, region == "North")$spend`) **or the summary numbers** given in
-#' the question. Output shows H0/H1, each formula with the numbers plugged
-#' in, the critical value / rejection region, the p-value, the decision, an
-#' exam-wording paragraph and the call to re-run it.
+#' the question. Output: H0 / H1 (a one-sided H0 is composite, e.g.
+#' "mu <= 15", and its boundary value is used), a table like the course
+#' package UBStats (Normal.Approx and Student-t rows when a variance is
+#' unknown), each formula with the numbers plugged in, the critical value /
+#' rejection region, the p-value and its reading, the decision, exam wording,
+#' the matching UBStats call and the call to re-run it.
 #'
-#' * `test_mean()`   one population mean (sigma known -> Z; unknown -> t, or Z for large samples).
-#' * `test_paired()` paired / before-after mean difference, D = x - y.
-#' * `test_2means()` two independent means (`case` = "pooled", "welch", "large" or "known").
+#' * `test_mean()`   one population mean (sigma known -> Z; unknown -> z and t rows,
+#'   `method` chooses the one worked through).
+#' * `test_paired()` paired / before-after mean difference, D = x - y (sigma_D known -> Z).
+#' * `test_2means()` two independent means. Without `case`, the four UBStats
+#'   tests (variances equal or different x Normal or t); with raw data also
+#'   Levene's test for equal variances.
+#' * `test_levene()` Levene's test for equal variances of two groups (raw
+#'   data; absolute deviations from the medians, as UBStats `var.test = TRUE`).
 #' * `test_prop()`   one population proportion (Z test, SE uses p0).
-#' * `test_2props()` two independent proportions (Z test, pooled p under H0).
+#' * `test_2props()` two independent proportions (Z test; pooled p under H0
+#'   when `d0 = 0`, separate p-hats otherwise).
 #'
 #' @param x Data. For means: numeric values. For proportions: a logical
 #'   vector (`df$loyalty == "High"`), a 0/1 vector, or a categorical vector
@@ -84,7 +93,8 @@
 #'   two-sample: the second group).
 #' @param mu0 Null value of the population mean.
 #' @param p0 Null value of the population proportion (0.25 or 25).
-#' @param d0 Null value of the difference (default 0).
+#' @param d0 Null value of the difference (default 0): mu_D, mu_x - mu_y or
+#'   p_x - p_y under H0 (UBStats `mdiff0` / `pdiff0`).
 #' @param alt Alternative: `"<"`, `">"` or `"!="` (also `"less"`,
 #'   `"greater"`, `"two.sided"`).
 #' @param alpha Significance level (0.05 or 5).
@@ -93,7 +103,8 @@
 #' @param case Two independent means: `"pooled"` (variances unknown but
 #'   assumed equal), `"welch"` (unknown, not assumed equal), `"large"`
 #'   (non-normal / unknown distribution, large samples, Z) or `"known"`
-#'   (population sigmas known, give `sigma1`, `sigma2`).
+#'   (population sigmas known, give `sigma1`, `sigma2`). Omit it to see all
+#'   four tests.
 #' @param group,levels Grouping variable and the two groups to compare,
 #'   e.g. `group = df$loyalty, levels = c("High", "Medium")`.
 #' @param event Category of `x` that counts as a "success", e.g. `"High"`.
@@ -106,6 +117,10 @@
 #'   means/SDs and their covariance or correlation are given.
 #' @param xbar1,n1,xbar2,n2,sigma1,sigma2 Summary numbers for two samples.
 #' @param count,phat Number of successes or sample proportion (with `n`).
+#' @param sigma_d `test_paired()`: known standard deviation of the
+#'   differences (Z test).
+#' @param var_test Two means: Levene's test is shown automatically with raw
+#'   data (`NULL`); `FALSE` hides it.
 #' @param count1,count2,phat1,phat2 Two-sample successes / proportions.
 #' @return An `sc_result` (prints itself) with `statistic`, `p_value`,
 #'   `critical`, `se`, `df`, `decision`.
@@ -114,6 +129,8 @@
 #' test_mean(x, mu0 = 50, alt = ">")
 #' test_mean(xbar = 52.3, s = 6.1, n = 40, mu0 = 50, alt = ">")
 #' test_prop(count = 120, n = 400, p0 = 0.25, alt = ">")
+#' test_2means(xbar1 = 0.16, s1 = 0.35, n1 = 44, xbar2 = 0.06, s2 = 0.48, n2 = 42, alt = ">")
+#' test_2props(count1 = 138, n1 = 1150, count2 = 96, n2 = 1200, alt = ">")
 #' @name tests
 NULL
 
@@ -123,17 +140,31 @@ test_mean <- function(x = NULL, mu0, alt = "two.sided", alpha = 0.05, method = c
                       xbar = NULL, s = NULL, n = NULL, sigma = NULL, sum_x = NULL, sum_x2 = NULL) {
   if (missing(mu0)) stop("Give the null value: mu0 = ...", call. = FALSE)
   alt <- .alt(alt); alpha <- .prob(alpha, "alpha")
-  xlab <- .label(substitute(x))
+  sx <- substitute(x); xlab <- .label(sx)
   m <- .one_mean(x, xbar, s, n, sigma, method, xlab, sum_x, sum_x2)
   stat <- (m$xbar - mu0) / m$se
   sname <- if (m$dist == "z") "Z" else "t"
   p <- .pval(stat, alt, m$dist, m$df)
   crit <- .crit(alt, alpha, m$dist, m$df)
   xcut <- mu0 + crit * m$se
+  p_z <- p_t <- NULL
+  if (m$case == "known") {
+    tab <- data.frame(row.names = "Normal", n = m$n, xbar = m$xbar, sigma_X = m$sigma, se = m$se, stat = stat,
+                      `p-value` = .p_cells(p), check.names = FALSE)
+  } else {
+    R <- .test_rows(m$xbar, m$se, mu0, alt, m$n - 1)
+    p_z <- R$p[1]; p_t <- R$p[2]
+    tab <- data.frame(row.names = rownames(R), n = m$n, xbar = m$xbar, s_X = m$s, se = m$se, stat = R$stat,
+                      `p-value` = .p_cells(R$p), check.names = FALSE)
+  }
   lines <- c(
-    sprintf("H0: mu = %s      H1: mu %s %s", .f(mu0), .alt_sym(alt), .f(mu0)),
+    .hyp_lines("mu", .f(mu0), alt),
+    "",
+    sprintf("Test on the mean   (variance %s)", if (m$case == "known") "known" else "unknown"),
+    .ci_table_lines(tab),
+    "",
     m$inputs,
-    sprintf("Case: %s", m$label),
+    sprintf("Explained below: %s", m$label),
     "",
     m$steps,
     m$se_txt,
@@ -142,16 +173,20 @@ test_mean <- function(x = NULL, mu0, alt = "two.sided", alpha = 0.05, method = c
     sprintf("  on the xbar scale: %s", .reject_region(alt, xcut, "xbar")),
     sprintf("p-value = %s = %s", .p_text(alt, .dist_label(m$dist, m$df), stat), .fp(p)),
     "",
-    .decision_lines(p, alpha))
-  wording <- sprintf(
-    "Let mu denote the population mean of %s. We test H0: mu = %s against H1: mu %s %s. %s. The sample mean is %s with standard error %s, giving a test statistic %s = %s%s. %s to conclude that the population mean of %s is %s %s.",
-    xlab, .f(mu0), .alt_sym(alt), .f(mu0), m$reason, .f(m$xbar), .f(m$se), sname, .f(stat),
+    .decision_lines(p, alpha),
+    .p_reading(p))
+  wording <- c(sprintf(
+    "Let mu denote the population mean of %s. We test %s. %s. The sample mean is %s with standard error %s, giving a test statistic %s = %s%s. %s to conclude that the population mean of %s is %s %s.",
+    xlab, .hyp_text("mu", .f(mu0), alt), m$reason, .f(m$xbar), .f(m$se), sname, .f(stat),
     if (!is.null(m$df)) sprintf(" with %s degrees of freedom", .f(m$df)) else "",
-    .decision_words(p, alpha), xlab, .alt_words(alt), .f(mu0))
+    .decision_words(p, alpha), xlab, .alt_words(alt), .f(mu0)),
+    .zt_disagree(p_z, p_t, alpha))
+  ub <- if (!is.null(x)) .ub_call("TEST.mean", x = sx, sigma = sigma, mu0 = mu0, alternative = .ub_alt(alt)) else .ub_raw_note
   .plot_test(stat, alt, alpha, m$dist, m$df, main = "One-mean test")
   .result("One-mean test", lines, wording, m$note, match.call(),
           statistic = stat, p_value = p, critical = crit, se = m$se, df = m$df,
-          estimate = m$xbar, n = m$n, decision = if (p < alpha) "reject H0" else "fail to reject H0")
+          estimate = m$xbar, n = m$n, decision = if (p < alpha) "reject H0" else "fail to reject H0",
+          p_z = p_z, p_t = p_t, cutoff = xcut, table = tab, ubstats = ub)
 }
 
 #' Point estimates and confidence intervals
@@ -179,6 +214,8 @@ test_mean <- function(x = NULL, mu0, alt = "two.sided", alpha = 0.05, method = c
 #' @param sum_x,sum_x2 Sum of the observations and sum of their squares
 #'   (with `n`), when the question gives these instead of xbar and s.
 #' @param sigma_d Known standard deviation of the paired differences.
+#' @param var_test `ci_2means()`: with raw data Levene's test for equal variances is
+#'   shown automatically (`NULL`); `FALSE` hides it.
 #' @param se_target `est_mean()`: target standard error; prints the sample
 #'   size needed, n >= (sigma / SE*)^2.
 #' @return An `sc_result` with `estimate`, `se`, `critical`, `margin`, `ci`
@@ -338,33 +375,61 @@ est_mean <- function(x = NULL, xbar = NULL, s = NULL, n = NULL, sigma = NULL, su
 #' @export
 test_paired <- function(x = NULL, y = NULL, d0 = 0, alt = "two.sided", alpha = 0.05, method = c("t", "z"),
                         dbar = NULL, sd_d = NULL, n = NULL,
-                        mean1 = NULL, mean2 = NULL, s1 = NULL, s2 = NULL, cov = NULL, r = NULL) {
+                        mean1 = NULL, mean2 = NULL, s1 = NULL, s2 = NULL, cov = NULL, r = NULL, sigma_d = NULL) {
   alt <- .alt(alt); alpha <- .prob(alpha, "alpha"); method <- match.arg(method)
-  P <- .paired(x, y, dbar, sd_d, n, mean1, mean2, s1, s2, cov, r, .label(substitute(x)), .label(substitute(y)))
-  dist <- if (method == "t") "t" else "z"; df <- if (method == "t") P$n - 1 else NULL
+  sx <- substitute(x); sy <- substitute(y)
+  P <- .paired(x, y, dbar, sd_d, n, mean1, mean2, s1, s2, cov, r, .label(sx), .label(sy), sigma_d)
+  known <- !is.null(sigma_d)
+  dist <- if (known || method == "z") "z" else "t"; df <- if (dist == "t") P$n - 1 else NULL
   sname <- if (dist == "t") "t" else "Z"
   stat <- (P$dbar - d0) / P$se
   p <- .pval(stat, alt, dist, df); crit <- .crit(alt, alpha, dist, df)
+  base <- data.frame(n = P$n)
+  if (!is.null(P$mean_x)) { base$xbar <- P$mean_x; base$ybar <- P$mean_y }
+  base$dbar <- P$dbar
+  p_z <- p_t <- NULL
+  if (known) {
+    tab <- cbind(base, sigma_D = sigma_d, se = P$se, stat = stat, `p-value` = .p_cells(p)); rownames(tab) <- "Normal"
+  } else {
+    R <- .test_rows(P$dbar, P$se, d0, alt, P$n - 1)
+    p_z <- R$p[1]; p_t <- R$p[2]
+    tab <- cbind(base[c(1, 1), , drop = FALSE], s_D = P$sd_d, se = P$se, stat = R$stat, `p-value` = .p_cells(R$p))
+    rownames(tab) <- rownames(R)
+  }
+  names(tab)[names(tab) == "`p-value`"] <- "p-value"
   lines <- c(
-    sprintf("H0: mu_D = %s      H1: mu_D %s %s      (%s)", .f(d0), .alt_sym(alt), .f(d0), P$def),
+    .hyp_lines("mu_D", .f(d0), alt),
+    sprintf("    %s   (mu_D = mu_x - mu_y)", P$def),
+    "",
+    sprintf("Test on mu_x - mu_y   (paired samples, variance of the differences %s)", if (known) "known" else "unknown"),
+    .ci_table_lines(tab),
+    "",
     P$inputs,
-    sprintf("Case: paired data (same units measured twice) -> %s", if (dist == "t") sprintf("t with n - 1 = %s df", .f(df)) else "z (large sample)"),
+    sprintf("Explained below: %s", if (dist == "t") sprintf("Student t with n - 1 = %s df", .f(df)) else "normal (z)"),
     "",
     P$steps,
     sprintf("%s = (Dbar - d0) / SE = (%s - %s) / %s = %s", sname, .f(P$dbar), .f(d0), .f(P$se), .f(stat)),
     sprintf("Critical value: %s  ->  %s", paste(.f(crit), collapse = " and "), .reject_region(alt, crit, sname)),
     sprintf("p-value = %s = %s", .p_text(alt, .dist_label(dist, df), stat), .fp(p)),
     "",
-    .decision_lines(p, alpha))
-  wording <- sprintf(
-    "The measurements are paired because they are repeated measurements on the same statistical units, so we work with the differences %s. Let mu_D denote the population mean difference. We test H0: mu_D = %s against H1: mu_D %s %s. The mean paired difference is %s with standard error %s, giving %s = %s%s. %s to conclude that the population mean difference is %s %s.",
-    P$def, .f(d0), .alt_sym(alt), .f(d0), .f(P$dbar), .f(P$se), sname, .f(stat),
+    .decision_lines(p, alpha),
+    .p_reading(p))
+  wording <- c(sprintf(
+    "The measurements are paired because they are repeated measurements on the same statistical units, so we work with the differences %s. Let mu_D denote the population mean difference. We test %s. The mean paired difference is %s with standard error %s, giving %s = %s%s. %s to conclude that the population mean difference is %s %s.",
+    P$def, .hyp_text("mu_D", .f(d0), alt), .f(P$dbar), .f(P$se), sname, .f(stat),
     if (!is.null(df)) sprintf(" with %s degrees of freedom", .f(df)) else "",
-    .decision_words(p, alpha), .alt_words(alt), .f(d0))
+    .decision_words(p, alpha), .alt_words(alt), .f(d0)),
+    .zt_disagree(p_z, p_t, alpha))
+  mdiff <- if (d0 != 0) d0
+  ub <- if (!is.null(x) && !is.null(y))
+          .ub_call("TEST.diffmean", x = sx, y = sy, type = "paired", sigma.d = sigma_d, mdiff0 = mdiff, alternative = .ub_alt(alt))
+        else if (!is.null(x)) paste(.ub_call("TEST.mean", x = sx, sigma = sigma_d, mu0 = d0, alternative = .ub_alt(alt)), " # on the differences")
+        else .ub_raw_note
   .plot_test(stat, alt, alpha, dist, df, main = "Paired test")
   .result("Paired test (mean difference)", lines, wording, P$note, match.call(),
           statistic = stat, p_value = p, critical = crit, se = P$se, df = df, estimate = P$dbar,
-          n = P$n, decision = if (p < alpha) "reject H0" else "fail to reject H0")
+          n = P$n, decision = if (p < alpha) "reject H0" else "fail to reject H0",
+          p_z = p_z, p_t = p_t, table = tab, ubstats = ub)
 }
 
 #' @rdname ci
@@ -431,7 +496,9 @@ ci_paired <- function(x = NULL, y = NULL, conf = 0.95, method = c("t", "z"),
     }
     note <- .dropped_note(a, b)
     n1 <- length(a); n2 <- length(b); xbar1 <- mean(a); xbar2 <- mean(b); s1 <- sd(a); s2 <- sd(b)
+    raw <- list(a = a[!is.na(a)], b = b[!is.na(b)])
   } else {
+    raw <- NULL
     .need(xbar1, n1, xbar2, n2, msg = "Give data (x, y or x + group) or xbar1, n1, xbar2, n2 with s1, s2 (or sigma1, sigma2).")
     labs <- c("group 1", "group 2"); vlab <- "the variable"
   }
@@ -475,7 +542,7 @@ ci_paired <- function(x = NULL, y = NULL, conf = 0.95, method = c("t", "z"),
   tab <- data.frame(group = labs, n = c(n1, n2), mean = c(xbar1, xbar2),
                     sd = c(s1 %||% NA, s2 %||% NA))
   list(n1 = n1, n2 = n2, xbar1 = xbar1, xbar2 = xbar2, s1 = s1, s2 = s2, diff = xbar1 - xbar2, se = se, dist = dist, df = df,
-       case = case, reason = reason, steps = steps, labs = labs, vlab = vlab, note = note,
+       case = case, reason = reason, steps = steps, labs = labs, vlab = vlab, note = note, raw = raw,
        table = .table_lines(.round_df(tab)))
 }
 
@@ -484,73 +551,212 @@ ci_paired <- function(x = NULL, y = NULL, conf = 0.95, method = c("t", "z"),
 test_2means <- function(x = NULL, y = NULL, case, d0 = 0, alt = "two.sided", alpha = 0.05,
                         group = NULL, levels = NULL,
                         xbar1 = NULL, s1 = NULL, n1 = NULL, xbar2 = NULL, s2 = NULL, n2 = NULL,
-                        sigma1 = NULL, sigma2 = NULL) {
+                        sigma1 = NULL, sigma2 = NULL, var_test = NULL) {
   alt <- .alt(alt); alpha <- .prob(alpha, "alpha")
+  sx <- substitute(x); sy <- substitute(y); sg <- substitute(group)
   M <- .two_means(x, y, group, levels, xbar1, s1, n1, xbar2, s2, n2, sigma1, sigma2,
-                  if (missing(case)) NULL else case, .label(substitute(x)), .label(substitute(y)))
-  sname <- if (M$dist == "t") "t" else "Z"
-  stat <- (M$diff - d0) / M$se
-  p <- .pval(stat, alt, M$dist, M$df); crit <- .crit(alt, alpha, M$dist, M$df)
-  lines <- c(
-    sprintf("H0: mu1 - mu2 = %s      H1: mu1 - mu2 %s %s", .f(d0), .alt_sym(alt), .f(d0)),
-    sprintf("Group 1 = %s,  Group 2 = %s   (independent samples, case = \"%s\")", M$labs[1], M$labs[2], M$case),
-    M$table,
-    "",
-    sprintf("Difference in sample means = %s - %s = %s", .f(M$xbar1), .f(M$xbar2), .f(M$diff)),
-    M$steps,
-    sprintf("%s = (diff - d0) / SE = (%s - %s) / %s = %s", sname, .f(M$diff), .f(d0), .f(M$se), .f(stat)),
-    sprintf("Critical value: %s  ->  %s", paste(.f(crit), collapse = " and "), .reject_region(alt, crit, sname)),
-    sprintf("p-value = %s = %s", .p_text(alt, .dist_label(M$dist, M$df), stat), .fp(p)),
-    "",
-    .decision_lines(p, alpha))
-  wording <- sprintf(
-    "Let mu1 and mu2 denote the population means of %s for %s and %s. The two samples contain different statistical units and are therefore independent. %s. We test H0: mu1 - mu2 = %s against H1: mu1 - mu2 %s %s. The observed difference between the sample means is %s with standard error %s, giving %s = %s%s. %s to conclude that the population mean of %s for %s is %s that for %s.",
-    M$vlab, M$labs[1], M$labs[2], M$reason, .f(d0), .alt_sym(alt), .f(d0), .f(M$diff), .f(M$se), sname, .f(stat),
-    if (!is.null(M$df)) sprintf(" with %s degrees of freedom", .f(M$df, 2)) else "",
-    .decision_words(p, alpha), M$vlab, M$labs[1],
-    if (d0 == 0) .alt_words(alt) else sprintf("%s (by %s)", .alt_words(alt), .f(d0)), M$labs[2])
-  .plot_test(stat, alt, alpha, M$dist, M$df, main = "Two independent means")
+                  if (missing(case)) NULL else case, .label(sx), .label(sy), allow_all = TRUE)
+  head <- sprintf("Test on mu_x - mu_y   (independent samples)   x = %s, y = %s", M$labs[1], M$labs[2])
+  lines <- c(.hyp_lines("mu_x - mu_y", .f(d0), alt), "")
+  stat <- p <- crit <- se <- df <- tests <- decision <- NULL
+  if (M$case != "all") {
+    sname <- if (M$dist == "t") "t" else "Z"
+    stat <- (M$diff - d0) / M$se; se <- M$se; df <- M$df
+    p <- .pval(stat, alt, M$dist, M$df); crit <- .crit(alt, alpha, M$dist, M$df)
+    decision <- if (p < alpha) "reject H0" else "fail to reject H0"
+    work <- c(
+      sprintf("Difference in sample means = %s - %s = %s", .f(M$xbar1), .f(M$xbar2), .f(M$diff)),
+      M$steps,
+      sprintf("%s = (xbar - ybar - d0) / SE = (%s - %s) / %s = %s", sname, .f(M$diff), .f(d0), .f(M$se), .f(stat)),
+      sprintf("Critical value: %s  ->  %s", paste(.f(crit), collapse = " and "), .reject_region(alt, crit, sname)),
+      sprintf("p-value = %s = %s", .p_text(alt, .dist_label(M$dist, M$df), stat), .fp(p)),
+      "",
+      .decision_lines(p, alpha),
+      .p_reading(p))
+    wording <- sprintf(
+      "Let mu_x and mu_y denote the population means of %s for %s and %s. The two samples contain different statistical units and are therefore independent. %s. We test %s. The observed difference between the sample means is %s with standard error %s, giving %s = %s%s. %s to conclude that the population mean of %s for %s is %s that for %s.",
+      M$vlab, M$labs[1], M$labs[2], M$reason, .hyp_text("mu_x - mu_y", .f(d0), alt), .f(M$diff), .f(M$se), sname, .f(stat),
+      if (!is.null(M$df)) sprintf(" with %s degrees of freedom", .f(M$df, 2)) else "",
+      .decision_words(p, alpha), M$vlab, M$labs[1],
+      if (d0 == 0) .alt_words(alt) else sprintf("%s (by %s)", .alt_words(alt), .f(d0)), M$labs[2])
+  }
+  if (M$case == "known") {
+    tab <- data.frame(row.names = "Normal", n_x = M$n1, n_y = M$n2, xbar = M$xbar1, ybar = M$xbar2, `xbar-ybar` = M$diff,
+                      sigma_X = sigma1, sigma_Y = sigma2, se = M$se, stat = stat, `p-value` = .p_cells(p), check.names = FALSE)
+    lines <- c(lines, paste(head, "  variances known"), .ci_table_lines(tab), "", work)
+  } else {
+    R <- .diffmean_rows(M, d0 = d0, alt = alt, alpha = alpha)
+    tests <- R$intervals
+    lines <- c(lines, paste(head, "  variances unknown"), "", R$lines)
+    if (M$case != "all") {
+      pick <- switch(M$case, pooled = 2, welch = 4, large = 3)
+      lines <- c(lines, "", sprintf("Chosen (case = \"%s\"): variances %s, %s", M$case, tests$variances[pick], tests$method[pick]), work)
+    } else {
+      rej <- tests$p < alpha
+      wording <- c(
+        sprintf("The samples are independent (different units). We test %s. The four tests for mu_x - mu_y (x = %s, y = %s) differ only in their assumptions: Student-t tests are exact for normal populations (pooled variance with n_x + n_y - 2 df if the variances can be assumed equal, Welch-Satterthwaite df otherwise); for large samples the normal approximation is valid whatever the distribution, and the t test is the conservative choice.",
+                .hyp_text("mu_x - mu_y", .f(d0), alt), M$labs[1], M$labs[2]),
+        if (all(rej)) sprintf("At alpha = %s H0 is rejected under all four sets of assumptions: the conclusion does not depend on them.", .f(alpha))
+        else if (!any(rej)) sprintf("At alpha = %s H0 is not rejected under any of the four sets of assumptions: there is insufficient empirical evidence against H0.", .f(alpha))
+        else sprintf("At alpha = %s the decision depends on the assumptions (H0 rejected only for: %s): justify the case you choose.", .f(alpha),
+                     paste(sprintf("%s variances %s", tests$variances[rej], tests$method[rej]), collapse = "; ")),
+        "Choose the case with case = \"pooled\", \"welch\" or \"large\" to get the step-by-step working for one test.")
+    }
+  }
+  L <- .levene_block(M, var_test)
+  if (!is.null(L)) { lines <- c(lines, "", L$lines); wording <- c(wording, L$wording) }
+  mdiff <- if (d0 != 0) d0
+  vt <- if (!is.null(L)) TRUE
+  ub <- if (is.null(x)) .ub_raw_note
+        else if (!is.null(group)) {
+          if (.ub_by_ok(group, levels) && is.null(sigma1))
+            .ub_call("TEST.diffmean", x = sx, by = sg, mdiff0 = mdiff, alternative = .ub_alt(alt), var.test = vt)
+          else .ub_call("TEST.diffmean", x = .ub_subset(sx, sg, M$labs[1]), y = .ub_subset(sx, sg, M$labs[2]),
+                        sigma.x = sigma1, sigma.y = sigma2, mdiff0 = mdiff, alternative = .ub_alt(alt), var.test = vt)
+        } else .ub_call("TEST.diffmean", x = sx, y = sy, sigma.x = sigma1, sigma.y = sigma2, mdiff0 = mdiff,
+                        alternative = .ub_alt(alt), var.test = vt)
+  if (!is.null(stat)) .plot_test(stat, alt, alpha, M$dist, M$df, main = "Two independent means")
   .result("Two independent means test", lines, wording, M$note, match.call(),
-          statistic = stat, p_value = p, critical = crit, se = M$se, df = M$df, estimate = M$diff,
-          decision = if (p < alpha) "reject H0" else "fail to reject H0")
+          statistic = stat, p_value = p, critical = crit, se = se, df = df, estimate = M$diff,
+          decision = decision, tests = tests, levene = L$res, ubstats = ub)
 }
 
-# The four UBStats intervals for mu_x - mu_y with unknown variances.
-.diffmean_rows <- function(M, conf) {
+# The four UBStats rows for mu_x - mu_y with unknown variances: intervals
+# (conf given) or tests (alt given).
+.diffmean_rows <- function(M, conf = NULL, d0 = 0, alt = NULL, alpha = 0.05) {
   n1 <- M$n1; n2 <- M$n2; s1 <- M$s1; s2 <- M$s2; d <- M$diff
   sp2 <- ((n1 - 1) * s1^2 + (n2 - 1) * s2^2) / (n1 + n2 - 2)
   se_eq <- sqrt(sp2 / n1 + sp2 / n2); df_eq <- n1 + n2 - 2
   v1 <- s1^2 / n1; v2 <- s2^2 / n2
   se_un <- sqrt(v1 + v2); df_w <- (v1 + v2)^2 / (v1^2 / (n1 - 1) + v2^2 / (n2 - 1))
-  z <- qnorm((1 + conf) / 2)
-  crit <- c(z, qt((1 + conf) / 2, df_eq), z, qt((1 + conf) / 2, df_w))
   se <- c(se_eq, se_eq, se_un, se_un)
   iv <- data.frame(variances = rep(c("equal", "different"), each = 2), method = rep(c("Normal.Approx", "Student-t"), 2),
-                   df = c(NA, df_eq, NA, df_w), crit = crit, se = se, Lower = d - crit * se, Upper = d + crit * se,
-                   stringsAsFactors = FALSE)
+                   df = c(NA, df_eq, NA, df_w), stringsAsFactors = FALSE)
+  if (!is.null(conf)) {
+    z <- qnorm((1 + conf) / 2)
+    iv$crit <- c(z, qt((1 + conf) / 2, df_eq), z, qt((1 + conf) / 2, df_w))
+    iv$se <- se; iv$Lower <- d - iv$crit * se; iv$Upper <- d + iv$crit * se
+    tails <- c(sprintf(";  z = %s, t(df = n_x+n_y-2 = %s) = %s", .f(z), .f(df_eq), .f(iv$crit[2])), "",
+               sprintf(";  t = %s", .f(iv$crit[4])))
+  } else {
+    iv$se <- se; iv$stat <- (d - d0) / se
+    iv$p <- c(.pval(iv$stat[1], alt, "z"), .pval(iv$stat[2], alt, "t", df_eq),
+              .pval(iv$stat[3], alt, "z"), .pval(iv$stat[4], alt, "t", df_w))
+    iv$decision <- ifelse(iv$p < alpha, "reject H0", "fail to reject H0")
+    tails <- c(sprintf(";  stat = (xbar - ybar - d0) / se = (%s - %s) / %s = %s", .f(d), .f(d0), .f(se_eq), .f(iv$stat[1])),
+               sprintf(";  stat = (%s - %s) / %s = %s", .f(d), .f(d0), .f(se_un), .f(iv$stat[3])), "")
+  }
   mk <- function(rows) {
     t <- data.frame(n_x = n1, n_y = n2, xbar = M$xbar1, ybar = M$xbar2, `xbar-ybar` = d, s_X = s1, s_Y = s2,
-                    se = iv$se[rows], Lower = iv$Lower[rows], Upper = iv$Upper[rows], check.names = FALSE)
+                    se = iv$se[rows], check.names = FALSE)
+    if (!is.null(conf)) { t$Lower <- iv$Lower[rows]; t$Upper <- iv$Upper[rows] }
+    else { t$stat <- iv$stat[rows]; t$`p-value` <- .p_cells(iv$p[rows]) }
     rownames(t) <- iv$method[rows]
     .ci_table_lines(t)
   }
   steps <- c(
     sprintf("Equal variances:  s^2_pool = [(n_x-1)s_X^2 + (n_y-1)s_Y^2] / (n_x+n_y-2) = [%s x %s^2 + %s x %s^2] / %s = %s",
             .f(n1 - 1), .f(s1), .f(n2 - 1), .f(s2), .f(df_eq), .f(sp2)),
-    sprintf("                  se = sqrt(s^2_pool/n_x + s^2_pool/n_y) = %s;  z = %s, t(df = n_x+n_y-2 = %s) = %s",
-            .f(se_eq), .f(z), .f(df_eq), .f(crit[2])),
-    sprintf("Different:        se = sqrt(s_X^2/n_x + s_Y^2/n_y) = sqrt(%s^2/%s + %s^2/%s) = %s", .f(s1), .f(n1), .f(s2), .f(n2), .f(se_un)),
-    sprintf("                  Welch-Satterthwaite df = (s_X^2/n_x + s_Y^2/n_y)^2 / [(s_X^2/n_x)^2/(n_x-1) + (s_Y^2/n_y)^2/(n_y-1)] = %s;  t = %s",
-            .f(df_w), .f(crit[4])))
+    sprintf("                  se = sqrt(s^2_pool/n_x + s^2_pool/n_y) = %s%s", .f(se_eq), tails[1]),
+    sprintf("Different:        se = sqrt(s_X^2/n_x + s_Y^2/n_y) = sqrt(%s^2/%s + %s^2/%s) = %s%s", .f(s1), .f(n1), .f(s2), .f(n2), .f(se_un), tails[2]),
+    sprintf("                  Welch-Satterthwaite df = (s_X^2/n_x + s_Y^2/n_y)^2 / [(s_X^2/n_x)^2/(n_x-1) + (s_Y^2/n_y)^2/(n_y-1)] = %s%s",
+            .f(df_w), tails[3]))
   list(intervals = iv, lines = c("Unknown variances assumed to be equal", mk(1:2), "",
                                  "Unknown variances assumed to be different", mk(3:4), "", steps))
+}
+
+# ---------- Levene's test (equal variances?) ----------
+
+# As UBStats (var.test = TRUE): absolute deviations from the group MEDIANS,
+# one-way ANOVA F on them with df (1, n_x + n_y - 2).
+.levene <- function(a, b) {
+  za <- abs(a - median(a)); zb <- abs(b - median(b))
+  na <- length(a); nb <- length(b); zbar <- mean(c(za, zb))
+  num <- na * (mean(za) - zbar)^2 + nb * (mean(zb) - zbar)^2
+  den <- (na - 1) * var(za) + (nb - 1) * var(zb)
+  Fs <- (na + nb - 2) * num / den
+  list(s2_x = var(a), s2_y = var(b), F = Fs, df1 = 1, df2 = na + nb - 2, p_value = 1 - pf(Fs, 1, na + nb - 2),
+       mz = c(mean(za), mean(zb)), zbar = zbar, num = num, den = den, n = c(na, nb))
+}
+
+.levene_table <- function(L) {
+  .ci_table_lines(data.frame(row.names = "", s2_x = L$s2_x, s2_y = L$s2_y, `F-stat` = L$F, df1 = L$df1, df2 = L$df2,
+                             `p-value` = .p_cells(L$p_value), check.names = FALSE))
+}
+
+.levene_reading <- function(p) {
+  if (p < 0.05) sprintf("Levene p-value = %s < 0.05: equal variances are rejected at the 5%% level -> use the 'different variances' rows (Welch).", .fp(p))
+  else sprintf("Levene p-value = %s >= 0.05: equal variances are not rejected (the test is conservative toward H0: equal variances) -> the 'equal variances' rows (pooled) are acceptable.", .fp(p))
+}
+
+# Levene block for ci_2means / test_2means: raw data only; var_test = FALSE turns it off.
+.levene_block <- function(M, var_test) {
+  if (isFALSE(var_test) || is.null(M$raw) || M$case == "known") return(NULL)
+  L <- .levene(M$raw$a, M$raw$b)
+  list(res = L,
+       lines = c("Levene test for homogeneity of variance   H0: sigma2_x = sigma2_y   H1: sigma2_x != sigma2_y",
+                 .levene_table(L), .levene_reading(L$p_value)),
+       wording = sprintf("Levene's test for equal variances gives F = %s with (1, %s) df and p-value %s: %s",
+                         .f(L$F), .f(L$df2), .fp(L$p_value),
+                         if (L$p_value < 0.05) "the hypothesis of equal variances is rejected at the 5% level, so the procedure for different variances is preferred."
+                         else "the hypothesis of equal variances cannot be rejected at the usual levels, so assuming equal variances is acceptable."))
+}
+
+#' @rdname tests
+#' @export
+test_levene <- function(x = NULL, y = NULL, group = NULL, levels = NULL, alpha = 0.05) {
+  alpha <- .prob(alpha, "alpha")
+  sx <- substitute(x); sy <- substitute(y); sg <- substitute(group)
+  if (is.null(x)) stop("Levene's test needs the raw data of the two groups (x and y, or x and group =).", call. = FALSE)
+  if (!is.null(group)) {
+    sp <- .split2(x, group, levels)
+    a <- .num(sp$x1, sp$levels[1]); b <- .num(sp$x2, sp$levels[2]); labs <- sp$levels
+  } else {
+    if (is.null(y)) stop("Give the second sample y = ..., or the grouping variable group = ...", call. = FALSE)
+    a <- .num(x, .label(sx)); b <- .num(y, .label(sy)); labs <- c(.label(sx), .label(sy))
+  }
+  note <- .dropped_note(a, b)
+  a <- a[!is.na(a)]; b <- b[!is.na(b)]
+  if (length(a) < 2 || length(b) < 2) stop("Each group needs at least two values.", call. = FALSE)
+  L <- .levene(a, b)
+  crit <- qf(1 - alpha, 1, L$df2)
+  lines <- c(
+    "H0: sigma2_x = sigma2_y (equal population variances)      H1: sigma2_x != sigma2_y",
+    sprintf("x = %s, y = %s   (independent samples)", labs[1], labs[2]),
+    "",
+    "Levene test for homogeneity of variance",
+    .levene_table(L),
+    "",
+    sprintf("Step 1: absolute deviations from each group's MEDIAN: z = |x - median_x| (median %s), |y - median_y| (median %s)",
+            .f(median(a)), .f(median(b))),
+    sprintf("Step 2: means of z: zbar_x = %s, zbar_y = %s, overall zbar = %s", .f(L$mz[1]), .f(L$mz[2]), .f(L$zbar)),
+    sprintf("Step 3: F = (n - 2) x [n_x (zbar_x - zbar)^2 + n_y (zbar_y - zbar)^2] / [(n_x - 1) s^2_zx + (n_y - 1) s^2_zy] = %s x %s / %s = %s",
+            .f(L$df2), .f(L$num), .f(L$den), .f(L$F)),
+    sprintf("        (a one-way ANOVA F on the deviations, df = 1 and n_x + n_y - 2 = %s)", .f(L$df2)),
+    sprintf("Critical value F(%s; 1, %s) = %s  ->  reject H0 if F > %s", .f(1 - alpha), .f(L$df2), .f(crit), .f(crit)),
+    sprintf("p-value = P(F(1, %s) > %s) = %s", .f(L$df2), .f(L$F), .fp(L$p_value)),
+    "",
+    .decision_lines(L$p_value, alpha),
+    if (L$p_value < alpha) "-> treat the variances as different: ci_2means / test_2means with case = \"welch\" (or the 'different' rows)."
+    else "-> equal variances are acceptable: case = \"pooled\" (or the 'equal' rows).")
+  wording <- sprintf(
+    "We test H0: the two population variances are equal (the status quo, retained unless the data clearly contradict it) against H1: they differ, using Levene's test on the absolute deviations from the group medians. The statistic is F = %s with 1 and %s degrees of freedom and p-value %s. %s that the variances of the two populations differ.",
+    .f(L$F), .f(L$df2), .fp(L$p_value), .decision_words(L$p_value, alpha))
+  ub <- if (!is.null(group)) {
+          if (.ub_by_ok(group, levels)) .ub_call("TEST.diffmean", x = sx, by = sg, var.test = TRUE)
+          else .ub_call("TEST.diffmean", x = .ub_subset(sx, sg, labs[1]), y = .ub_subset(sx, sg, labs[2]), var.test = TRUE)
+        } else .ub_call("TEST.diffmean", x = sx, y = sy, var.test = TRUE)
+  .result("Levene test (equal variances?)", lines, wording, note, match.call(),
+          statistic = L$F, df = c(L$df1, L$df2), p_value = L$p_value, critical = crit, s2 = c(L$s2_x, L$s2_y),
+          decision = if (L$p_value < alpha) "reject H0" else "fail to reject H0",
+          ubstats = paste(ub, " # the Levene part of the output"))
 }
 
 #' @rdname ci
 #' @export
 ci_2means <- function(x = NULL, y = NULL, case, conf = 0.95, group = NULL, levels = NULL,
                       xbar1 = NULL, s1 = NULL, n1 = NULL, xbar2 = NULL, s2 = NULL, n2 = NULL,
-                      sigma1 = NULL, sigma2 = NULL) {
+                      sigma1 = NULL, sigma2 = NULL, var_test = NULL) {
   conf <- .prob(conf, "conf")
   sx <- substitute(x); sy <- substitute(y); sg <- substitute(group)
   M <- .two_means(x, y, group, levels, xbar1, s1, n1, xbar2, s2, n2, sigma1, sigma2,
@@ -599,12 +805,16 @@ ci_2means <- function(x = NULL, y = NULL, case, conf = 0.95, group = NULL, level
   } else if (zero_txt[1] > 0 || zero_txt[2] < 0) "The interval does not contain 0, so the data indicate a difference between the two population means."
     else "The interval contains 0, so a zero difference between the population means is plausible."
   wording <- c(wording, zero)
+  L <- .levene_block(M, var_test)
+  if (!is.null(L)) { lines <- c(lines, "", L$lines); wording <- c(wording, L$wording) }
+  vt <- if (!is.null(L)) TRUE
   ub <- if (is.null(x)) .ub_raw_note
         else if (!is.null(group)) {
-          if (.ub_by_ok(group, levels) && is.null(sigma1)) .ub_call("CI.diffmean", x = sx, by = sg, conf.level = conf)
+          if (.ub_by_ok(group, levels) && is.null(sigma1)) .ub_call("CI.diffmean", x = sx, by = sg, conf.level = conf, var.test = vt)
           else .ub_call("CI.diffmean", x = .ub_subset(sx, sg, M$labs[1]), y = .ub_subset(sx, sg, M$labs[2]),
-                        sigma.x = sigma1, sigma.y = sigma2, conf.level = conf)
-        } else .ub_call("CI.diffmean", x = sx, y = sy, sigma.x = sigma1, sigma.y = sigma2, conf.level = conf)
+                        sigma.x = sigma1, sigma.y = sigma2, conf.level = conf, var.test = vt)
+        } else .ub_call("CI.diffmean", x = sx, y = sy, sigma.x = sigma1, sigma.y = sigma2, conf.level = conf, var.test = vt)
   .result("Confidence interval for two independent means", lines, wording, M$note, match.call(),
-          estimate = M$diff, se = se, critical = crit, margin = me, ci = ci, df = df, intervals = intervals, ubstats = ub)
+          estimate = M$diff, se = se, critical = crit, margin = me, ci = ci, df = df, intervals = intervals,
+          levene = L$res, ubstats = ub)
 }
