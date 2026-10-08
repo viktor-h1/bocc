@@ -761,6 +761,11 @@
   sc_notes(tp[.ask_choice("Which notes?", sprintf("%-12s %s", tp, .notes_titles))])
   NULL
 }
+.m_define <- function() {
+  sc_define()
+  sc_define(.mq("\nTerm to define (e.g. IQR, standard error, CLT)"))
+  NULL
+}
 
 # ---------- the menu tree ----------
 
@@ -829,7 +834,8 @@
   list(title = "Which test? / course notes", items = list(
     list("Which test do I need? (decision tree)", .m_guide),
     list("All functions by topic", .m_index),
-    list("Course notes and exam rules", .m_notes))))
+    list("Course notes and exam rules", .m_notes),
+    list("Define a term (what it is, formula, meaning, property)", .m_define))))
 
 .version <- function() tryCatch(as.character(utils::packageVersion("statcram")), error = function(e) "dev")
 

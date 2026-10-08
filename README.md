@@ -1,4 +1,4 @@
-# statcram 0.9.1
+# statcram 0.9.2
 
 A study companion for 30001 Statistics (R, RStudio and UBStats). Practise with the course data
 and the past papers, check your answers against the official solutions, and learn the UBStats and
@@ -21,7 +21,7 @@ Pure R, no compilation, no internet needed after installing.
 
 ```r
 # from the built file
-install.packages("statcram_0.9.1.tar.gz", repos = NULL, type = "source")
+install.packages("statcram_0.9.2.tar.gz", repos = NULL, type = "source")
 # or from GitHub
 remotes::install_github("viktor-h1/bocc", ref = "claude/quirky-gates-9i7hvr")
 
@@ -48,6 +48,7 @@ sc_recipes()     # R one-liners: new columns, subsets, factors, typed tables
 sc_notes("inference")   # course rules (also: rules, descriptive, estimation, random, chisq, regression, patterns)
 sc_notes("patterns")    # past-paper questions -> what to run -> what the answer must contain
 sc_notes("phrasing")    # how official answers are phrased: 7 moves + phrase bank (any question)
+sc_define("IQR")        # exam-ready definition: what it is, formula, meaning, property (sc_define() lists all)
 ```
 
 At every menu prompt: **b** = back, **m** = main menu, **q** = quit.
@@ -67,13 +68,18 @@ answer can be built even for a question no past paper asked:
 - **A phrase bank** for every concept of the course, and the language rules.
 
 The exam wording of the first-partial procedures is printed with the same labels (Frame, Tool,
-Result, Meaning, Conclusion, Caveat); `options(statcram.labels = FALSE)` hides them. Version 0.9.1
-also follows the 14 Oct 2025 partial:
+Result, Meaning, Conclusion, Caveat); `options(statcram.labels = FALSE)` hides them. Since 0.9.1
+it also follows the 14 Oct 2025 partial:
 - group shapes read as in the solution ("central part fairly symmetric, outliers mainly on the
   lower side");
 - a linearity check in `desc_cor()`;
 - `est_mean(x, group =)` for estimates and SEs by group;
 - `desc_cv()` mixing raw data with means / SDs / variances.
+
+"Define ..." questions: `sc_define("IQR")` prints a definition in the four parts the answer needs
+(what it is, the formula, the meaning for the units, one property or caveat) for about 55 terms
+of the first partial; abbreviations work (`"se"`, `"CLT"`, `"interquartile"`), and `sc_define()`
+lists them all.
 
 ## The panel
 
@@ -96,7 +102,7 @@ console prints, and the Plot tab shows the graph. Change a field and the result 
 | 6 | Chi-square | `chisq_gof` `chisq_indep` |
 | 7 | Regression | `reg_fit` `reg_predict` `reg_test` `reg_check` `reg_compare` `reg_effect` |
 | 8 | Enter a table from paper / data tools | `sc_table` `sc_data` `sc_recipes` |
-| 9 | Which test? / course notes | `sc_guide` `sc_index` `sc_notes` |
+| 9 | Which test? / course notes / definitions | `sc_guide` `sc_index` `sc_notes` `sc_define` |
 
 Type a prefix and press Tab in RStudio (`test_`, `ci_`, `desc_` ...) to see the family;
 `?test_mean` opens one help page covering all tests (same for `?ci_mean`, `?reg_fit`, ...).

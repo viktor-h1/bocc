@@ -42,6 +42,7 @@ sc_guide <- function() {
     "  Very large n: tiny, practically irrelevant differences become significant.",
     "",
     "How to phrase any answer: sc_notes(\"phrasing\")  (Frame, Tool, Result, Meaning, Conclusion, Caveat)",
+    "\"Define ...\" questions: sc_define(\"IQR\")  (what it is, formula, meaning, property)",
     "",
     "Describe data (no population claim)",
     "  frequency table / cumulative / Freq(X <= x), few values .. desc_freq()      sc(1,1)",
@@ -110,10 +111,10 @@ sc_guide <- function() {
 .index <- data.frame(
   topic = c(rep("1 Describe", 9), rep("2 Probability", 12), rep("3 Estimation / CIs", 6),
             rep("4 Hypothesis tests", 6), rep("5 Power / sample size", 6), rep("6 Chi-square", 2),
-            rep("7 Regression", 6), rep("8 Data tools", 3), rep("9 Guide", 5)),
+            rep("7 Regression", 6), rep("8 Data tools", 3), rep("9 Guide", 6)),
   menu = c(paste0("sc(1,", 1:9, ")"), paste0("sc(2,", 1:12, ")"), paste0("sc(3,", 1:6, ")"), paste0("sc(4,", 1:6, ")"),
            paste0("sc(5,", 1:6, ")"), paste0("sc(6,", 1:2, ")"), paste0("sc(7,", 1:6, ")"),
-           "sc(8,1)", "sc(8,3)", "sc(8,6)", "sc(9,1)", "sc(9,2)", "sc(9,3)", "", ""),
+           "sc(8,1)", "sc(8,3)", "sc(8,6)", "sc(9,1)", "sc(9,2)", "sc(9,3)", "sc(9,4)", "", ""),
   fun = c("desc_freq", "desc_classes", "desc_summary", "desc_compare", "desc_cv", "desc_prop", "desc_crosstab", "desc_cor", "desc_vars",
           "prob_events", "prob_bayes", "rv_discrete", "prob_binom", "prob_unif", "prob_normal", "prob_t", "prob_chisq",
           "rv_lincomb", "rv_joint", "rv_iid", "rv_prop",
@@ -123,7 +124,7 @@ sc_guide <- function() {
           "chisq_gof", "chisq_indep",
           "reg_fit", "reg_predict", "reg_test", "reg_check", "reg_compare", "reg_effect",
           "sc_table", "sc_data", "sc_recipes",
-          "sc_guide", "sc_index", "sc_notes", "sc_selftest", "sc"),
+          "sc_guide", "sc_index", "sc_notes", "sc_define", "sc_selftest", "sc"),
   what = c("frequency table: f_k, p_k, F_k; Freq(X <= x); bars / spikes / cumulative",
            "intervals / classes: w_k, c_k = p_k / w_k, F_k; histogram, ogive; approx. Freq(X <= x)",
            "one numeric variable: centre, spread, quartiles, outliers, plots",
@@ -154,7 +155,7 @@ sc_guide <- function() {
            "fit lm + all tests + interpretation", "CI mean response + PI individual", "H0: beta = value",
            "diagnostics + multicollinearity", "adjusted R2 + partial F", "CI for beta / for a change of c units",
            "enter a table from paper", "what is loaded now", "R one-liners",
-           "which test? decision tree", "this list", "course notes", "check the installation", "the menu"),
+           "which test? decision tree", "this list", "course notes", "define a term in exam wording", "check the installation", "the menu"),
   stringsAsFactors = FALSE)
 
 #' @rdname guide
