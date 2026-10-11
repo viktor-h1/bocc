@@ -41,3 +41,11 @@ test_that("menu item 9,4 defines a typed term", {
   r <- scripted(c("CLT", "q"), sc(9, 4))
   expect_true(any(grepl("^== Central Limit Theorem \\(CLT\\)", r$out)))
 })
+
+test_that("menu 8,2 fixes a whole data frame, not one of its columns", {
+  in_global(list(covarcor = data.frame(adspend = c("`100", "200", "300"), revenue = c(2000, 4000, 6000))), {
+    r <- scripted(c("1=100", "", "", "q"), sc(8, 2))
+    expect_false(any(grepl("not a table", r$out)))
+    expect_equal(get("covarcor", envir = .GlobalEnv)$adspend, c(100, 200, 300))
+  })
+})

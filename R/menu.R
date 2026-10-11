@@ -721,11 +721,10 @@
 
 .m_table <- function() { sc_table(); NULL }
 .m_table_edit <- function() {
-  d <- .ask_data("the table to fix", "both")
-  obj <- .eval_expr(d$expr)
-  if (!is.data.frame(obj)) stop("That is not a table / data frame.", call. = FALSE)
-  if (!.syntactic(d$expr)) stop("Choose a table saved under its own name (e.g. tab1).", call. = FALSE)
-  eval(call("sc_table", edit = as.name(d$expr)), envir = list2env(list(sc_table = sc_table), parent = .GlobalEnv))
+  # pick a whole data frame (not one of its columns)
+  dfn <- .ask_df()
+  if (!.syntactic(dfn)) stop("Choose a table saved under a simple name (e.g. tab1).", call. = FALSE)
+  eval(call("sc_table", edit = as.name(dfn)), envir = list2env(list(sc_table = sc_table), parent = .GlobalEnv))
   NULL
 }
 .m_sc_data <- function() { sc_data(); NULL }
