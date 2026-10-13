@@ -27,6 +27,7 @@ sc_app <- function() {
   viewer <- if (requireNamespace("rstudioapi", quietly = TRUE) && rstudioapi::isAvailable()) shiny::paneViewer(minHeight = 600)
             else shiny::browserViewer()
   cl <- shiny::runGadget(.app_ui(), .app_server, viewer = viewer, stopOnCancel = FALSE)
+  if (identical(cl, "answers")) return(sc_answers_app())
   if (!is.call(cl)) return(invisible(NULL))
   cat("> ", paste(deparse(cl, width.cutoff = 500L), collapse = " "), "\n", sep = "")
   invisible(.run_call(cl))
@@ -49,6 +50,7 @@ sc_app <- function() {
       shiny::fillRow(flex = c(4, 7),
         shiny::div(style = "height: 100%; overflow-y: auto; padding-right: 12px;",
                    shiny::selectInput("proc", "Procedure", choices = .app_choices(), selected = "desc_summary", width = "100%", selectize = FALSE),
+                   shiny::actionLink("answers", "Open the study answer bank (answer templates; study use only)"),
                    shiny::uiOutput("form")),
         shiny::div(style = "height: 100%; overflow-y: auto;",
                    shiny::tabsetPanel(id = "tab",
@@ -109,6 +111,7 @@ sc_app <- function() {
 }
 
 .app_plot <- function(cl) {
+  if (identical(cl, "answers")) return(sc_answers_app())
   if (!is.call(cl)) return(invisible(NULL))
   op <- options(statcram.plot = TRUE); on.exit(options(op))
   utils::capture.output(tryCatch(.app_eval(cl), error = function(e) NULL))
@@ -140,4 +143,5 @@ sc_app <- function() {
     shiny::stopApp(if (is.call(cl)) cl else NULL)
   })
   shiny::observeEvent(input$close, shiny::stopApp(NULL))
+  shiny::observeEvent(input$answers, shiny::stopApp("answers"))
 }

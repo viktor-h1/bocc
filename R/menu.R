@@ -762,29 +762,48 @@
 }
 # Study answer bank: category number or words -> numbered cases -> one case -> optional fill.
 .m_answers <- function() {
-  .ab_cat(.ab_categories_lines())
-  a <- .mq("\nCategory number, or words to search (e.g. unequal widths, among those)")
+  .ab_cat(.ab_start_lines())
+  cat("\nA START HERE number (1-11), c1..c6 for a chapter, w for the weak spots,\n",
+      "p for past-paper questions, d for a practice drill, or words to search.\n", sep = "")
+  a <- .mq("Choice")
   if (!nzchar(a)) return(NULL)
-  n <- suppressWarnings(as.integer(a))
-  rows <- if (!is.na(n) && n >= 1 && n <= nrow(.ab()$sections)) which(.ab()$templates$category == .ab()$sections$id[n])
-          else { r <- .ab_search(a); r$rows }
-  if (!length(rows)) { cat(sprintf("No case matches \"%s\". Try a shorter word.\n", a)); return(NULL) }
+  b <- .ab(); t <- b$templates
+  n <- suppressWarnings(as.integer(a)); al <- tolower(a)
+  if (al == "p") {
+    sc_answers_questions()
+    s <- .mq("Source key (e.g. P25)")
+    if (nzchar(s)) sc_answers_questions(s)
+    return(NULL)
+  }
+  if (al == "d") {
+    g <- .mq("Drill which? START HERE number, c1..c6, w = weak spots, Enter = all", "")
+    args <- if (grepl("^c[1-6]$", tolower(g))) list(chapter = as.integer(substring(g, 2)))
+            else if (tolower(g) == "w") list(priority = "high")
+            else if (!is.na(suppressWarnings(as.integer(g)))) list(group = as.integer(g)) else list()
+    do.call(sc_answers_practice, c(args, n = 5))
+    return(NULL)
+  }
+  rows <- if (!is.na(n) && n >= 1 && n <= nrow(b$groups)) which(.ab_keep(group = n))
+          else if (grepl("^c[1-6]$", al)) which(t$chapter == as.integer(substring(al, 2)))
+          else if (al == "w") which(.ab_keep(priority = "critical"))
+          else .ab_search(a)$rows
+  if (!length(rows)) { cat(sprintf("No card matches \"%s\". Try a shorter word.\n", a)); return(NULL) }
   i <- rows[1]
   if (length(rows) > 1) {
-    .ab_cat(.ab_list_lines(rows, c(sprintf("%d cases (study use only - authored templates):", length(rows)), "")))
+    .ab_cat(.ab_list_lines(rows, c(sprintf("%d cards (study use only - authored templates):", length(rows)), "")))
     repeat {
-      k <- suppressWarnings(as.integer(.mq("Case number to show")))
+      k <- suppressWarnings(as.integer(.mq("Card number to show")))
       if (!is.na(k) && k >= 1 && k <= length(rows)) break
       cat("  Type one of the numbers above (b = back, m = main menu, q = quit).\n")
     }
     i <- rows[k]
   }
   cat("\n"); .ab_cat(.ab_card_lines(i))
-  ph <- .ab()$templates$placeholders[[i]]
+  ph <- t$placeholders[[i]]
   if (length(ph) && .ask_yes("Fill in the blanks now?", FALSE)) {
     parts <- unique(trimws(unlist(strsplit(ph, ",", fixed = TRUE))))
     vals <- stats::setNames(lapply(parts, function(p) .mq(sprintf("  [%s] (Enter = leave blank)", p), "")), parts)
-    cat("\n"); sc_answers_fill(.ab()$templates$id[i], values = vals)
+    cat("\n"); sc_answers_fill(t$id[i], values = vals)
   }
   NULL
 }

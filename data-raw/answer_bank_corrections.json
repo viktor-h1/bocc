@@ -1,0 +1,1927 @@
+[
+ {
+  "id": "C1.DATA.VAR_NOM",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when the categories have a natural order (use the ordinal card) or when the values are genuine counts or measurements."
+ },
+ {
+  "id": "C1.DATA.VAR_ORD",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when the categories have no natural order (use the nominal card) or when the values are genuine numerical counts or measurements."
+ },
+ {
+  "id": "C1.DATA.VAR_DISCRETE",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use for measurements on a continuous scale (use the continuous card) or for categories that are merely coded with numbers (use the coding-trap card)."
+ },
+ {
+  "id": "C1.DATA.VAR_CONT",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use for counts of objects or events (use the discrete card) or for categories that are merely coded with numbers (use the coding-trap card)."
+ },
+ {
+  "id": "C1.DATA.NUM_CODE_TRAP",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when the numbers are genuine counts or measurements; then classify the variable as quantitative discrete or continuous."
+ },
+ {
+  "id": "C1.DATA.ID_NOT_VARIABLE",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use for numeric codes of a real characteristic such as a Likert score (use the coding-trap card) or for genuine counts or measurements."
+ },
+ {
+  "id": "C1.DATA.PARAM_STAT",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when the data cover the whole population: then the computed value is itself the parameter, not a sample statistic."
+ },
+ {
+  "id": "C1.DATA.DESCRIPTIVE",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when the question generalises from the sample to the population or asks about uncertainty; use the inferential card instead."
+ },
+ {
+  "id": "C1.DATA.INFERENTIAL",
+  "field": "answer_template",
+  "kind": "minor",
+  "reason": "Inference is not only estimation: the book defines it as generalisations, predictions or inferences (including tests) about population parameters.",
+  "from": "This is an inferential objective: sample information is used to estimate a characteristic of the population, accounting for the uncertainty due to sampling variability.",
+  "to": "This is an inferential objective: sample information is used to estimate (or draw conclusions about) a characteristic of the population, accounting for the uncertainty due to sampling variability."
+ },
+ {
+  "id": "C1.DATA.INFERENTIAL",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when the data are the whole population or the task only summarises the observed data; use the descriptive card instead."
+ },
+ {
+  "id": "C1.DATA.SYST_SAMPLE",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when units are drawn by lot, independently with equal probability (simple random sampling), rather than every k-th unit from a list."
+ },
+ {
+  "id": "C1.DATA.OBS_EXPER",
+  "field": "answer_template",
+  "kind": "misleading",
+  "reason": "The book defines a controlled experiment by RANDOM assignment of units to treatments; 'deliberately assigned' would also cover non-random assignment, which does not support causal conclusions.",
+  "from": "The study is [observational/a controlled experiment] because [no treatment was assigned/treatments were deliberately assigned]. An observational association alone does not establish a causal effect.",
+  "to": "The study is [observational/a controlled experiment] because [no treatment was assigned by the researcher/units were randomly assigned to the treatments]. An observational association alone does not establish a causal effect."
+ },
+ {
+  "id": "C1.DATA.OBS_EXPER",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when the question only asks to describe an association, not how the data were collected or whether a causal claim is justified."
+ },
+ {
+  "id": "C3.LOCATION.MODE",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use for data in classes, where the modal class is the one with the highest density, or for continuous data with all values distinct."
+ },
+ {
+  "id": "C3.LOCATION.MODE_POOR",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when the modal category clearly dominates the others; then the plain mode card is enough."
+ },
+ {
+  "id": "C3.LOCATION.MEDIAN_RAW",
+  "field": "formulas",
+  "kind": "minor",
+  "reason": "Formula text is garbled ('F=0.5 at a value'); state the condition explicitly.",
+  "from": [
+   "smallest x with F(x)≥0.5; for numerical data F=0.5 at a value, midpoint with next value"
+  ],
+  "to": [
+   "smallest x with F(x)≥0.5; for numerical data, if F(x)=0.5 exactly, take the midpoint of x and the next ordered value"
+  ]
+ },
+ {
+  "id": "C3.LOCATION.MEDIAN_RAW",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when F equals exactly 0.5 at a value (use the midpoint median card), for data in classes (grouped median) or for ordinal categories."
+ },
+ {
+  "id": "C3.LOCATION.MEDIAN_EVEN",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use for ordinal categories (no averaging; use the ordinal median card) or when F jumps past 0.5 at a value (use the raw median card)."
+ },
+ {
+  "id": "C3.LOCATION.MEDIAN_GROUP",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when the raw values are available (use the cumulative-frequency rule) or when the median falls in an open-ended class."
+ },
+ {
+  "id": "C3.LOCATION.MEAN_RAW",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use for data in classes (use the class-midpoint mean) or for numerically coded categories; for whole-population data call it the population mean."
+ },
+ {
+  "id": "C3.LOCATION.MEAN_GROUP",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when a class is open-ended (use the open-class card) or when the raw values are available (use the exact mean)."
+ },
+ {
+  "id": "C3.LOCATION.MEAN_OPEN",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when all classes have finite endpoints (use the class-midpoint mean); quantiles not falling in the open class can still be computed."
+ },
+ {
+  "id": "C3.LOCATION.MEAN_MED_SYM",
+  "field": "answer_template",
+  "kind": "minor",
+  "reason": "'the approximately symmetric distribution' presupposes symmetry; mean close to median is only consistent with symmetry (opposite tails can offset each other).",
+  "from": "The mean ([mean]) and median ([median]) are similar, consistently with the approximately symmetric distribution of [X]. Both adequately describe its centre.",
+  "to": "The mean ([mean]) and median ([median]) are similar, consistent with an approximately symmetric distribution of [X] (only an indication of shape). Both adequately describe its centre."
+ },
+ {
+  "id": "C3.LOCATION.MEAN_MED_SYM",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when mean and median differ noticeably (use the mean-above or mean-below-median cards) or when the distribution is bimodal."
+ },
+ {
+  "id": "C3.LOCATION.MEAN_GT_MED",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when the difference is negligible (use the similar mean and median card) or the mean is below the median (use the left-skew card)."
+ },
+ {
+  "id": "C3.LOCATION.MEAN_LT_MED",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when the difference is negligible (use the similar mean and median card) or the mean exceeds the median (use the right-skew card)."
+ },
+ {
+  "id": "C3.LOCATION.CENTER_GROUPS",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when only one group is described or the question asks for one specific measure; then compute and interpret that measure."
+ },
+ {
+  "id": "C3.LOCATION.CENTRE_TWOMODES",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use for a single-peaked distribution; then compare mean and median with the symmetry or skewness cards."
+ },
+ {
+  "id": "C3.QUANTILES.QUARTILE",
+  "field": "answer_template",
+  "kind": "minor",
+  "reason": "'below which' suggests strictly less than; with the course's cumulative rule at least 25% (75%) of observations are at most Q1 (Q3).",
+  "from": "The first quartile Q1=[q1] is the value below which approximately 25% of observations lie; the third quartile Q3=[q3] is the value below which approximately 75% lie. The central 50% lies between them.",
+  "to": "The first quartile Q1=[q1] is the value such that approximately 25% of observations are at most [q1]; the third quartile Q3=[q3] is the value such that approximately 75% are at most [q3]. The central 50% lies between them."
+ },
+ {
+  "id": "C3.QUANTILES.QUARTILE",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when the question asks for the spread of the central half (use the IQR card) or for other percentiles (use the percentile card)."
+ },
+ {
+  "id": "C3.QUANTILES.PERCENTILE",
+  "field": "answer_template",
+  "kind": "minor",
+  "reason": "The placeholder [units] is used both for the measurement unit of the value and for the statistical units (e.g. 'clients'), so filling it once produces a wrong sentence; also 'k%' should be approximate like '100-k%'.",
+  "from": "The [k]-th percentile of [X] is [value] [units]: [k]% of [units] have values at most [value], while approximately [100-k]% have values above it.",
+  "to": "The [k]-th percentile of [X] is [value] [measure_units]: approximately [k]% of [cases] have values at most [value], while approximately [100-k]% have values above it."
+ },
+ {
+  "id": "C3.QUANTILES.PERCENTILE",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use for a central interval (use the central 80% or 90% cards) or for data in classes (use the grouped quantile card)."
+ },
+ {
+  "id": "C3.QUANTILES.PERCENTILE",
+  "field": "placeholders",
+  "kind": "placeholders_sync",
+  "reason": "Blanks list updated to match the corrected answer.",
+  "from": [
+   "X",
+   "k",
+   "units",
+   "value"
+  ],
+  "to": [
+   "X",
+   "k",
+   "value",
+   "measure_units",
+   "cases"
+  ]
+ },
+ {
+  "id": "C3.QUANTILES.CENTRAL80",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use for the 90% most standard units (use the central 90% card) or when only a single-tail threshold is needed (use the top 10% card)."
+ },
+ {
+  "id": "C3.QUANTILES.CENTRAL90",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when another central share is asked, such as 80% (use P10 and P90), or when only one tail threshold is required."
+ },
+ {
+  "id": "C3.QUANTILES.TOP10",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use for the bottom 10% (use P10) or to judge whether more than 5% are outliers (use the P95 versus upper fence cards)."
+ },
+ {
+  "id": "C3.QUANTILES.GROUP_QUANTILE",
+  "field": "answer_template",
+  "kind": "minor",
+  "reason": "'estimated' suggests inference; with data in classes the course calls it an approximation, and the caveat (uniformity, raw values unavailable) earns marks.",
+  "from": "The target cumulative proportion [q] is reached inside [l,u). Assuming within-class uniformity, the estimated quantile is [l]+([q]-[F_lower])/[density]=[value].",
+  "to": "The target cumulative proportion [q] is reached inside [l,u). Assuming within-class uniformity, the approximate quantile is [l]+([q]-[F_lower])/[density]=[value]. This is an approximation because the original values are unavailable."
+ },
+ {
+  "id": "C3.QUANTILES.GROUP_QUANTILE",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when raw values are available (use the cumulative-frequency rule) or when the target falls in an open-ended class without finite width."
+ },
+ {
+  "id": "C3.QUANTILES.ORDINAL_QUANTILE",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use for nominal variables, which have no median, or for numerical data where F equals exactly 0.5 (use the midpoint median card)."
+ },
+ {
+  "id": "C3.SPREAD.RANGE",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use as the main spread measure when outliers are present; the robust alternative is the IQR."
+ },
+ {
+  "id": "C3.SPREAD.IQR",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use for the total spread (use the range card) or to compare variability across different units or means (use the CV cards)."
+ },
+ {
+  "id": "C3.SPREAD.VAR_SAMPLE",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when the data are the whole population: divide by N to obtain the population variance."
+ },
+ {
+  "id": "C3.SPREAD.VAR_SHORTCUT",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use for whole-population data, where the variance is Σx²/N−μ² without the n/(n−1) factor."
+ },
+ {
+  "id": "C3.SPREAD.SD",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use to compare the dispersion of variables with different units or very different means; use the CV cards instead."
+ },
+ {
+  "id": "C3.SPREAD.CV_LOW",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when a mean is zero or close to zero or the variable has no meaningful zero; use the CV-unsuitable card."
+ },
+ {
+  "id": "C3.SPREAD.CV_UNSUITABLE",
+  "field": "avoid_when",
+  "kind": "minor",
+  "reason": "The current text describes when this card applies (variables without a meaningful zero), not when to avoid it.",
+  "from": "Do not compare CVs blindly for variables without meaningful zero.",
+  "to": "Do not use when both means are clearly non-zero on a ratio scale with a meaningful zero; then compare the CVs with the higher-CV cards."
+ },
+ {
+  "id": "C3.SPREAD.GROUP_SD",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when a class is open-ended (no midpoint) or when the raw values are available (use the sample variance card)."
+ },
+ {
+  "id": "C3.OUTLIERS.LOW_TRUE",
+  "field": "answer_template",
+  "kind": "minor",
+  "reason": "Official answers require the substitution (e.g. Q1 − 1.5 IQR = 50.8225 − 1.5 × 11.895 = 32.98), not only the final fence.",
+  "from": "The lower outlier fence is Q1−1.5IQR=[lower]. Since [value]<[lower], this observation is anomalously low according to the boxplot rule.",
+  "to": "The lower outlier fence is Q1−1.5IQR=[q1]−1.5×[iqr]=[lower]. Since [value]<[lower], this observation is anomalously low according to the boxplot rule."
+ },
+ {
+  "id": "C3.OUTLIERS.LOW_TRUE",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when the value is at or above Q1−1.5IQR (use the low-not-outlier card) or for high values (use the upper fence cards)."
+ },
+ {
+  "id": "C3.OUTLIERS.LOW_TRUE",
+  "field": "placeholders",
+  "kind": "placeholders_sync",
+  "reason": "Blanks list updated to match the corrected answer.",
+  "from": [
+   "lower",
+   "value"
+  ],
+  "to": [
+   "lower",
+   "value",
+   "q1",
+   "iqr"
+  ]
+ },
+ {
+  "id": "C3.OUTLIERS.LOW_FALSE",
+  "field": "answer_template",
+  "kind": "minor",
+  "reason": "Official answers require the substitution (e.g. Q1 − 1.5 IQR = 50.8225 − 1.5 × 11.895 = 32.98), not only the final fence.",
+  "from": "The lower outlier fence is Q1−1.5IQR=[lower]. Since [value]≥[lower], it cannot be classified as an abnormally low observation by this rule.",
+  "to": "The lower outlier fence is Q1−1.5IQR=[q1]−1.5×[iqr]=[lower]. Since [value]≥[lower], it cannot be classified as an abnormally low observation by this rule."
+ },
+ {
+  "id": "C3.OUTLIERS.LOW_FALSE",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when the value is below Q1−1.5IQR (use the low-outlier card) or for high values (use the upper fence cards)."
+ },
+ {
+  "id": "C3.OUTLIERS.LOW_FALSE",
+  "field": "placeholders",
+  "kind": "placeholders_sync",
+  "reason": "Blanks list updated to match the corrected answer.",
+  "from": [
+   "lower",
+   "value"
+  ],
+  "to": [
+   "lower",
+   "value",
+   "q1",
+   "iqr"
+  ]
+ },
+ {
+  "id": "C3.OUTLIERS.HIGH_TRUE",
+  "field": "answer_template",
+  "kind": "minor",
+  "reason": "Official answers require the substitution (e.g. Q1 − 1.5 IQR = 50.8225 − 1.5 × 11.895 = 32.98), not only the final fence.",
+  "from": "The upper outlier fence is Q3+1.5IQR=[upper]. Since [value]>[upper], the observation is an abnormally high value according to the boxplot rule.",
+  "to": "The upper outlier fence is Q3+1.5IQR=[q3]+1.5×[iqr]=[upper]. Since [value]>[upper], the observation is an abnormally high value according to the boxplot rule."
+ },
+ {
+  "id": "C3.OUTLIERS.HIGH_TRUE",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when the value is at or below Q3+1.5IQR (use the high-not-outlier card) or for low values (use the lower fence cards)."
+ },
+ {
+  "id": "C3.OUTLIERS.HIGH_TRUE",
+  "field": "placeholders",
+  "kind": "placeholders_sync",
+  "reason": "Blanks list updated to match the corrected answer.",
+  "from": [
+   "upper",
+   "value"
+  ],
+  "to": [
+   "upper",
+   "value",
+   "q3",
+   "iqr"
+  ]
+ },
+ {
+  "id": "C3.OUTLIERS.HIGH_FALSE",
+  "field": "answer_template",
+  "kind": "minor",
+  "reason": "Official answers require the substitution (e.g. Q1 − 1.5 IQR = 50.8225 − 1.5 × 11.895 = 32.98), not only the final fence.",
+  "from": "The upper outlier fence is Q3+1.5IQR=[upper]. Since [value]≤[upper], it is not an upper outlier according to the boxplot rule.",
+  "to": "The upper outlier fence is Q3+1.5IQR=[q3]+1.5×[iqr]=[upper]. Since [value]≤[upper], it is not an upper outlier according to the boxplot rule."
+ },
+ {
+  "id": "C3.OUTLIERS.HIGH_FALSE",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when the value is above Q3+1.5IQR (use the high-outlier card) or for low values (use the lower fence cards)."
+ },
+ {
+  "id": "C3.OUTLIERS.HIGH_FALSE",
+  "field": "placeholders",
+  "kind": "placeholders_sync",
+  "reason": "Blanks list updated to match the corrected answer.",
+  "from": [
+   "upper",
+   "value"
+  ],
+  "to": [
+   "upper",
+   "value",
+   "q3",
+   "iqr"
+  ]
+ },
+ {
+  "id": "C3.OUTLIERS.WHISKERS",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use for the basic boxplot, whose whiskers reach the minimum and maximum; this card applies to the enhanced (Tukey) boxplot."
+ },
+ {
+  "id": "C3.OUTLIERS.MORE5",
+  "field": "answer_template",
+  "kind": "minor",
+  "reason": "'more than approximately 5%' is self-contradictory; the official answer says 'more than 5% ... anomalous'. Add the ties/count caveat required by the course rule.",
+  "from": "Because the 95th percentile of [X], [p95], exceeds the upper fence [upper], more than approximately 5% of the observations lie above the outlier threshold.",
+  "to": "Because the 95th percentile of [X], [p95], exceeds the upper fence Q3+1.5IQR=[upper], more than 5% of the observations lie above the outlier threshold, i.e. are anomalously high (with ties or an interpolated percentile, confirm with the actual count above [upper])."
+ },
+ {
+  "id": "C4.JOINT.JOINT",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when the question restricts to a group ('among those with X=x'); that is a conditional share, use C4.CONDITIONAL.ROW."
+ },
+ {
+  "id": "C4.JOINT.MARGINAL",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when the share is asked within a level of the other variable; use C4.CONDITIONAL.ROW or C4.CONDITIONAL.COLUMN."
+ },
+ {
+  "id": "C4.CONDITIONAL.ROW",
+  "field": "avoid_when",
+  "kind": "minor",
+  "reason": "Current text is a rule, not a 'when not to use' statement; it names no sibling card.",
+  "from": "Never divide by overall n when question says 'among those with X=x'.",
+  "to": "Do not use when the share is of the whole sample (use C4.JOINT.JOINT) or when conditioning on Y (use C4.CONDITIONAL.COLUMN). Never divide by the overall n when the question says 'among those with X=x'."
+ },
+ {
+  "id": "C4.CONDITIONAL.COLUMN",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when the conditioning group is a level of X (use C4.CONDITIONAL.ROW); usually condition on the explanatory variable, not the response."
+ },
+ {
+  "id": "C4.CONDITIONAL.A_MORE",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when the shares compared are joint or whole-sample percentages, or are nearly equal; use C4.CONDITIONAL.COUNT_TRAP or C4.CONDITIONAL.SAME."
+ },
+ {
+  "id": "C4.CONDITIONAL.B_MORE",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when the shares compared are joint or whole-sample percentages, or are nearly equal; use C4.CONDITIONAL.COUNT_TRAP or C4.CONDITIONAL.SAME."
+ },
+ {
+  "id": "C4.CONDITIONAL.SAME",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use to claim independence: that needs every conditional distribution (all levels, all groups) to match; use the C4.INDEPENDENCE cards."
+ },
+ {
+  "id": "C4.CONDITIONAL.COUNT_TRAP",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when the question really asks for counts or whole-sample (joint) shares; use C4.JOINT.JOINT."
+ },
+ {
+  "id": "C4.CONDITIONAL.UNION_CATEGORIES",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when only a single outcome level is asked; use C4.CONDITIONAL.ROW."
+ },
+ {
+  "id": "C4.INDEPENDENCE.INDEPENDENT",
+  "field": "answer_template",
+  "kind": "minor",
+  "reason": "'Compatible with' sounds like inferential (test) language; descriptive independence is an exact property of the observed table. Keep the claim descriptive.",
+  "from": "The joint distribution is compatible with statistical independence: for every pair (x,y), p(x,y)=p_X(x)p_Y(y), equivalently all conditional distributions coincide with the corresponding marginal distributions.",
+  "to": "In the observed data the variables are statistically independent (descriptive sense): for every pair (x,y), p(x,y)=p_X(x)p_Y(y), equivalently all conditional distributions coincide with the corresponding marginal distributions."
+ },
+ {
+  "id": "C4.INDEPENDENCE.INDEPENDENT",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use if even one cell has p_kj≠R_k·C_j or one conditional distribution differs (use C4.INDEPENDENCE.NOT_INDEP); equal joint counts never prove independence."
+ },
+ {
+  "id": "C4.INDEPENDENCE.NOT_INDEP",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when all conditional distributions coincide (use C4.INDEPENDENCE.INDEPENDENT); lack of independence says nothing about strength or causation."
+ },
+ {
+  "id": "C4.INDEPENDENCE.INDEPENDENCE_EQUAL",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use to conclude independence from one outcome level being equal across groups; every conditional distribution must match (use C4.INDEPENDENCE.INDEPENDENT/NOT_INDEP)."
+ },
+ {
+  "id": "C4.COMPARISON.BOX_A_HIGH",
+  "field": "answer_template",
+  "kind": "minor",
+  "reason": "Title promises medians/quartiles but the answer uses only the median; official answers also compare Q1/Q3 (e.g. 'Q3 of A < Q1 of B').",
+  "from": "The distribution of [X] in group [A] is located higher: its median [mA] exceeds [mB] for group [B], showing that observed values tend to be higher in [A].",
+  "to": "The distribution of [X] in group [A] is located higher: its median [mA] exceeds [mB] for group [B] (and, where true, its quartiles are higher too), showing that observed values tend to be higher in [A]."
+ },
+ {
+  "id": "C4.COMPARISON.BOX_A_HIGH",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when the medians are nearly equal or the question is about spread or shape; use C4.COMPARISON.BOX_SPREAD or BOX_SYM/BOX_RIGHT/BOX_LEFT."
+ },
+ {
+  "id": "C4.COMPARISON.BOX_B_HIGH",
+  "field": "answer_template",
+  "kind": "minor",
+  "reason": "Title promises medians/quartiles but the answer uses only the median; official answers also compare quartiles.",
+  "from": "The median [mB] of group [B] exceeds [mA] in group [A]. Therefore, typical values of [X] are higher for [B] in the observed data.",
+  "to": "The median [mB] of group [B] exceeds [mA] in group [A] (and, where true, its quartiles are higher too). Therefore, typical values of [X] are higher for [B] in the observed data."
+ },
+ {
+  "id": "C4.COMPARISON.BOX_B_HIGH",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when the medians are nearly equal or the question is about spread or shape; use C4.COMPARISON.BOX_SPREAD or BOX_SYM/BOX_RIGHT/BOX_LEFT."
+ },
+ {
+  "id": "C4.COMPARISON.BOX_SPREAD",
+  "field": "answer_template",
+  "kind": "misleading",
+  "reason": "The IQR is the LENGTH of the box along the value axis, not its width; box width carries no information (official: 'the Yes box is taller (wider IQR)').",
+  "from": "The box for group [A] is wider, with IQR_A=[iqrA] > IQR_B=[iqrB]. The central 50% of [X] values is thus more dispersed in [A].",
+  "to": "The box for group [A] is longer (it spans a wider range of values on the [X] axis), with IQR_A=[iqrA] > IQR_B=[iqrB]. The central 50% of [X] values is thus more dispersed in [A]."
+ },
+ {
+  "id": "C4.COMPARISON.BOX_SPREAD",
+  "field": "use_when",
+  "kind": "misleading",
+  "reason": "Same box 'width' vs length confusion.",
+  "from": "A wider box and higher IQR.",
+  "to": "A's box is longer along the value axis (higher IQR)."
+ },
+ {
+  "id": "C4.COMPARISON.BOX_SPREAD",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use for location differences (use BOX_A_HIGH/BOX_B_HIGH) or when the question is about the overall range or outliers rather than the central 50%."
+ },
+ {
+  "id": "C4.COMPARISON.BOX_SYM",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when the median is off-centre in the box or one whisker/outlier tail is clearly longer; use C4.COMPARISON.BOX_RIGHT or BOX_LEFT."
+ },
+ {
+  "id": "C4.COMPARISON.BOX_RIGHT",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when the long tail or outliers are on the lower side (use C4.COMPARISON.BOX_LEFT) or the box is balanced (use BOX_SYM)."
+ },
+ {
+  "id": "C4.COMPARISON.BOX_LEFT",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when the long tail or outliers are on the upper side (use C4.COMPARISON.BOX_RIGHT) or the box is balanced (use BOX_SYM)."
+ },
+ {
+  "id": "C4.RELATIONSHIP.SCATTER",
+  "field": "answer_template",
+  "kind": "minor",
+  "reason": "Course rule: the explanatory variable goes on the horizontal axis (by logic/time order, not word order); the official answer also stresses that the plot shows how reliable r is.",
+  "from": "To investigate the relationship between the two numerical variables [X] and [Y], we first use a scatterplot; it reveals the direction, form, outliers and whether a linear summary is appropriate.",
+  "to": "To investigate the relationship between the two numerical variables [X] and [Y], we first use a scatterplot, with the explanatory variable [X] on the horizontal axis; it reveals the direction, form, outliers and whether a linear summary (and hence the correlation coefficient) is reliable."
+ },
+ {
+  "id": "C4.RELATIONSHIP.SCATTER",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when one variable is categorical or has few values (use side-by-side boxplots) or both are categorical (use a contingency table)."
+ },
+ {
+  "id": "C4.RELATIONSHIP.POS_LINEAR",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when the cloud is curved or shaped by outliers or subgroups; use C4.RELATIONSHIP.NONLINEAR or HIGH_R_MISLEAD."
+ },
+ {
+  "id": "C4.RELATIONSHIP.NEG_LINEAR",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when the cloud is curved or shaped by outliers or subgroups; use C4.RELATIONSHIP.NONLINEAR or HIGH_R_MISLEAD."
+ },
+ {
+  "id": "C4.RELATIONSHIP.WEAK_LINEAR",
+  "field": "answer_template",
+  "kind": "minor",
+  "reason": "'Little evidence' is inferential wording for a descriptive measure; also outliers can deflate r, and the scatterplot must be checked.",
+  "from": "Pearson's correlation r=[r] is close to zero, indicating little evidence of a LINEAR relationship in these data. This does not exclude a nonlinear association.",
+  "to": "Pearson's correlation r=[r] is close to zero, indicating a very weak (or absent) LINEAR relationship in these data. This does not exclude a nonlinear association (e.g. an inverted U) or a relation masked by outliers or subgroups, so the scatterplot must be checked."
+ },
+ {
+  "id": "C4.RELATIONSHIP.NONLINEAR",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when the cloud is roughly straight (use POS_LINEAR/NEG_LINEAR); if a few extreme points rather than curvature are the issue, use OUTLIER_R."
+ },
+ {
+  "id": "C4.RELATIONSHIP.HIGH_R_MISLEAD",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when the scatterplot shows a clean straight-line cloud; then interpret r directly with C4.RELATIONSHIP.R_INTERPRET."
+ },
+ {
+  "id": "C4.RELATIONSHIP.OUTLIER_R",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when the whole cloud is curved rather than a few points being extreme; use C4.RELATIONSHIP.NONLINEAR."
+ },
+ {
+  "id": "C4.RELATIONSHIP.COV_POS",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use to judge the strength of the relation (covariance depends on units); use r with C4.RELATIONSHIP.R_INTERPRET."
+ },
+ {
+  "id": "C4.RELATIONSHIP.COV_NEG",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use to judge the strength of the relation (covariance depends on units); use r with C4.RELATIONSHIP.R_INTERPRET."
+ },
+ {
+  "id": "C4.RELATIONSHIP.COV_ZERO",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when the covariance is clearly nonzero (use COV_POS/COV_NEG); never conclude independence or 'no relation' from it without the scatterplot."
+ },
+ {
+  "id": "C4.RELATIONSHIP.R_INTERPRET",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when the scatterplot is curved or dominated by outliers or subgroups; use C4.RELATIONSHIP.HIGH_R_MISLEAD or NONLINEAR."
+ },
+ {
+  "id": "C4.RELATIONSHIP.CONF_COV",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use for a whole population (divide by N) or for data given as a joint frequency table (use s_XY=n/(n−1)[ΣΣ x_k y_j p_kj − x̄ȳ])."
+ },
+ {
+  "id": "C4.RELATIONSHIP.SIMPSON",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use when no grouping variable is available or subgroup patterns match the aggregate; use C4.RELATIONSHIP.CAUSALITY for a general confounding caveat."
+ },
+ {
+  "id": "C4.RELATIONSHIP.CAUSALITY",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Do not use as the main answer when asked to describe or measure the association; give the measure first and add this as a caveat."
+ },
+ {
+  "id": "C4.RELATIONSHIP.REG_LINE_VIS",
+  "field": "avoid_when",
+  "kind": "minor",
+  "reason": "Current text is a scope note, not a 'when not to use'; it should also block the common error of reading strength from the slope.",
+  "from": "Analytic derivation of line coefficients is excluded from 2026/27 Chapter 4.",
+  "to": "Do not use to compute or derive b0 and b1 (analytic derivation excluded in 2026/27) or to judge strength from the slope; use r with C4.RELATIONSHIP.R_INTERPRET."
+ },
+ {
+  "id": "C5.EVENTS.COMPLEMENT",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not when 'not A' is restricted to a subgroup ('among B'); then use 1−P(A|B) with the conditional card (C5.EVENTS.CONDITIONAL)."
+ },
+ {
+  "id": "C5.EVENTS.UNION",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not when A and B are mutually exclusive (use C5.EVENTS.UNION_DISJOINT) or when 'exactly one' of the two is asked, which excludes the overlap."
+ },
+ {
+  "id": "C5.EVENTS.UNION_DISJOINT",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not when the events can occur together; then subtract the overlap P(A∩B) using C5.EVENTS.UNION."
+ },
+ {
+  "id": "C5.EVENTS.INTERSECTION",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not when the question restricts attention to one group ('among B', 'given B'); that is P(A|B) (C5.EVENTS.CONDITIONAL). If independent, P(A∩B)=P(A)P(B)."
+ },
+ {
+  "id": "C5.EVENTS.REVERSE_CONDITIONAL",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not when you must actually compute P(B|A) from P(A|B) and prior probabilities; use Bayes' theorem (C5.EVENTS.BAYES)."
+ },
+ {
+  "id": "C5.EVENTS.INDEP_TRUE",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not when P(A∩B) differs from P(A)P(B) (use C5.EVENTS.INDEP_FALSE), nor for mutually exclusive events with positive probabilities (C5.EVENTS.DISJOINT_NOT_INDEP)."
+ },
+ {
+  "id": "C5.EVENTS.INDEP_FALSE",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not when the joint probability equals the product of the marginals; then the events are independent (C5.EVENTS.INDEP_TRUE)."
+ },
+ {
+  "id": "C5.EVENTS.DISJOINT_NOT_INDEP",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not when the events can occur together (P(A∩B)>0); then compare P(A∩B) with P(A)P(B) (C5.EVENTS.INDEP_TRUE / INDEP_FALSE)."
+ },
+ {
+  "id": "C5.EVENTS.TOTAL_PROB",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not when the question asks which group an observed outcome came from; that is the posterior P(Bj|A) (C5.EVENTS.BAYES)."
+ },
+ {
+  "id": "C5.EVENTS.BAYES",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not when P(A|Bj) itself is asked, or when a joint table gives P(Bj∩A) and P(A) directly; then use P(Bj|A)=P(Bj∩A)/P(A) (C5.EVENTS.CONDITIONAL)."
+ },
+ {
+  "id": "C5.EVENTS.BAYES_RARE",
+  "field": "answer_template",
+  "kind": "minor",
+  "reason": "'A rare event can still have a modest posterior probability' is vague; the point is that the posterior can be LOW even for an accurate test, because most positives come from the large group without the event. Also no formula is shown.",
+  "from": "The conditional probability of the underlying event after a positive signal is not the sensitivity. Bayes' theorem combines the signal accuracy with the prior prevalence; a rare event can still have a modest posterior probability.",
+  "to": "The conditional probability of the underlying event after a positive signal, P(D|T), is not the sensitivity P(T|D). Bayes' theorem combines the signal accuracy with the prior prevalence: P(D|T)=P(T|D)P(D)/[P(T|D)P(D)+P(T|Dᶜ)P(Dᶜ)]. When the event is rare, this posterior can be low even for an accurate test, because most positive signals come from the much larger group without the event."
+ },
+ {
+  "id": "C5.EVENTS.BAYES_RARE",
+  "field": "formulas",
+  "kind": "minor",
+  "reason": "No formula listed for a computational card.",
+  "from": [],
+  "to": [
+   "P(D|T)=P(T|D)P(D)/[P(T|D)P(D)+P(T|Dᶜ)P(Dᶜ)]"
+  ]
+ },
+ {
+  "id": "C5.EVENTS.BAYES_RARE",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not when there is no small prior/prevalence or no test-accuracy figures; use the general Bayes card (C5.EVENTS.BAYES)."
+ },
+ {
+  "id": "C5.EVENTS.WITH_REPLACEMENT",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not for draws without replacement from a small finite population, where later probabilities change (C5.EVENTS.WITHOUT_REPLACEMENT)."
+ },
+ {
+  "id": "C5.EVENTS.WITHOUT_REPLACEMENT",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not when draws are with replacement or the population is very large relative to the draws; then treat draws as independent (C5.EVENTS.WITH_REPLACEMENT)."
+ },
+ {
+  "id": "C5.RV.DISCRETE",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not for continuous variables, which have a density, probabilities as areas and P(X=x)=0 (C5.RV.CONTINUOUS)."
+ },
+ {
+  "id": "C5.RV.CDF",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not for strict inequalities or intervals of a discrete X (C5.RV.CDF_INTERVAL), nor for Normal X, where P(X≤a)=pnorm (C5.NORMAL.NORM_PROB_LEFT)."
+ },
+ {
+  "id": "C5.RV.DISCRETE_QUANTILE",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not for Normal or other continuous variables, where the quantile solves F(x)=q (qnorm, C5.NORMAL.NORM_QUANTILE_LOW), nor for grouped sample data."
+ },
+ {
+  "id": "C5.RV.EXPECT",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not for a transformed variable a+bX (use C5.TRANSFORM.EXPECT_LINEAR) or for the mean of observed sample data."
+ },
+ {
+  "id": "C5.RV.VAR",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not for observed sample data (that is the sample variance) or for a+bX, where Var=b²Var(X) (C5.TRANSFORM.VAR_LINEAR)."
+ },
+ {
+  "id": "C5.RV.BERN",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not for the number of successes in several trials (Binomial, out of the 2026/27 syllabus); for the share of successes in n trials use C5.SAMPLING.PHAT_DISTRIBUTION."
+ },
+ {
+  "id": "C5.RV.CONTINUOUS",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not for discrete variables, where P(X=x)=p_X(x) can be positive (C5.RV.DISCRETE)."
+ },
+ {
+  "id": "C5.RV.CONTINUOUS_RANGE",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not for discrete variables, where including an endpoint changes the result (C5.RV.CDF_INTERVAL); for Normal X use pnorm (C5.NORMAL.NORM_RANGE)."
+ },
+ {
+  "id": "C5.RV.JOINT",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not when one variable's value is given ('among those with Y=y'); that is the conditional p(x|y) (C5.RV.CONDITIONAL_PMF)."
+ },
+ {
+  "id": "C5.RV.MARGINAL",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not when the other variable is fixed at a value: both values fixed is the joint cell (C5.RV.JOINT); conditioning on it is C5.RV.CONDITIONAL_PMF."
+ },
+ {
+  "id": "C5.RV.CONDITIONAL_PMF",
+  "field": "formulas",
+  "kind": "minor",
+  "reason": "'p(X=x|Y=y)' mixes the pmf symbol p with an event; course notation is p_{X|Y}(x|y) or P(X=x|Y=y).",
+  "from": [
+   "p(X=x|Y=y)=p_XY(x,y)/p_Y(y)"
+  ],
+  "to": [
+   "P(X=x|Y=y)=p_XY(x,y)/p_Y(y)"
+  ]
+ },
+ {
+  "id": "C5.RV.CONDITIONAL_PMF",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not when X=x and Y=y are both asked together (joint cell, C5.RV.JOINT); the denominator is the marginal of the conditioning variable only."
+ },
+ {
+  "id": "C5.RV.JOINT_INDEP_FALSE",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not when every cell equals the product of its marginals; then X and Y are independent (C5.RV.JOINT_INDEP_TRUE)."
+ },
+ {
+  "id": "C5.RV.EXY",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not when only E(X), E(Y) and independence are given; then E(XY)=E(X)E(Y) (C5.RV.INDEP_EXY)."
+ },
+ {
+  "id": "C5.RV.COV_RV",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not to judge the strength of the relationship (covariance depends on units; use the correlation), nor to conclude independence from a zero covariance."
+ },
+ {
+  "id": "C5.RV.INDEP_EXY",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not when independence is not stated or the variables are dependent; compute E(XY) from the joint distribution (C5.RV.EXY)."
+ },
+ {
+  "id": "C5.TRANSFORM.EXPECT_LINEAR",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not for the variance or SD of a+bX, where the constant drops out and b is squared or taken in absolute value (C5.TRANSFORM.VAR_LINEAR / SD_LINEAR)."
+ },
+ {
+  "id": "C5.TRANSFORM.VAR_LINEAR",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not for the SD (use |b|SD(X), C5.TRANSFORM.SD_LINEAR) or for combinations of two variables aX+bY (C5.TRANSFORM.LINCOMB_INDEP / LINCOMB_DEP)."
+ },
+ {
+  "id": "C5.TRANSFORM.SD_LINEAR",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not for combinations of two variables: SDs do not add, so compute the variance first (C5.TRANSFORM.LINCOMB_INDEP / LINCOMB_DEP), then take the root."
+ },
+ {
+  "id": "C5.TRANSFORM.PROOF_EXPECT",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not for numerical questions; just apply E(a+bX)=a+bE(X) with the numbers (C5.TRANSFORM.EXPECT_LINEAR)."
+ },
+ {
+  "id": "C5.TRANSFORM.PROOF_VAR",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not for numerical questions; just apply Var(a+bX)=b²Var(X) with the numbers (C5.TRANSFORM.VAR_LINEAR)."
+ },
+ {
+  "id": "C5.TRANSFORM.LINCOMB_INDEP",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not when X and Y may be correlated; include 2ab Cov(X,Y) (C5.TRANSFORM.LINCOMB_DEP). Even for X−Y the variances add."
+ },
+ {
+  "id": "C5.TRANSFORM.LINCOMB_DEP",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not when independence is stated (covariance zero, C5.TRANSFORM.LINCOMB_INDEP); a probability for the combination also needs its distribution, e.g. jointly Normal."
+ },
+ {
+  "id": "C5.NORMAL.NORM_PROB_LEFT",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not for upper tails (use 1−pnorm, C5.NORMAL.NORM_PROB_RIGHT), nor for a sample mean, where sd is σ/√n (C5.SAMPLING.EXACT_NORMAL_MEAN / CLT_LARGE)."
+ },
+ {
+  "id": "C5.NORMAL.NORM_PROB_RIGHT",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not for lower tails (C5.NORMAL.NORM_PROB_LEFT), nor for a sample mean, where sd is σ/√n (C5.SAMPLING.EXACT_NORMAL_MEAN / CLT_LARGE)."
+ },
+ {
+  "id": "C5.NORMAL.NORM_RANGE",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not for one-sided probabilities (C5.NORMAL.NORM_PROB_LEFT / NORM_PROB_RIGHT), nor when X is not Normal and no CLT argument applies."
+ },
+ {
+  "id": "C5.NORMAL.NORM_QUANTILE_LOW",
+  "field": "answer_template",
+  "kind": "misleading",
+  "reason": "Says '[q]%' but qnorm takes a probability in (0,1); a student filling q=10 would type qnorm(10, …), which returns NaN. State that q is entered as a proportion.",
+  "from": "To find the value with [q]% of the Normal distribution to its LEFT, use qnorm([q],mean=[mu],sd=[sigma])=[cutoff].",
+  "to": "To find the value with probability [q] of the Normal distribution to its LEFT, use qnorm([q],mean=[mu],sd=[sigma])=[cutoff]. Here [q] is entered as a proportion (e.g. 0.10 for 10%), not as a percentage."
+ },
+ {
+  "id": "C5.NORMAL.NORM_QUANTILE_LOW",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not when the share is given ABOVE the value ('exceeded by 10%'); use qnorm(1−α, …) as in C5.NORMAL.NORM_QUANTILE_RIGHT."
+ },
+ {
+  "id": "C5.NORMAL.NORM_QUANTILE_RIGHT",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not when the probability is given to the LEFT of the value (qnorm(q), C5.NORMAL.NORM_QUANTILE_LOW); for a two-sided central interval use z_{α/2}."
+ },
+ {
+  "id": "C5.NORMAL.NORMAL_VARIANCE_TRAP",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not when the standard deviation is given directly (e.g. 'SD = 3'); enter it in sd without taking a square root."
+ },
+ {
+  "id": "C5.NORMAL.STANDARDISE",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not to get probabilities for a non-Normal X: Z always has mean 0 and variance 1, but it is N(0,1) only if X is Normal."
+ },
+ {
+  "id": "C5.NORMAL.NORMAL_LINEAR",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not when X is not Normal: the mean and variance still transform (C5.TRANSFORM.*), but the distribution of Y is then unknown."
+ },
+ {
+  "id": "C5.SAMPLING.SUM_IID",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not for the sample mean (Var σ²/n, C5.SAMPLING.MEAN_IID) or for dependent observations, where covariance terms are needed."
+ },
+ {
+  "id": "C5.SAMPLING.MEAN_IID",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not for the total of the n observations (Var nσ², C5.SAMPLING.SUM_IID) or for a single observation (SD σ)."
+ },
+ {
+  "id": "C5.SAMPLING.INDIVIDUAL_VS_MEAN",
+  "field": "answer_template",
+  "kind": "misleading",
+  "reason": "'[σ/σ/√n]' reads as σ/(σ/√n)=√n, and the distribution of one observation is not a 'sampling distribution'. Also needs the caveat that a probability for one X requires X itself to be Normal (CLT does not apply to n=1).",
+  "from": "The probability concerns [a single observation/the average of n observations], so we use standard deviation [σ/σ/√n] respectively. The two sampling distributions are not interchangeable.",
+  "to": "The probability concerns [a single observation X / the sample mean X̄ of n observations], so the relevant standard deviation is [σ for X / σ/√n for X̄]. The distribution of one observation and the sampling distribution of X̄ are not interchangeable; moreover, a Normal probability for a single X requires X itself to be Normal, because the CLT does not apply to one observation."
+ },
+ {
+  "id": "C5.SAMPLING.INDIVIDUAL_VS_MEAN",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not when the question clearly concerns only one of the two; go straight to C5.NORMAL.NORM_PROB_RIGHT (one Normal X) or C5.SAMPLING.CLT_LARGE (the mean)."
+ },
+ {
+  "id": "C5.SAMPLING.EXACT_NORMAL_MEAN",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not when the population is not stated to be Normal; then X̄ is only approximately Normal for large n (C5.SAMPLING.CLT_LARGE)."
+ },
+ {
+  "id": "C5.SAMPLING.CLT_LARGE",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not for a single observation (C5.SAMPLING.CLT_NOT_INDIVIDUAL), for small n from a non-Normal population (CLT_NOT_JUSTIFIED), or a Normal population (EXACT_NORMAL_MEAN)."
+ },
+ {
+  "id": "C5.SAMPLING.CLT_NOT_JUSTIFIED",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not when the population is stated Normal (X̄ exactly Normal, C5.SAMPLING.EXACT_NORMAL_MEAN) or n is large, above about 30 (C5.SAMPLING.CLT_LARGE)."
+ },
+ {
+  "id": "C5.SAMPLING.CLT_NOT_INDIVIDUAL",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not when X is stated to be Normal (use C5.NORMAL.NORM_PROB_RIGHT) or the question concerns the mean or total of many observations (C5.SAMPLING.CLT_LARGE)."
+ },
+ {
+  "id": "C5.SAMPLING.PHAT_DISTRIBUTION",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not for the mean of a numerical (non 0/1) variable (C5.SAMPLING.MEAN_IID), nor when np or n(1−p) is small (C5.SAMPLING.PROP_APPROX_INVALID)."
+ },
+ {
+  "id": "C5.SAMPLING.PROP_APPROX_VALID",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not when p is close to 0 or 1 and the expected successes or failures are few (C5.SAMPLING.PROP_APPROX_INVALID)."
+ },
+ {
+  "id": "C5.SAMPLING.PROP_APPROX_INVALID",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not when np and n(1−p) are both comfortably large; then the Normal approximation is fine (C5.SAMPLING.PROP_APPROX_VALID)."
+ },
+ {
+  "id": "C5.SAMPLING.PROP_TAIL",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Not for lower tails (use pnorm(a, …) directly) or when np or n(1−p) is small (C5.SAMPLING.PROP_APPROX_INVALID)."
+ },
+ {
+  "id": "C6.ESTIMATOR.PAR_EST",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Avoid when only one property is asked, e.g. defining unbiasedness (UNBIASED_DEF) or interpreting a standard error (SE_MEANING)."
+ },
+ {
+  "id": "C6.ESTIMATOR.UNBIASED_DEF",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Avoid when the bias only vanishes as n grows; use ASY_UNBIASED (e.g. variance with divisor n)."
+ },
+ {
+  "id": "C6.ESTIMATOR.ASY_UNBIASED",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Avoid when E(T)=θ holds exactly for every n; use UNBIASED_DEF."
+ },
+ {
+  "id": "C6.ESTIMATOR.MEAN_EST",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Avoid when the parameter is a proportion (use PROP_EST) or a variance (use VAR_EST)."
+ },
+ {
+  "id": "C6.ESTIMATOR.MEAN_SE_KNOWN",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Avoid when σ is not given and must be replaced by s; use MEAN_SE_UNKNOWN."
+ },
+ {
+  "id": "C6.ESTIMATOR.MEAN_SE_UNKNOWN",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Avoid when the population σ is given (use MEAN_SE_KNOWN) or the estimator is a proportion (use PROP_SE)."
+ },
+ {
+  "id": "C6.ESTIMATOR.VAR_EST",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Avoid when the squared deviations are divided by n; use VAR_BIASED_N."
+ },
+ {
+  "id": "C6.ESTIMATOR.VAR_BIASED_N",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Avoid when the divisor is n−1 (unbiased S²); use VAR_EST."
+ },
+ {
+  "id": "C6.ESTIMATOR.PROP_EST",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Avoid when the variable is numerical and the target is a mean; use MEAN_EST."
+ },
+ {
+  "id": "C6.ESTIMATOR.PROP_SE",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Avoid for a numerical variable's mean (use MEAN_SE_UNKNOWN); never plug in a hypothesised p0 here."
+ },
+ {
+  "id": "C6.ESTIMATOR.SE_MEANING",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Avoid when asked to compare two SEs or two realised estimates; use ESTIMATOR_COMPARE or ESTIMATE_CLOSER_UNKN."
+ },
+ {
+  "id": "C6.ESTIMATOR.ESTIMATOR_COMPARE",
+  "field": "answer_template",
+  "kind": "minor",
+  "reason": "Official answer (14 Oct 2025 Q6) stresses SEs are usually ESTIMATED ('estimated to be more tightly clustered'); and ranking by SE alone is only meaningful for unbiased estimators (otherwise compare MSE).",
+  "from": "The estimator with the smaller standard error has a more concentrated sampling distribution and is thus more reliable in the sense of precision across repeated samples. We cannot determine which observed estimate is closer to its unknown parameter.",
+  "to": "The estimator with the smaller (estimated) standard error has a more concentrated sampling distribution, so its estimates are (estimated to be) more tightly clustered around the parameter: it is more reliable in the sense of precision across repeated samples (for unbiased estimators). We cannot determine which observed estimate is closer to its unknown parameter."
+ },
+ {
+  "id": "C6.ESTIMATOR.ESTIMATOR_COMPARE",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Avoid when the question only asks whether a specific realised estimate is closer to the truth; use ESTIMATE_CLOSER_UNKN."
+ },
+ {
+  "id": "C6.ESTIMATOR.ESTIMATE_CLOSER_UNKN",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Avoid when asked only to interpret a single standard error; use SE_MEANING."
+ },
+ {
+  "id": "C6.ESTIMATOR.SE_N_EFFECT",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Avoid when the question is about the confidence-interval width; use NARROW_N or N_QUADRUPLE."
+ },
+ {
+  "id": "C6.ESTIMATOR.PROP_NORM_VALID",
+  "field": "answer_template",
+  "kind": "minor",
+  "reason": "No threshold is stated, so the student cannot justify 'sufficiently large'; framework rule of thumb is n·p and n(1−p) above 10 (or 15). Also the estimated SE itself does not need Normality; only the CI relies on the Normal approximation.",
+  "from": "The usual Normal approximation for the sample proportion is reasonable when the expected numbers of successes and failures are sufficiently large. Here n p̂=[a] and n(1−p̂)=[b], supporting its use.",
+  "to": "The usual Normal approximation to the sampling distribution of P̂ (on which the large-sample CI is based) is reasonable when the expected numbers of successes and failures are sufficiently large (rule of thumb: both above 10). Here n p̂=[a] and n(1−p̂)=[b], supporting its use."
+ },
+ {
+  "id": "C6.ESTIMATOR.PROP_NORM_VALID",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Avoid when successes or failures are few; use PROP_NORM_POOR or PROP_CI_UNSUITABLE."
+ },
+ {
+  "id": "C6.ESTIMATOR.PROP_NORM_POOR",
+  "field": "answer_template",
+  "kind": "minor",
+  "reason": "'Wald' is not course vocabulary; call it the large-sample (Normal-approximation) interval. Placeholder [successes/failures] is not declared in PLACEHOLDERS.",
+  "from": "The Normal approximation to the sampling distribution of P̂ is unreliable here because the sample contains too few [successes/failures]. The usual Wald confidence interval should therefore be treated with caution.",
+  "to": "The Normal approximation to the sampling distribution of P̂ is unreliable here because the sample contains too few [successes/failures]. The usual large-sample confidence interval p̂±z_(α/2)√(p̂(1−p̂)/n) should therefore be treated with caution."
+ },
+ {
+  "id": "C6.ESTIMATOR.PROP_NORM_POOR",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Avoid when n·p̂ and n(1−p̂) are both large; use PROP_NORM_VALID and compute the CI with PROP_CI."
+ },
+ {
+  "id": "C6.CI.FORM",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Avoid when a specific interval must be computed; use the matching mean or proportion CI card."
+ },
+ {
+  "id": "C6.CI.KNOWN_NORMAL",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Avoid when σ is unknown (use UNKNOWN_NORMAL) or the population is not stated Normal (use KNOWN_CLT)."
+ },
+ {
+  "id": "C6.CI.KNOWN_CLT",
+  "field": "answer_template",
+  "kind": "minor",
+  "reason": "With a non-Normal population the confidence level is only approximate; the official answer (3 July 2026 Q3.b) says 'with a confidence level of approximately 90%'. The interpretation sentence should carry 'approximately' too.",
+  "from": "Although the population need not be Normal, the large sample size [n] justifies a Normal approximation for X̄ via the CLT. Therefore the approximate [conf]% CI for μ is [xbar]±[z]([sigma]/√[n])=[[L],[U]]. We are [conf]% confident that the population mean [X] lies between [L] and [U].",
+  "to": "Although the population need not be Normal, the large sample size [n] justifies a Normal approximation for X̄ via the CLT. Therefore the approximate [conf]% CI for μ is [xbar]±[z]([sigma]/√[n])=[[L],[U]]. With a level of confidence of approximately [conf]% we can conclude that the population mean [X] lies between [L] and [U]."
+ },
+ {
+  "id": "C6.CI.KNOWN_CLT",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Avoid when the population is stated Normal (use KNOWN_NORMAL) or σ is unknown (use UNKNOWN_LARGE_Z/T)."
+ },
+ {
+  "id": "C6.CI.UNKNOWN_NORMAL",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Avoid when σ is known (use KNOWN_NORMAL) or Normality is not assumed and n is large (use UNKNOWN_LARGE_Z/T)."
+ },
+ {
+  "id": "C6.CI.UNKNOWN_LARGE_Z",
+  "field": "answer_template",
+  "kind": "minor",
+  "reason": "Last sentence is muddled ('rather than an exact t interval under a Normal population') and the card gives no interpretation. State clearly why it is approximate and that the Student-t row is the conservative alternative.",
+  "from": "Since σ is unknown and n=[n] is large enough for the CLT, a Normal approximation gives the [conf]% CI x̄±z_(α/2)s/√n=[[L],[U]]. This interval is approximate, rather than an exact t interval under a Normal population.",
+  "to": "Since σ is unknown and n=[n] is large enough for the CLT, a Normal approximation gives the approximate [conf]% CI x̄±z_(α/2)s/√n=[[L],[U]]. The confidence level is only approximate because no Normal population is assumed; the Student-t row (t_(n−1,α/2)) is the slightly wider, conservative alternative. With a level of confidence of approximately [conf]% we can conclude that the population mean lies between [L] and [U]."
+ },
+ {
+  "id": "C6.CI.UNKNOWN_LARGE_Z",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Avoid when σ is known (use KNOWN_CLT) or the population is Normal and the exact t interval applies (use UNKNOWN_NORMAL)."
+ },
+ {
+  "id": "C6.CI.UNKNOWN_LARGE_T",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Avoid when the population is Normal (t is exact; use UNKNOWN_NORMAL) or σ is known (use KNOWN_CLT)."
+ },
+ {
+  "id": "C6.CI.UNKNOWN_SMALL_NONNORMAL",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Avoid when the population is Normal (use UNKNOWN_NORMAL) or n is large enough for the CLT (use UNKNOWN_LARGE_Z/T)."
+ },
+ {
+  "id": "C6.CI.PROP_CI",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Avoid when expected successes or failures are too few (use PROP_CI_UNSUITABLE); never use a hypothesised p0 in this formula."
+ },
+ {
+  "id": "C6.CI.PROP_CI_UNSUITABLE",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Avoid when n·p̂ and n(1−p̂) are both large; use PROP_CI."
+ },
+ {
+  "id": "C6.CI.CI_MEANING",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Avoid when the question proposes a 'probability the parameter is in this interval' statement; use CI_FALSE_PROB."
+ },
+ {
+  "id": "C6.CI.CI_FALSE_PROB",
+  "field": "answer_template",
+  "kind": "minor",
+  "reason": "Coverage is a long-run proportion: 'about [conf]%' of intervals (official wording, 22 Oct 2024). Also add that the observed interval either contains the parameter or not.",
+  "from": "The statement is incorrect: the population parameter is fixed, not random in the frequentist framework. The confidence level means that [conf]% of intervals constructed by this procedure over repeated samples would contain the true parameter.",
+  "to": "The statement is incorrect: the population parameter is fixed, not random in the frequentist framework, so the specific observed interval either contains it or does not. The confidence level means that about [conf]% of intervals constructed by this procedure over repeated samples would contain the true parameter."
+ },
+ {
+  "id": "C6.CI.CI_FALSE_PROB",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Avoid when simply asked to interpret a computed interval; use CI_MEANING."
+ },
+ {
+  "id": "C6.CI.CI_RANDOM",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Avoid when asked only to interpret a specific numerical interval; use CI_MEANING."
+ },
+ {
+  "id": "C6.CI.WIDE_CONF",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Avoid when the confidence level is lowered; use NARROW_CONF."
+ },
+ {
+  "id": "C6.CI.NARROW_CONF",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Avoid when the confidence level is raised; use WIDE_CONF."
+ },
+ {
+  "id": "C6.CI.NARROW_N",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Avoid when the confidence level or variability changes instead of n; use WIDE_CONF/NARROW_CONF or WIDER_VAR."
+ },
+ {
+  "id": "C6.CI.WIDER_VAR",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Avoid when n or the confidence level changes; use NARROW_N or WIDE_CONF/NARROW_CONF."
+ },
+ {
+  "id": "C6.CI.MOE",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Avoid when the total width is asked; use WIDTH."
+ },
+ {
+  "id": "C6.CI.WIDTH",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Avoid when only the margin of error is asked; use MOE."
+ },
+ {
+  "id": "C6.CI.T_VS_Z",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Avoid when σ is known (only a z interval is printed); use KNOWN_NORMAL or KNOWN_CLT."
+ },
+ {
+  "id": "C6.CI.T_CRIT",
+  "field": "use_when",
+  "kind": "minor",
+  "reason": "Normality is an assumption about the POPULATION, not the sample.",
+  "from": "σ unknown Normal sample.",
+  "to": "σ unknown and Normal population (exact t), or the Student-t row for a large sample."
+ },
+ {
+  "id": "C6.CI.T_CRIT",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Avoid when σ is known; use Z_CRIT."
+ },
+ {
+  "id": "C6.CI.Z_CRIT",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Avoid when σ is unknown and the population is Normal (exact t); use T_CRIT."
+ },
+ {
+  "id": "C6.CI.CONTAINS_BENCH",
+  "field": "avoid_when",
+  "kind": "minor",
+  "reason": "Current text is a scope note, not a 'when not to use' rule; it does not name the sibling card.",
+  "from": "Formal tests are in the second partial; do not present hypothesis tests as first-partial requirements.",
+  "to": "Avoid when the benchmark lies outside the interval (use EXCLUDES_BENCH) or a formal hypothesis test with α is asked (second partial)."
+ },
+ {
+  "id": "C6.CI.EXCLUDES_BENCH",
+  "field": "answer_template",
+  "kind": "minor",
+  "reason": "Course rule: a CI that excludes a value suggests a difference, but quantifying the risk of a wrong conclusion is the job of tests (second partial). The card should say what the exclusion suggests.",
+  "from": "The benchmark [benchmark] lies outside the [conf]% confidence interval [[L],[U]]. It is therefore not among the parameter values retained by this interval at the stated confidence level.",
+  "to": "The benchmark [benchmark] lies outside the [conf]% confidence interval [[L],[U]]. It is therefore not among the parameter values retained by this interval at the stated confidence level, which suggests that the parameter differs from [benchmark]; a formal conclusion with a stated risk of error requires a hypothesis test."
+ },
+ {
+  "id": "C6.CI.EXCLUDES_BENCH",
+  "field": "avoid_when",
+  "kind": "minor",
+  "reason": "Current text is a scope note, not a 'when not to use' rule; it does not name the sibling card.",
+  "from": "Equivalent test logic belongs to second partial; avoid claiming any α, and never 'at any level'.",
+  "to": "Avoid when the benchmark lies inside the interval (use CONTAINS_BENCH) or a formal test with significance level α is asked (second partial)."
+ },
+ {
+  "id": "C6.SAMPLESIZE.MEAN_ME",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Avoid when σ is unknown (use MEAN_UNKNOWN_SIGMA), the target is an SE (use MEAN_SE) or a proportion (use PROP_*)."
+ },
+ {
+  "id": "C6.SAMPLESIZE.MEAN_SE",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Avoid when the target is a margin of error or width; use MEAN_ME (with WIDTH_TO_MARGIN if needed)."
+ },
+ {
+  "id": "C6.SAMPLESIZE.MEAN_UNKNOWN_SIGMA",
+  "field": "formulas",
+  "kind": "minor",
+  "reason": "No formula given; framework/notes: with σ unknown plug in s, n ≥ (z·s/ME)² (or t·s/ME), approximate, still rounded UP.",
+  "from": [],
+  "to": [
+   "n≥(z_(α/2)·s/ME)² (or t_(n−1,α/2) in place of z), approximate, rounded UP"
+  ]
+ },
+ {
+  "id": "C6.SAMPLESIZE.MEAN_UNKNOWN_SIGMA",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Avoid when the population σ is given; use MEAN_ME or MEAN_SE."
+ },
+ {
+  "id": "C6.SAMPLESIZE.PROP_KNOWN_P",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Avoid when no planning value of p is given; use PROP_P_UNKNOWN with p=0.5."
+ },
+ {
+  "id": "C6.SAMPLESIZE.PROP_P_UNKNOWN",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Avoid when an anticipated p is given (use PROP_KNOWN_P) or the parameter is a mean (use MEAN_ME)."
+ },
+ {
+  "id": "C6.SAMPLESIZE.WIDTH_TO_MARGIN",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Avoid when the question already states the margin of error; plug it directly into the sample-size formula."
+ },
+ {
+  "id": "C6.SAMPLESIZE.ROUND_CEILING",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Avoid when the formula already gives an exact integer; then that integer is the minimum n."
+ },
+ {
+  "id": "C6.SAMPLESIZE.N_QUADRUPLE",
+  "field": "avoid_when",
+  "kind": "added_avoid_when",
+  "reason": "The source had no \"don't use when\" text; sentence added from the course rules, naming the card to use instead.",
+  "from": "",
+  "to": "Avoid when the change in n is not a factor of four; apply the 1/√n rule generally (SE_N_EFFECT)."
+ },
+ {
+  "id": "C1.DATA.VAR_DISCRETE",
+  "field": "placeholders",
+  "kind": "placeholders_sync",
+  "reason": "Choice blanks used in the answer added to the blanks list.",
+  "from": [
+   "X"
+  ],
+  "to": [
+   "X",
+   "objects/events"
+  ]
+ },
+ {
+  "id": "C1.DATA.NUM_CODE_TRAP",
+  "field": "placeholders",
+  "kind": "placeholders_sync",
+  "reason": "Choice blanks used in the answer added to the blanks list.",
+  "from": [
+   "X"
+  ],
+  "to": [
+   "X",
+   "nominal/ordinal"
+  ]
+ },
+ {
+  "id": "C1.DATA.DESCRIPTIVE",
+  "field": "placeholders",
+  "kind": "placeholders_sync",
+  "reason": "Choice blanks used in the answer added to the blanks list.",
+  "from": [
+   "X"
+  ],
+  "to": [
+   "X",
+   "sample/population"
+  ]
+ },
+ {
+  "id": "C3.LOCATION.MODE",
+  "field": "placeholders",
+  "kind": "placeholders_sync",
+  "reason": "Choice blanks used in the answer added to the blanks list.",
+  "from": [
+   "X",
+   "f",
+   "mode"
+  ],
+  "to": [
+   "X",
+   "f",
+   "mode",
+   "absolute/relative",
+   "category/value"
+  ]
+ },
+ {
+  "id": "C3.SPREAD.CV_UNSUITABLE",
+  "field": "placeholders",
+  "kind": "placeholders_sync",
+  "reason": "Choice blanks used in the answer added to the blanks list.",
+  "from": [
+   "X"
+  ],
+  "to": [
+   "X",
+   "zero/very close to zero"
+  ]
+ },
+ {
+  "id": "C4.RELATIONSHIP.HIGH_R_MISLEAD",
+  "field": "placeholders",
+  "kind": "placeholders_sync",
+  "reason": "Choice blanks used in the answer added to the blanks list.",
+  "from": [
+   "abs_r"
+  ],
+  "to": [
+   "abs_r",
+   "outliers/nonlinearity/distinct subgroups"
+  ]
+ },
+ {
+  "id": "C4.RELATIONSHIP.R_INTERPRET",
+  "field": "placeholders",
+  "kind": "placeholders_sync",
+  "reason": "Choice blanks used in the answer added to the blanks list.",
+  "from": [
+   "X",
+   "Y",
+   "abs_r",
+   "r"
+  ],
+  "to": [
+   "X",
+   "Y",
+   "abs_r",
+   "r",
+   "positive/negative",
+   "weak/moderate/strong"
+  ]
+ },
+ {
+  "id": "C5.RV.COV_RV",
+  "field": "placeholders",
+  "kind": "placeholders_sync",
+  "reason": "Choice blanks used in the answer added to the blanks list.",
+  "from": [
+   "EX",
+   "EY",
+   "actual_EXY",
+   "cov"
+  ],
+  "to": [
+   "EX",
+   "EY",
+   "actual_EXY",
+   "cov",
+   "positive/negative",
+   "same/opposite"
+  ]
+ },
+ {
+  "id": "C6.CI.PROP_CI_UNSUITABLE",
+  "field": "placeholders",
+  "kind": "placeholders_sync",
+  "reason": "Choice blanks used in the answer added to the blanks list.",
+  "from": [],
+  "to": [
+   "successes/failures"
+  ]
+ },
+ {
+  "id": "C6.CI.CI_MEANING",
+  "field": "placeholders",
+  "kind": "placeholders_sync",
+  "reason": "Choice blanks used in the answer added to the blanks list.",
+  "from": [
+   "L",
+   "U",
+   "conf"
+  ],
+  "to": [
+   "L",
+   "U",
+   "conf",
+   "population mean/proportion of the relevant group"
+  ]
+ }
+]

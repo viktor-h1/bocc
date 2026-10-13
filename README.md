@@ -1,4 +1,4 @@
-# statcram 0.10.0
+# statcram 0.11.0
 
 A study companion for 30001 Statistics (R, RStudio and UBStats). Practise with the course data
 and the past papers, check your answers against the official solutions, and learn the UBStats and
@@ -21,7 +21,7 @@ Pure R, no compilation, no internet needed after installing.
 
 ```r
 # from the built file
-install.packages("statcram_0.10.0.tar.gz", repos = NULL, type = "source")
+install.packages("statcram_0.11.0.tar.gz", repos = NULL, type = "source")
 # or from GitHub
 remotes::install_github("viktor-h1/bocc", ref = "claude/quirky-gates-9i7hvr")
 
@@ -48,7 +48,7 @@ sc_recipes()     # R one-liners: new columns, subsets, factors, typed tables
 sc_notes("inference")   # course rules (also: rules, descriptive, estimation, random, chisq, regression, patterns)
 sc_notes("patterns")    # past-paper questions -> what to run -> what the answer must contain
 sc_notes("phrasing")    # how official answers are phrased: 7 moves + phrase bank (any question)
-sc_answers("unequal widths")  # study answer bank: answer templates by question type (sc_answers_app() = window)
+sc_answers()            # study answer bank: 244 answer templates, Ch. 1-6 (study only; sc_answers_app() = window)
 sc_define("IQR")        # exam-ready definition: what it is, formula, meaning, property (sc_define() lists all)
 ```
 
@@ -85,36 +85,54 @@ lists them all.
 ## Study answer bank
 
 > **Study use only.** The 2026/27 syllabus forbids R scripts prepared before the exam and AI
-> tools during it. The answer bank is for revising and memorising beforehand; at the exam you
-> write your own answers. Always check the current exam rules.
+> tools during it. Do not open statcram, its answer bank or exported cards at the exam: use them
+> to revise and memorise beforehand, then write your own answers. Always check the current rules.
 
-59 answer templates for the first-partial question types (Chapter 2 and the Chapter 3/4 tools
-the same exercises mix in), in 11 categories: graphs, shape, centre, comparing groups,
-histograms, modal class, shares, cumulative frequencies, grouped data, conditional percentages,
-conclusions. They are written in the style of the official solutions but are **authored study
-templates, not verbatim official answers**. Each case shows *when to use it*, *when not to*,
-the answer with `[blanks]`, the formulas and related past-paper questions. Nothing is computed:
-pick a case only if its conditions match your data.
+244 answer templates for the 2026/27 first partial, Chapters 1-6 (12 / 59 / 36 / 33 / 57 / 47
+cards): data and sampling, frequency tables and graphs, location / dispersion / quantiles /
+boxplots, two variables, probability / random variables / Normal / CLT, and estimation of one
+mean and one proportion (SEs, CIs, sample size). Two-sample inference, hypothesis tests and
+regression are second-partial material and are not in the bank.
+
+Each card shows **use this when**, the **answer to practise** with `[blanks]`, formulas,
+**don't use when**, its source status, past-paper questions of the same kind (verbatim excerpts)
+and the other cases of the same kind, so you can see why they would be wrong. The cards are
+written in the style of the official solutions but are **authored study templates, not
+verbatim official answers**; the verbatim questions and official solution excerpts are kept
+separately (`sc_answers_questions()`). Nothing is computed: pick a card only if its conditions
+match your data. 32 cards are flagged as weak spots (`priority = "critical"`).
 
 ```r
-sc_answers()                               # categories with counts
-sc_answers("among those")                  # search (typos and accents tolerated)
-sc_answers(category = "histogram")         # one category
-sc_answers(id = "C2.HISTOGRAM.UNEQUAL")    # one case in full
-sc_answers(scope = "core", list = TRUE)    # index as a data frame (Chapter 2 only)
+sc_answers()                                      # START HERE (by question wording) + chapters
+sc_answers(group = "probability")                 # one START HERE group
+sc_answers(chapter = 5)                           # a chapter, grouped by kind of question
+sc_answers("conditional probability")             # search (typos, accents, symbols tolerated)
+sc_answers("standard error", priority = "critical")
+sc_answers(category = "ci", chapter = 6)
+sc_answer("C5.EVENTS.CONDITIONAL")                # one card in full
 sc_answers_fill("C2.MODAL.UNEQUAL", values = list(interval = "[25, 30)"))
-sc_answers_app()                           # window: search, categories, card, fill, copy (Addins too)
+sc_answers_questions("P25")                       # verbatim past-paper questions + official excerpts
+sc_answers_practice(chapter = 6, n = 5)           # drill: situation first, answer on Enter, rate y/n
+sc_answers_progress()                             # cards marked "needs review" this session
+sc_answers_export("cards.md", group = "ci")       # Markdown study cards for home revision
+sc_answers_corrections()                          # what statcram changed in the supplied bank
+sc_answers_app()                                  # window (also Addins, and a link in sc_app())
 ```
+
+In the menu: `sc(9, 5)`. Symbols print as ASCII (`mu`, `sigma`, `<=`, `xbar`) on consoles that
+are not UTF-8, or with `options(statcram.ascii = TRUE)`.
 
 Example: an exercise asks for the modal class of a table with classes of different widths.
 `sc_answers("unequal widths")` lists *Unequal-width intervals* and *Modal class: unequal widths*;
-`sc_answers(id = "C2.MODAL.UNEQUAL")` shows when it applies; after computing the densities
-yourself, `sc_answers_fill("C2.MODAL.UNEQUAL", values = list(interval = "[25, 30)"))` prints the
-filled sentence and flags any blank left. In the menu: `sc(9, 5)`.
+`sc_answer("C2.MODAL.UNEQUAL")` shows when it applies; after computing the densities yourself,
+`sc_answers_fill("C2.MODAL.UNEQUAL", values = list(interval = "[25, 30)"))` prints the filled
+sentence and flags any blank left.
 
-The templates live in `data-raw/answer_bank.json` (editable) and are compiled with
-`Rscript data-raw/build_answer_bank.R` into `inst/extdata/answer_bank.rds`; new chapters are new
-records with new ids.
+**Data.** `data-raw/answer_bank.json` (the supplied bank, unchanged) plus
+`data-raw/answer_bank_corrections.json` (225 documented changes: 5 misleading and 33 minor
+wording fixes, 172 "don't use when" sentences where the source had none, 15 blank-list updates)
+are compiled by `Rscript data-raw/build_answer_bank.R` into `inst/extdata/answer_bank.rds`.
+See USAGE.md and VERIFICATION.md.
 
 ## The panel
 

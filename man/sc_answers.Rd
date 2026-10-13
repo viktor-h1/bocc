@@ -2,6 +2,7 @@
 % Please edit documentation in R/answers.R
 \name{sc_answers}
 \alias{sc_answers}
+\alias{sc_answer}
 \title{Study answer bank: exam-style answer templates by question type}
 \usage{
 sc_answers(
@@ -9,60 +10,80 @@ sc_answers(
   category = NULL,
   id = NULL,
   chapter = NULL,
+  priority = NULL,
+  group = NULL,
   scope = NULL,
   list = FALSE
 )
+
+sc_answer(id)
 }
 \arguments{
 \item{query}{Words to search for.}
 
-\item{category}{A category id (e.g. \code{"histogram"}), its number, or part of
-its title.}
+\item{category}{A category (e.g. \code{"ci"}, \code{"events"}, \code{"histogram"},
+\code{"6.ci"}), its number in the chapter's list, or part of its label.}
 
-\item{id}{A case id, e.g. \code{"C2.GROUPED.VARIANCE"}.}
+\item{id}{A card id, e.g. \code{"C2.GROUPED.VARIANCE"}.}
 
-\item{chapter}{Keep only cases of this chapter (e.g. \code{2}).}
+\item{chapter}{One or more chapters (1 to 6).}
 
-\item{scope}{\code{"all"} (default), \code{"core"} (Chapter 2 only) or
-\code{"crossover"} (cases that also use Chapter 3/4 tools).}
+\item{priority}{\code{"critical"} (the weak spots) or \code{"high"} (critical and
+high).}
 
-\item{list}{If \code{TRUE}, return the matching cases as a data frame index
-instead of printing them.}
+\item{group}{A START HERE group: its number or id (\code{"graph"}, \code{"compare"},
+\code{"percent"}, \code{"quantile"}, \code{"grouped"}, \code{"relation"}, \code{"probability"},
+\code{"rv"}, \code{"clt"}, \code{"estimator"}, \code{"ci"}).}
+
+\item{scope}{\code{"all"}, \code{"core"} (cards about their own chapter only) or
+\code{"crossover"} (cards tagged with other chapters too).}
+
+\item{list}{If \code{TRUE}, return the matching cards as a data frame instead of
+printing them.}
 }
 \value{
-Invisibly: the record shown (a one-row data frame) or the data
-frame of matching cases; with \code{list = TRUE}, that data frame visibly.
+Invisibly: the card shown (a one-row data frame) or the data frame
+of matching cards; with \code{list = TRUE}, that data frame visibly.
 }
 \description{
-A searchable bank of authored answer templates for the exam questions of
-the first partial (Chapter 2 and the Chapter 3/4 topics that the same
-exercises mix in). Each case shows \strong{when it applies}, \strong{when it does
-not}, the \strong{answer to study} with \verb{[blanks]}, the formulas and the
-related past-paper questions. The templates are written in the style of
-the official solutions but are \strong{not} verbatim official answers, and
-they are for \strong{study only}: the course rules forbid prepared R scripts
-and AI tools at the exam. Nothing is computed: the bank never asserts a
-conclusion about your data; pick a case only if its conditions match.
+A searchable bank of 244 authored answer templates for the 2026/27 first
+partial (Chapters 1-6: data, descriptive statistics, two variables,
+probability and the CLT, estimation of one mean and one proportion). Each
+card shows \strong{when to use it}, the \strong{answer to practise} with \verb{[blanks]},
+the formulas, \strong{when not to use it}, its source status, past-paper
+questions of the same kind (verbatim excerpts) and the other cases of the
+same kind, so you can see why they would be wrong. The templates are
+written in the style of the official solutions but are \strong{not} verbatim
+official answers, and they are for \strong{study only}: the 2026/27 rules forbid
+prepared R scripts and AI tools at the exam. Nothing is computed: pick a
+card only if its conditions match your data.
 }
 \details{
 \itemize{
-\item \code{sc_answers()} lists the categories with their counts.
-\item \code{sc_answers("words")} searches titles, triggers, conditions and
-templates (case- and accent-insensitive, small typos tolerated); one hit
-is shown in full, several are listed.
-\item \code{sc_answers(category = "histogram")} (or a number) lists a category.
-\item \code{sc_answers(id = "C2.HISTOGRAM.UNEQUAL")} shows one case in full.
-\item \code{sc_answers(list = TRUE)} returns the index as a data frame.
+\item \code{sc_answers()} shows START HERE (groups by the wording of the question)
+and the chapters.
+\item \code{sc_answers("words")} searches (case-, accent- and punctuation-
+insensitive, small typos tolerated); one hit is shown in full.
+\item \code{sc_answers(chapter = 5)}, \code{sc_answers(category = "ci")},
+\code{sc_answers(group = 3)}, \code{sc_answers(priority = "critical")} list cards.
+\item \code{sc_answer("C6.CI.UNKNOWN_NORMAL")} (or \code{sc_answers(id = ...)}) shows
+one card.
+\item \code{list = TRUE} returns the matching cards as a data frame.
 }
+
+Symbols print as ASCII (\code{mu}, \code{sigma}, \code{<=}, \code{xbar}) on consoles that are
+not UTF-8, or always with \code{options(statcram.ascii = TRUE)}.
 }
 \examples{
 sc_answers()
-sc_answers("unequal widths")
-sc_answers(category = "conditional")
-sc_answers(id = "C2.GROUPED.VARIANCE")
+sc_answers("among those who")
+sc_answers(chapter = 6, category = "ci")
+sc_answers(priority = "critical")
+sc_answer("C5.TRANSFORM.VAR_LINEAR")
 head(sc_answers(chapter = 2, list = TRUE))
 }
 \seealso{
-\code{\link[=sc_answers_fill]{sc_answers_fill()}}, \code{\link[=sc_answers_app]{sc_answers_app()}}, \code{\link[=sc_notes]{sc_notes()}} with
-\code{"phrasing"} for the seven-move framework, \code{\link[=sc_define]{sc_define()}} for definitions.
+\code{\link[=sc_answer]{sc_answer()}}, \code{\link[=sc_answers_fill]{sc_answers_fill()}}, \code{\link[=sc_answers_questions]{sc_answers_questions()}},
+\code{\link[=sc_answers_practice]{sc_answers_practice()}}, \code{\link[=sc_answers_export]{sc_answers_export()}}, \code{\link[=sc_answers_app]{sc_answers_app()}},
+\code{sc_notes("phrasing")}, \code{\link[=sc_define]{sc_define()}}.
 }

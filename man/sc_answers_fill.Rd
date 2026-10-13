@@ -7,7 +7,7 @@
 sc_answers_fill(id, values = list(), print = TRUE)
 }
 \arguments{
-\item{id}{A case id, e.g. \code{"C2.CONDITIONAL.A_HIGH"} (see \code{\link[=sc_answers]{sc_answers()}}).}
+\item{id}{A card id, e.g. \code{"C2.CONDITIONAL.A_HIGH"} (see \code{\link[=sc_answers]{sc_answers()}}).}
 
 \item{values}{A named list (or named vector) of texts, one per blank, e.g.
 \code{list(X = "Bid", A = "Agency")}. Blanks with spaces need backticks:
@@ -21,10 +21,10 @@ Invisibly, the filled text, with attribute \code{unfilled} (the blanks
 still empty) and \code{id}.
 }
 \description{
-Replaces the \verb{[blanks]} of a case of the study answer bank with the text
-you supply and prints the result, listing any blank still to fill. Values
-are inserted as plain text: nothing is evaluated or computed, so check
-that the case you chose matches your data. Study use only.
+Replaces the \verb{[blanks]} of a card of the study answer bank with the text you
+supply and prints the result, listing any blank still to fill. Values are
+inserted as plain text: nothing is evaluated or computed, so check that the
+card you chose matches your data. Study use only.
 }
 \examples{
 sc_answers_fill("C2.CONDITIONAL.A_HIGH",

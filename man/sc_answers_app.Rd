@@ -11,14 +11,18 @@ Invisibly, the filled text printed when you press "Print to
 console" (or \code{NULL}).
 }
 \description{
-Opens a window to find and study the answer templates of \code{\link[=sc_answers]{sc_answers()}}:
-type words in the search box (or pick a category), choose a case, read
-when it applies and when it does not, then fill its blanks and copy the
-text or print it to the console. "Recall mode" hides the answer until you
-ask for it, to test yourself. The templates are authored study examples,
-not official solutions, and the window is for studying only: the course
-rules forbid prepared scripts and AI tools at the exam. Needs the shiny
-and miniUI packages; \code{\link[=sc_answers]{sc_answers()}} works without them.
+Opens a window to find and study the cards of \code{\link[=sc_answers]{sc_answers()}}: start from
+the wording of the question (START HERE), a chapter, the weak spots or a
+search; choose a card; read when it applies and when it does not, compare
+it with the other cases of the same kind, then fill its blanks and copy the
+text or print it to the console. Practice mode hides the answer until you
+ask, then lets you mark the card "remembered" or "needs review" (kept for
+this R session). The "Past-paper questions" tab shows the verbatim
+questions and official solution excerpts, labelled separately. The cards
+are authored study templates, not official solutions; the window is for
+studying only: the course rules forbid prepared scripts and AI tools at the
+exam. Needs the shiny and miniUI packages; \code{\link[=sc_answers]{sc_answers()}} works without
+them.
 }
 \examples{
 if (interactive()) sc_answers_app()
