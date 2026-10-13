@@ -1,4 +1,4 @@
-# statcram 0.9.3
+# statcram 0.10.0
 
 A study companion for 30001 Statistics (R, RStudio and UBStats). Practise with the course data
 and the past papers, check your answers against the official solutions, and learn the UBStats and
@@ -21,7 +21,7 @@ Pure R, no compilation, no internet needed after installing.
 
 ```r
 # from the built file
-install.packages("statcram_0.9.3.tar.gz", repos = NULL, type = "source")
+install.packages("statcram_0.10.0.tar.gz", repos = NULL, type = "source")
 # or from GitHub
 remotes::install_github("viktor-h1/bocc", ref = "claude/quirky-gates-9i7hvr")
 
@@ -48,6 +48,7 @@ sc_recipes()     # R one-liners: new columns, subsets, factors, typed tables
 sc_notes("inference")   # course rules (also: rules, descriptive, estimation, random, chisq, regression, patterns)
 sc_notes("patterns")    # past-paper questions -> what to run -> what the answer must contain
 sc_notes("phrasing")    # how official answers are phrased: 7 moves + phrase bank (any question)
+sc_answers("unequal widths")  # study answer bank: answer templates by question type (sc_answers_app() = window)
 sc_define("IQR")        # exam-ready definition: what it is, formula, meaning, property (sc_define() lists all)
 ```
 
@@ -80,6 +81,40 @@ it also follows the 14 Oct 2025 partial:
 (what it is, the formula, the meaning for the units, one property or caveat) for about 55 terms
 of the first partial; abbreviations work (`"se"`, `"CLT"`, `"interquartile"`), and `sc_define()`
 lists them all.
+
+## Study answer bank
+
+> **Study use only.** The 2026/27 syllabus forbids R scripts prepared before the exam and AI
+> tools during it. The answer bank is for revising and memorising beforehand; at the exam you
+> write your own answers. Always check the current exam rules.
+
+59 answer templates for the first-partial question types (Chapter 2 and the Chapter 3/4 tools
+the same exercises mix in), in 11 categories: graphs, shape, centre, comparing groups,
+histograms, modal class, shares, cumulative frequencies, grouped data, conditional percentages,
+conclusions. They are written in the style of the official solutions but are **authored study
+templates, not verbatim official answers**. Each case shows *when to use it*, *when not to*,
+the answer with `[blanks]`, the formulas and related past-paper questions. Nothing is computed:
+pick a case only if its conditions match your data.
+
+```r
+sc_answers()                               # categories with counts
+sc_answers("among those")                  # search (typos and accents tolerated)
+sc_answers(category = "histogram")         # one category
+sc_answers(id = "C2.HISTOGRAM.UNEQUAL")    # one case in full
+sc_answers(scope = "core", list = TRUE)    # index as a data frame (Chapter 2 only)
+sc_answers_fill("C2.MODAL.UNEQUAL", values = list(interval = "[25, 30)"))
+sc_answers_app()                           # window: search, categories, card, fill, copy (Addins too)
+```
+
+Example: an exercise asks for the modal class of a table with classes of different widths.
+`sc_answers("unequal widths")` lists *Unequal-width intervals* and *Modal class: unequal widths*;
+`sc_answers(id = "C2.MODAL.UNEQUAL")` shows when it applies; after computing the densities
+yourself, `sc_answers_fill("C2.MODAL.UNEQUAL", values = list(interval = "[25, 30)"))` prints the
+filled sentence and flags any blank left. In the menu: `sc(9, 5)`.
+
+The templates live in `data-raw/answer_bank.json` (editable) and are compiled with
+`Rscript data-raw/build_answer_bank.R` into `inst/extdata/answer_bank.rds`; new chapters are new
+records with new ids.
 
 ## The panel
 

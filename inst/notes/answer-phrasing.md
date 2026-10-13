@@ -5,6 +5,8 @@ and of the Module 1 exercises)
 statcram prints its "Exam wording" with the same labels (Frame, Tool, Result, Meaning, Conclusion,
 Caveat); the Computation is the step-by-step block above it.
 options(statcram.labels = FALSE) removes the labels.
+Ready-made answer templates by question type (study use only, authored in this style, not
+official answers): sc_answers("unequal widths"), sc_answers(category = "compare"), sc_answers_app().
 
 ## A. Seven moves, always in this order (use the ones the question needs)
 1. FRAME       say what is analysed, in statistical terms: the variable and its type, sample or

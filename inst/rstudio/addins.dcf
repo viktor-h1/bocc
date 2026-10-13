@@ -2,3 +2,8 @@ Name: statcram panel
 Description: Point-and-click statcram for the first-partial topics (describing data, random variables and the CLT, estimation of one mean and one proportion).
 Binding: sc_app
 Interactive: true
+
+Name: Answer template browser
+Description: Study answer bank: search exam-style answer templates by question type, see when each applies, fill the blanks and copy (study use only).
+Binding: sc_answers_app
+Interactive: true

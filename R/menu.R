@@ -760,6 +760,34 @@
   sc_notes(tp[.ask_choice("Which notes?", sprintf("%-12s %s", tp, .notes_titles))])
   NULL
 }
+# Study answer bank: category number or words -> numbered cases -> one case -> optional fill.
+.m_answers <- function() {
+  .ab_cat(.ab_categories_lines())
+  a <- .mq("\nCategory number, or words to search (e.g. unequal widths, among those)")
+  if (!nzchar(a)) return(NULL)
+  n <- suppressWarnings(as.integer(a))
+  rows <- if (!is.na(n) && n >= 1 && n <= nrow(.ab()$sections)) which(.ab()$templates$category == .ab()$sections$id[n])
+          else { r <- .ab_search(a); r$rows }
+  if (!length(rows)) { cat(sprintf("No case matches \"%s\". Try a shorter word.\n", a)); return(NULL) }
+  i <- rows[1]
+  if (length(rows) > 1) {
+    .ab_cat(.ab_list_lines(rows, c(sprintf("%d cases (study use only - authored templates):", length(rows)), "")))
+    repeat {
+      k <- suppressWarnings(as.integer(.mq("Case number to show")))
+      if (!is.na(k) && k >= 1 && k <= length(rows)) break
+      cat("  Type one of the numbers above (b = back, m = main menu, q = quit).\n")
+    }
+    i <- rows[k]
+  }
+  cat("\n"); .ab_cat(.ab_card_lines(i))
+  ph <- .ab()$templates$placeholders[[i]]
+  if (length(ph) && .ask_yes("Fill in the blanks now?", FALSE)) {
+    parts <- unique(trimws(unlist(strsplit(ph, ",", fixed = TRUE))))
+    vals <- stats::setNames(lapply(parts, function(p) .mq(sprintf("  [%s] (Enter = leave blank)", p), "")), parts)
+    cat("\n"); sc_answers_fill(.ab()$templates$id[i], values = vals)
+  }
+  NULL
+}
 .m_define <- function() {
   sc_define()
   sc_define(.mq("\nTerm to define (e.g. IQR, standard error, CLT)"))
@@ -834,7 +862,8 @@
     list("Which test do I need? (decision tree)", .m_guide),
     list("All functions by topic", .m_index),
     list("Course notes and exam rules", .m_notes),
-    list("Define a term (what it is, formula, meaning, property)", .m_define))))
+    list("Define a term (what it is, formula, meaning, property)", .m_define),
+    list("Study answer bank: exam-style answer templates by question type", .m_answers))))
 
 .version <- function() tryCatch(as.character(utils::packageVersion("statcram")), error = function(e) "dev")
 
