@@ -807,6 +807,33 @@
   }
   NULL
 }
+# Your phrasing bank: section code, case id, a part of the bank, or words.
+.m_phrasing <- function() {
+  .ab_cat(.pb_start_lines())
+  cat("\nA section code (e.g. 5N), a case id (e.g. 5N.05), v = verbs, n = notation,\n",
+      "x = verbatim excerpts, e = your error log, or words to search.\n", sep = "")
+  a <- .mq("Choice")
+  if (!nzchar(a)) return(NULL)
+  parts <- c(v = "verbs", n = "notation", x = "excerpts", e = "mistakes")
+  al <- tolower(trimws(a))
+  if (al %in% names(parts)) { sc_phrasing(what = parts[[al]]); return(NULL) }
+  b <- .pb()
+  rows <- .pb_find(a)
+  if (!length(rows)) rows <- if (toupper(trimws(a)) %in% b$sections$code) which(b$cases$section == toupper(trimws(a))) else .pb_search(a)$rows
+  if (!length(rows)) { cat(sprintf("No case matches \"%s\". Try a shorter word.\n", a)); return(NULL) }
+  i <- rows[1]
+  if (length(rows) > 1) {
+    .ab_cat(.pb_list_lines(rows, c(sprintf("%d cases (study use only - source-adapted templates):", length(rows)), "")))
+    repeat {
+      k <- suppressWarnings(as.integer(.mq("Case number to show")))
+      if (!is.na(k) && k >= 1 && k <= length(rows)) break
+      cat("  Type one of the numbers above (b = back, m = main menu, q = quit).\n")
+    }
+    i <- rows[k]
+  }
+  cat("\n"); .ab_cat(.pb_case_lines(i))
+  NULL
+}
 .m_define <- function() {
   sc_define()
   sc_define(.mq("\nTerm to define (e.g. IQR, standard error, CLT)"))
@@ -882,7 +909,8 @@
     list("All functions by topic", .m_index),
     list("Course notes and exam rules", .m_notes),
     list("Define a term (what it is, formula, meaning, property)", .m_define),
-    list("Study answer bank: exam-style answer templates by question type", .m_answers))))
+    list("Study answer bank: exam-style answer templates by question type", .m_answers),
+    list("Your phrasing bank: wording by question type, verbatim excerpts, error log", .m_phrasing))))
 
 .version <- function() tryCatch(as.character(utils::packageVersion("statcram")), error = function(e) "dev")
 

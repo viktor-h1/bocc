@@ -1,3 +1,20 @@
+# statcram 0.12.0
+
+## Your phrasing bank (study use only)
+
+* New `sc_phrasing()`: your "Stats30001 Exact Phrasing Bank" inside statcram. 167
+  source-adapted answer cases in 12 sections (Chapters 1-4, Chapter 5 split into probability,
+  random variables, Normal and sampling/CLT, Chapter 6 split into point estimation, confidence
+  intervals and sample size, plus the estimator-definitions appendix).
+* Each case shows use when, the sentence to write, formula / R, avoid, qualification, the
+  matching entries of your personal error log, sources, and the previous / next case.
+* `sc_phrasing("qnorm")` searches, `sc_phrasing("5N.05")` opens a case, `section = "6I"` or
+  `section = 5` lists a section or chapter. `what = "verbs"`, `"notation"`, `"excerpts"` (the 10
+  verbatim official-solution excerpts), `"mistakes"` (your error log), `"scope"`, `"sources"`.
+* The file is shipped unchanged (`inst/notes/phrasing-bank.md`); `sc_notes("bank")` prints it
+  as written. Menu `sc(9, 6)`; listed in `sc_guide()` and `sc_index()`.
+* Internal: the answer-bank search ranker is shared with the phrasing bank (no behaviour change).
+
 # statcram 0.11.0
 
 ## Study answer bank: full 2026/27 first partial (study use only)

@@ -1,4 +1,4 @@
-# statcram 0.11.0
+# statcram 0.12.0
 
 A study companion for 30001 Statistics (R, RStudio and UBStats). Practise with the course data
 and the past papers, check your answers against the official solutions, and learn the UBStats and
@@ -21,7 +21,7 @@ Pure R, no compilation, no internet needed after installing.
 
 ```r
 # from the built file
-install.packages("statcram_0.11.0.tar.gz", repos = NULL, type = "source")
+install.packages("statcram_0.12.0.tar.gz", repos = NULL, type = "source")
 # or from GitHub
 remotes::install_github("viktor-h1/bocc", ref = "claude/quirky-gates-9i7hvr")
 
@@ -81,6 +81,27 @@ it also follows the 14 Oct 2025 partial:
 (what it is, the formula, the meaning for the units, one property or caveat) for about 55 terms
 of the first partial; abbreviations work (`"se"`, `"CLT"`, `"interquartile"`), and `sc_define()`
 lists them all.
+
+## Your phrasing bank
+
+> **Study use only**, as for the answer bank below: learn the wording beforehand; do not open
+> statcram at the exam.
+
+Your "Stats30001 Exact Phrasing Bank" is built in: 167 source-adapted answer cases for the
+first partial (12 sections, Chapters 1-6), 10 verbatim official-solution excerpts and your
+personal error log. Each case shows **use when**, the sentence to **write**, formula / R,
+**avoid**, qualifications, the matching error-log entries and its sources. The text is shipped
+unchanged; only the Appendix B excerpts are verbatim official wording.
+
+```r
+sc_phrasing()                        # sections and commands
+sc_phrasing("qnorm")                 # search (typos and symbols tolerated)
+sc_phrasing("5N.05")                 # one case in full
+sc_phrasing(section = "6I")          # a section; section = 5 gives all of Chapter 5
+sc_phrasing(what = "mistakes")       # your error log; also "verbs", "notation", "excerpts", "scope", "sources"
+sc_notes("bank")                     # the whole file as written
+sc(9, 6)                             # the same from the menu
+```
 
 ## Study answer bank
 

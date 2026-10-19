@@ -1,4 +1,4 @@
-# statcram 0.11.0 — verification report
+# statcram verification report
 
 **Study use only.** statcram is a tool for revising, drilling and memorising.
 Do not open or use it during the exam. The 30001 syllabus forbids R scripts
@@ -7,6 +7,23 @@ does not make it permitted there.
 
 All checks below ran on 2026-10-13 in a Linux container
 (R, testthat edition 3, `LANG=C.UTF-8`). Anything not listed as run was not run.
+
+## 0.12.0 — phrasing bank (`sc_phrasing()`), checked 2026-10-19
+
+| Check | Result |
+|---|---|
+| `R CMD check --no-manual statcram_0.12.0.tar.gz` | **Status: OK**; tests `[ FAIL 0 \| WARN 0 \| SKIP 1 \| PASS 1201 ]` (same data-raw skip as below) |
+| Full suite from source | 166 tests, 1206 expectations, 0 failed, 0 skipped |
+| File shipped unchanged | `inst/notes/phrasing-bank.md` has the uploaded file's MD5 (`64875f79...`); tested in the installed package |
+| Parse completeness | 167 cases (8/16/25/18/16/16/9/11/14/22/9/3 by section), 10 excerpts, 19 error-log entries, 6 verbs, 6 notation rows, 13 source keys; 0 unparsed lines; every case has use-when, write and sources |
+| Wording kept | all 217 quoted (`> `) lines of the file appear word for word as template lines (207) or excerpts (10) |
+| Error-log links | every "Revisit" range expands to existing case ids |
+| Search / lookup | `"qnorm"`, `"t wider than z"` (6I.13 first), `"whisker"`, `"SE"` (whole word), typo `"histogramm"`, ids like `"5n.5"`, sections `"6I"`, `5`, title words |
+| Display | case layout, study note, backticks removed, ASCII fallback, all `what =` parts, `sc_notes("bank")` |
+| Menu | `sc(9, 6)`: case id, search + pick, section code, `e` error log |
+
+Not verified: a real Windows console (forced-ASCII path only). The bank's statistical content
+was not reviewed for this release; it is shipped as you wrote it.
 
 ## 1. R CMD check
 

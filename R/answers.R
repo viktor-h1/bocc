@@ -122,43 +122,46 @@
   }))
 }
 
-# Rank every card: phrase hits first, then cards with all the words, then
-# (if none) those with most words, then small misspellings.
-.ab_search <- function(query) {
+# Rank every document: phrase hits first, then documents with all the words,
+# then (if none) those with most words, then small misspellings. docs is a
+# list of normalised fields, weights their weights, boost a per-document bonus.
+.ab_rank <- function(query, docs, weights, boost = 0) {
   q <- .ab_norm(query)
-  docs <- .ab_docs(); n <- length(docs$title)
+  n <- length(docs[[1]])
   if (!nzchar(q)) return(list(rows = seq_len(n), how = "all"))
-  fields <- names(.ab_weights)
+  fields <- names(weights)
   # the phrase must start at a word boundary (and end at one, if short)
   pat <- paste0("(^|[^a-z0-9])", gsub("([.+()|^\\[\\]])", "\\\\\\1", q), if (nchar(q) <= 3) "($|[^a-z0-9])" else "")
-  phrase <- rowSums(vapply(fields, function(f) .ab_weights[[f]] * 3 * grepl(pat, docs[[f]], perl = TRUE), numeric(n)))
+  phrase <- rowSums(vapply(fields, function(f) weights[[f]] * 3 * grepl(pat, docs[[f]], perl = TRUE), numeric(n)))
   words <- unique(strsplit(q, " ", fixed = TRUE)[[1]])
   words <- words[!words %in% .ab_stop & nzchar(words)]
   if (!length(words)) words <- strsplit(q, " ", fixed = TRUE)[[1]]
   hits <- lapply(fields, function(f) matrix(vapply(words, .ab_hit, logical(n), docs = docs[[f]]), nrow = n))
   names(hits) <- fields
   wmat <- Reduce(`|`, hits)
-  wscore <- rowSums(vapply(fields, function(f) .ab_weights[[f]] * rowSums(hits[[f]]), numeric(n)))
+  wscore <- rowSums(vapply(fields, function(f) weights[[f]] * rowSums(hits[[f]]), numeric(n)))
   nmatch <- rowSums(wmat)
   how <- if (any(phrase > 0)) "phrase" else "words"
   keep <- phrase > 0 | nmatch == length(words)
   if (!any(keep) && max(nmatch) > 0) { keep <- nmatch == max(nmatch); how <- "partial" }
   if (!any(keep)) {
-    dw <- unique(unlist(strsplit(unlist(docs), " ", fixed = TRUE)))
+    dw <- unique(unlist(strsplit(unlist(docs[fields]), " ", fixed = TRUE)))
     fz <- vapply(words, function(w) if (nchar(w) < 5) w else {
       d <- utils::adist(w, dw); if (min(d) <= max(1, floor(nchar(w) / 5))) dw[which.min(d)] else w }, "")
     if (!identical(unname(fz), words)) {
-      r <- .ab_search(paste(fz, collapse = " "))
+      r <- .ab_rank(paste(fz, collapse = " "), docs, weights, boost)
       if (length(r$rows)) r$how <- paste0("spelling:", paste(fz, collapse = " "))
       return(r)
     }
     return(list(rows = integer(0), how = "none"))
   }
-  pri <- c(critical = 0.5, high = 0.25, normal = 0)[.ab()$templates$priority]
-  score <- phrase + wscore + pri
+  score <- phrase + wscore + boost
   rows <- which(keep)
   list(rows = rows[order(-score[rows], rows)], how = how)
 }
+
+.ab_search <- function(query)
+  .ab_rank(query, .ab_docs(), .ab_weights, c(critical = 0.5, high = 0.25, normal = 0)[.ab()$templates$priority])
 
 # ---------- filters ----------
 

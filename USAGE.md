@@ -1,10 +1,10 @@
-# statcram study answer bank: usage
+# statcram study answer bank and phrasing bank: usage
 
 > **Study use only.** The 2026/27 syllabus forbids R scripts prepared before the exam and AI tools
 > during it. Use the answer bank to revise and memorise beforehand; do not open statcram or exported
 > cards at the exam. At the exam use only what the rules allow (R, RStudio, UBStats, the R manual).
 
-Install: `install.packages("statcram_0.11.0.tar.gz", repos = NULL, type = "source")`, then
+Install: `install.packages("statcram_0.12.0.tar.gz", repos = NULL, type = "source")`, then
 `library(statcram)`. Everything below works offline and without shiny, except `sc_answers_app()`.
 
 | Command | What it does |
@@ -26,6 +26,22 @@ Install: `install.packages("statcram_0.11.0.tar.gz", repos = NULL, type = "sourc
 | `sc_answers_corrections()` | what statcram changed in the supplied bank, and why |
 | `sc_answers_app()` | window: search, START HERE, chapter, weak spots, cards, practice, fill, copy, past papers |
 | `sc(9, 5)` | the same from the menu (`b` back, `m` main menu, `q` quit) |
+
+Your phrasing bank (167 source-adapted cases, 10 verbatim excerpts, your error log):
+
+| Command | What it does |
+|---|---|
+| `sc_phrasing()` | the 12 sections with case counts, and the commands below |
+| `sc_phrasing("qnorm")` | search titles, use-when, template text, formulas, sources |
+| `sc_phrasing("5N.05")` or `sc_phrasing(id = "5N.05")` | one case: use when, write, formula / R, avoid, qualification, your error-log entries, sources |
+| `sc_phrasing(section = "6I")` / `sc_phrasing(section = 5)` | one section / all four Chapter 5 sections |
+| `sc_phrasing("SE", section = "6E")` | search inside one section |
+| `sc_phrasing(what = "excerpts")` | the 10 verbatim official-solution excerpts |
+| `sc_phrasing(what = "mistakes")` | your personal error log, with the cases to revisit |
+| `sc_phrasing(what = "verbs")`, `"notation"`, `"scope"`, `"sources"` | the other parts of the file |
+| `sc_phrasing("qnorm", list = TRUE)` | the matches as a data frame (no printing) |
+| `sc_notes("bank")` | the whole file as written |
+| `sc(9, 6)` | the same from the menu: section code, case id, `v` verbs, `n` notation, `x` excerpts, `e` error log, or words |
 
 Sources: `M1` Module 1 exercises, `P24` 1st partial 22 Oct 2024, `P25` 1st partial 14 Oct 2025,
 `S26JAN` 2nd partial 9 Jan 2026 (one-sample CI parts only), `G26JAN` general exam 30 Jan 2026,
