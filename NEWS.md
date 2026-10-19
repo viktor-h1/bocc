@@ -1,3 +1,34 @@
+# statcram 0.13.0
+
+## Phrasing game (study use only)
+
+* New `sc_phrasing_game()`: a quiz on your phrasing bank. Each round shows a case's situation;
+  you type the answer you would write; statcram scores it against the bank's sentence (0-100),
+  lists the key terms you missed and **flags every crucial verb you left out** (`! MISSING VERB`,
+  e.g. *contain*, *vary*, *determine*), a missing qualifier such as *approximately*
+  (`! QUALIFIER`) and a missing negation (`! NEGATION`: the canon says what does *not* hold).
+  Then it shows the canon sentence, what to avoid and your error-log entry for the case.
+* Points, hint (`h`, -10), skip, +10 for a clean answer, streaks, a final rank, and
+  `review = TRUE` to replay the rounds you scored below 70 this session. Cases with labelled
+  alternatives (e.g. NOMINAL / ORDINAL) are separate rounds: 199 rounds from 167 cases.
+* `sc_phrasing_score(id, answer)` scores one answer, e.g. a longer one written in the editor.
+* Scoring is word matching, offline: 55% key terms (80% of them earns the full share), 35%
+  crucial verbs, 10% negation. Tense, plural, British/American spelling and a few paraphrases
+  ("built" / "constructed", "about" / "approximately") do not matter. It does not understand
+  meaning: read the canon sentence after each round.
+* Menu `sc(9, 6)`: `g` starts the game.
+
+## Fixes: frequency lists entered with `sc_table()`
+
+* `desc_freq(table, n = 220)` on a table of proportions now rebuilds the counts
+  (f_k = p_k x n) and shows n = 220; before, the header said "n = unknown". A clear note is given
+  if p_k x n is not a whole number (rounded proportions). `n` must be a positive whole number.
+* `desc_freq()` on a typed frequency table names the variable (e.g. `products`), not the table.
+* The one-row-per-unit table (`<name>_long`) keeps numeric labels as numbers, so a count variable
+  such as "number of products: 1 2 4 5 8" is quantitative discrete, not nominal. Text labels
+  are still a factor in the order typed.
+* For a table of proportions, the "Next steps" line suggests `desc_freq(<name>, n = <sample size>)`.
+
 # statcram 0.12.0
 
 ## Your phrasing bank (study use only)

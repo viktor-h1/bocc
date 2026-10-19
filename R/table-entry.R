@@ -249,6 +249,13 @@
   T
 }
 
+# A unit-level column from category labels: numbers stay numbers (e.g. 1 2 4 5 8
+# products), anything else becomes a factor in the order typed.
+.long_col <- function(labels, idx) {
+  num <- suppressWarnings(as.numeric(labels))
+  if (!anyNA(num)) num[idx] else factor(labels[idx], levels = labels)
+}
+
 # One row per unit, for count tables / frequency lists with whole-number counts.
 .tbl_long <- function(T, df) {
   cnt <- suppressWarnings(as.numeric(T$vals))
@@ -256,11 +263,10 @@
   if (T$kind == "counts") {
     grid <- expand.grid(i = seq_along(T$rows), j = seq_along(T$cols))
     n <- mapply(function(i, j) as.numeric(T$vals[i, j]), grid$i, grid$j)
-    out <- data.frame(factor(rep(T$rows[grid$i], n), levels = T$rows),
-                      factor(rep(T$cols[grid$j], n), levels = T$cols))
+    out <- data.frame(.long_col(T$rows, rep(grid$i, n)), .long_col(T$cols, rep(grid$j, n)))
     names(out) <- make.unique(c(T$rowvar, T$colvar))
   } else if (T$kind == "freq") {
-    out <- data.frame(factor(rep(T$rows, as.numeric(T$vals[, 1])), levels = T$rows))
+    out <- data.frame(.long_col(T$rows, rep(seq_along(T$rows), as.numeric(T$vals[, 1]))))
     names(out) <- T$rowvar
   } else return(NULL)
   out
@@ -318,7 +324,8 @@
     classes = c(sprintf("desc_classes(%s)       densities, histogram, ogive, modal class   [sc(1,2)]", name),
                 sprintf("desc_classes(%s, at_most = <value>)   approx. Freq(X <= value)", name)),
     freq = c(sprintf("chisq_gof(%s, p = c(...))   goodness of fit (equal shares if p omitted)   [sc(6,1)]", name),
-             sprintf("desc_freq(%s)              counts, proportions, cumulative               [sc(1,1)]", name),
+             if (identical(T$value_type, "percent")) sprintf("desc_freq(%s, n = <sample size>)   proportions, cumulative; counts too when the question gives n   [sc(1,1)]", name)
+             else sprintf("desc_freq(%s)              counts, proportions, cumulative               [sc(1,1)]", name),
              sprintf("desc_prop(%s, event = \"%s\")  one category's proportion + SE", name, T$rows[1])))
   cat(paste0("  ", nx, collapse = "\n"), "\n", sep = "")
   invisible(df)

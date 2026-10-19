@@ -203,6 +203,10 @@
               sprintf("%d verbatim official-solution excerpts", nrow(b$excerpts)),
               sprintf("your personal error log (%d)", nrow(b$mistakes)), "scope rules and source-fidelity notes",
               "what the source keys (F, B1-B6, M1, P24, ...) mean", "the whole file as written")), "",
+    "PLAY",
+    "  sc_phrasing_game()                 type your answer; score, missing crucial verbs flagged",
+    "  sc_phrasing_score(\"6I.03\", \"...\")   score one answer you wrote",
+    "",
     "OPEN A CASE",
     "  sc_phrasing(\"qnorm\")   sc_phrasing(section = \"5N\")   sc_phrasing(\"5N.05\")")
 }

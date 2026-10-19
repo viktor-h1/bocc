@@ -810,12 +810,19 @@
 # Your phrasing bank: section code, case id, a part of the bank, or words.
 .m_phrasing <- function() {
   .ab_cat(.pb_start_lines())
-  cat("\nA section code (e.g. 5N), a case id (e.g. 5N.05), v = verbs, n = notation,\n",
-      "x = verbatim excerpts, e = your error log, or words to search.\n", sep = "")
+  cat("\nA section code (e.g. 5N), a case id (e.g. 5N.05), g = the phrasing game (scored answers),\n",
+      "v = verbs, n = notation, x = verbatim excerpts, e = your error log, or words to search.\n", sep = "")
   a <- .mq("Choice")
   if (!nzchar(a)) return(NULL)
   parts <- c(v = "verbs", n = "notation", x = "excerpts", e = "mistakes")
   al <- tolower(trimws(a))
+  if (al == "g") {
+    k <- suppressWarnings(as.integer(.mq("How many rounds", "5")))
+    sec <- .mq("Section code (e.g. 6I), r = replay rounds scored < 70, Enter = all sections", "")
+    if (tolower(sec) == "r") sc_phrasing_game(n = if (is.na(k)) 5 else k, review = TRUE)
+    else sc_phrasing_game(n = if (is.na(k)) 5 else k, section = if (nzchar(sec)) sec else NULL)
+    return(NULL)
+  }
   if (al %in% names(parts)) { sc_phrasing(what = parts[[al]]); return(NULL) }
   b <- .pb()
   rows <- .pb_find(a)
@@ -910,7 +917,7 @@
     list("Course notes and exam rules", .m_notes),
     list("Define a term (what it is, formula, meaning, property)", .m_define),
     list("Study answer bank: exam-style answer templates by question type", .m_answers),
-    list("Your phrasing bank: wording by question type, verbatim excerpts, error log", .m_phrasing))))
+    list("Your phrasing bank: wording by question type, scored answer game, error log", .m_phrasing))))
 
 .version <- function() tryCatch(as.character(utils::packageVersion("statcram")), error = function(e) "dev")
 

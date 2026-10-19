@@ -1,4 +1,4 @@
-# statcram 0.12.0
+# statcram 0.13.0
 
 A study companion for 30001 Statistics (R, RStudio and UBStats). Practise with the course data
 and the past papers, check your answers against the official solutions, and learn the UBStats and
@@ -21,7 +21,7 @@ Pure R, no compilation, no internet needed after installing.
 
 ```r
 # from the built file
-install.packages("statcram_0.12.0.tar.gz", repos = NULL, type = "source")
+install.packages("statcram_0.13.0.tar.gz", repos = NULL, type = "source")
 # or from GitHub
 remotes::install_github("viktor-h1/bocc", ref = "claude/quirky-gates-9i7hvr")
 
@@ -101,7 +101,14 @@ sc_phrasing(section = "6I")          # a section; section = 5 gives all of Chapt
 sc_phrasing(what = "mistakes")       # your error log; also "verbs", "notation", "excerpts", "scope", "sources"
 sc_notes("bank")                     # the whole file as written
 sc(9, 6)                             # the same from the menu
+sc_phrasing_game(n = 5, section = "6I")   # game: type your answer, get a score; missing crucial verbs flagged
+sc_phrasing_game(review = TRUE)      # replay the rounds you scored below 70
+sc_phrasing_score("6I.03", "...")    # score one answer you wrote
 ```
+
+The game's score is word matching against your bank's sentence (key terms, crucial verbs,
+negations), not an understanding of meaning: a good paraphrase can score lower, so always read
+the canon sentence it shows after each round.
 
 ## Study answer bank
 

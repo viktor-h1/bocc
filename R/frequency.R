@@ -195,9 +195,21 @@ desc_freq <- function(x, order = NULL, sort = c("none", "decreasing", "increasin
   n_given <- n
   sort <- match.arg(sort); plot <- match.arg(plot)
   sx <- substitute(x); xlab <- .label(sx)
+  # a typed frequency table (e.g. from sc_table()) is named after its variable, not the table
+  if (is.data.frame(x) && !is.null(.as_freq(x)) && .syntactic(names(x)[1])) xlab <- names(x)[1]
   Fc <- .freq_counts(x, xlab, order)
   fr <- Fc$fr; raw <- Fc$raw; numeric <- Fc$numeric; ordered <- Fc$ordered; intervals <- Fc$intervals; is_props <- Fc$is_props
   notes <- Fc$notes
+  if (is_props && !is.null(n_given)) {
+    if (!is.numeric(n_given) || length(n_given) != 1 || is.na(n_given) || n_given < 1 || n_given != round(n_given))
+      stop("n must be one positive whole number: the sample size stated in the question.", call. = FALSE)
+    cnt <- as.numeric(fr) / sum(fr) * n_given
+    if (all(abs(cnt - round(cnt)) < 1e-6)) {
+      fr <- stats::setNames(round(cnt), names(fr)); is_props <- FALSE
+      notes <- c(notes, sprintf("The values were read as proportions / percentages; with n = %s the counts are f_k = p_k x n.", .f(n_given)))
+    } else
+      notes <- c(notes, sprintf("With n = %s, p_k x n is not a whole number for every value (the proportions look rounded), so counts are not shown.", .f(n_given)))
+  }
   if (!is.null(Fc$guess)) {
     q <- paste0("\"", Fc$guess, "\"", collapse = ", ")
     notes <- c(notes, sprintf("%s looks ordinal (%s) but R keeps text in alphabetical order. Re-run with order = c(%s), or create the factor: %s <- factor(%s, levels = c(%s)).",
@@ -221,7 +233,7 @@ desc_freq <- function(x, order = NULL, sort = c("none", "decreasing", "increasin
   shown <- .with_total(tab, if (is_props) list(Prop = 1, Percent = 100) else list(Count = n, Prop = 1, Percent = 100))
   type_lab <- switch(type, binary = "qualitative nominal (binary)", nominal = "qualitative nominal", ordinal = "qualitative ordinal",
                      discrete = "quantitative discrete", classes = "measured in classes")
-  lines <- c(sprintf("Variable: %s   n = %s   K = %d distinct values   type: %s", xlab, if (is_props) "unknown" else .f(n), length(fr), type_lab), "",
+  lines <- c(sprintf("Variable: %s   n = %s   K = %d distinct values   type: %s", xlab, if (!is_props) .f(n) else if (!is.null(n_given)) .f(n_given) else "unknown", length(fr), type_lab), "",
              .table_lines(shown),
              "", paste0(if (is_props) "Prop = p_k" else "Count = f_k   Prop = p_k = f_k / n", if (ordered) "   Cum.Prop = F_k = p_1 + ... + p_k" else
                           "   (no cumulative frequencies: the categories have no order)"))

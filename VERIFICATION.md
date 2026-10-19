@@ -8,6 +8,21 @@ does not make it permitted there.
 All checks below ran on 2026-10-13 in a Linux container
 (R, testthat edition 3, `LANG=C.UTF-8`). Anything not listed as run was not run.
 
+## 0.13.0 — phrasing game and frequency-list fixes, checked 2026-10-19
+
+| Check | Result |
+|---|---|
+| Full suite from source | 173 tests, 1262 expectations, 0 failed, 0 skipped |
+| `R CMD check --no-manual statcram_0.13.0.tar.gz` | **Status: OK**; tests `[ FAIL 0 \| WARN 0 \| SKIP 1 \| PASS 1257 ]` (the same data-raw skip) |
+| Scorer sanity | all 199 rounds score 100 against their own canon text; an empty answer scores at most 15 |
+| Flags | missing *contain* / *vary* (6I.03), *approximately* (qualifier), missing negation (5N.09) are flagged; a full paraphrase of 6I.03 scores >= 85 with no flag |
+| Variants | 1.02 picks ORDINAL for an ordinal answer; `variant =` honoured; unknown variant / id errors |
+| Game | scripted play: hint (-10), skip, stop, result, error-log entry, history, `review = TRUE`, section rounds, menu `g` |
+| Frequency lists | proportions + `n = 220` rebuild counts 66/55/55/33/11 and show n = 220; variable named `products`; `_long` table numeric; text labels stay ordered factors |
+
+Not verified: how well the word-matching score agrees with a human marker. It is a check on
+wording, not a grade.
+
 ## 0.12.0 — phrasing bank (`sc_phrasing()`), checked 2026-10-19
 
 | Check | Result |

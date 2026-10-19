@@ -4,7 +4,7 @@
 > during it. Use the answer bank to revise and memorise beforehand; do not open statcram or exported
 > cards at the exam. At the exam use only what the rules allow (R, RStudio, UBStats, the R manual).
 
-Install: `install.packages("statcram_0.12.0.tar.gz", repos = NULL, type = "source")`, then
+Install: `install.packages("statcram_0.13.0.tar.gz", repos = NULL, type = "source")`, then
 `library(statcram)`. Everything below works offline and without shiny, except `sc_answers_app()`.
 
 | Command | What it does |
@@ -41,7 +41,14 @@ Your phrasing bank (167 source-adapted cases, 10 verbatim excerpts, your error l
 | `sc_phrasing(what = "verbs")`, `"notation"`, `"scope"`, `"sources"` | the other parts of the file |
 | `sc_phrasing("qnorm", list = TRUE)` | the matches as a data frame (no printing) |
 | `sc_notes("bank")` | the whole file as written |
-| `sc(9, 6)` | the same from the menu: section code, case id, `v` verbs, `n` notation, `x` excerpts, `e` error log, or words |
+| `sc(9, 6)` | the same from the menu: section code, case id, `g` game, `v` verbs, `n` notation, `x` excerpts, `e` error log, or words |
+| `sc_phrasing_game()` | game, 10 random rounds: type your answer, get a score 0-100, missing key terms, `! MISSING VERB`, `! QUALIFIER`, `! NEGATION`, then the canon sentence |
+| `sc_phrasing_game(n = 5, section = "6I")` / `query = "qnorm"` / `id = c("5N.05", "6I.13")` | choose the rounds |
+| `sc_phrasing_game(review = TRUE)` | replay the rounds you scored below 70 this session |
+| `sc_phrasing_score("6I.03", "your answer")` | score one answer without the game (e.g. a longer one from the editor) |
+
+In the game: type the answer and press Enter; `h` = hint (-10 points), Enter alone = skip, `q` = stop.
+Scoring is word matching (55% key terms, 35% crucial verbs, 10% negation), not meaning.
 
 Sources: `M1` Module 1 exercises, `P24` 1st partial 22 Oct 2024, `P25` 1st partial 14 Oct 2025,
 `S26JAN` 2nd partial 9 Jan 2026 (one-sample CI parts only), `G26JAN` general exam 30 Jan 2026,

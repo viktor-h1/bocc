@@ -42,3 +42,29 @@ test_that("frequency list, cancel, and edit of an existing table", {
     expect_equal(get("ch", envir = .GlobalEnv)$count, c(151, 120, 140))
   })
 })
+
+test_that("frequency list of a count variable: proportions + n, variable name, numeric long table", {
+  in_global(list(), {
+    # 220 customers, relative frequencies of the number of products (exam-style table)
+    scripted(c("4", "5", "products", "1 2 4 5 8", "2", "0.3 0.25 0.25 0.15 0.05", "", "pp"), sc_table())
+    pp <- get("pp", envir = .GlobalEnv)
+    out <- capture.output(desc_freq(pp, n = 220))
+    expect_true(any(grepl("Variable: products   n = 220", out, fixed = TRUE)))
+    expect_true(any(grepl("quantitative discrete", out, fixed = TRUE)))
+    expect_true(any(grepl("with n = 220 the counts are f_k = p_k x n", out, fixed = TRUE)))
+    expect_true(any(grepl("= 2.95", out, fixed = TRUE)))
+    expect_true(any(grepl("n = unknown", capture.output(desc_freq(pp)), fixed = TRUE)))
+    expect_true(any(grepl("not a whole number", capture.output(desc_freq(pp, n = 221)), fixed = TRUE)))
+    expect_error(desc_freq(pp, n = 2.5), "positive whole number")
+    # counts and the one-row-per-unit table: numeric labels stay numeric
+    s <- scripted(c("4", "5", "products", "1 2 4 5 8", "1", "66 55 55 33 11", "", "pc", "y"), sc_table())
+    pl <- get("pc_long", envir = .GlobalEnv)
+    expect_true(is.numeric(pl$products))
+    expect_equal(as.vector(table(pl$products)), c(66, 55, 55, 33, 11))
+    expect_true(any(grepl("quantitative discrete", capture.output(desc_freq(pl$products)), fixed = TRUE)))
+    expect_true(any(grepl("Variable: products   n = 220", capture.output(desc_freq(get("pc", envir = .GlobalEnv))), fixed = TRUE)))
+    # text labels still become a factor in the order typed
+    scripted(c("4", "3", "size", "small medium large", "1", "5 6 7", "", "sz", "y"), sc_table())
+    expect_equal(levels(get("sz_long", envir = .GlobalEnv)$size), c("small", "medium", "large"))
+  })
+})
