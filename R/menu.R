@@ -164,6 +164,24 @@
   }
   as.call(c(as.name("desc_cv"), lapply(ex, str2lang)))
 }
+# Five-number summaries side by side: raw vectors, class tables, or quartiles typed from the question.
+.m_desc_fivenum <- function() {
+  args <- list()
+  repeat {
+    k <- length(args) + 1
+    d <- .ask_data(sprintf("variable or sample %d (raw data or a class table)", k), "both", allow_summary = TRUE)
+    if (isTRUE(d$summary)) {
+      nm <- .mq(sprintf("Name of sample %d", k), sprintf("sample%d", k))
+      q <- .ask_nums("Q1, median, Q3 from the question (3 numbers)", 3)
+      mm <- .ask_nums("Min and max if given (2 numbers; Enter = not given)", 2, allow_empty = TRUE)
+      v <- c(min = if (length(mm)) mm[1] else NA, Q1 = q[1], median = q[2], Q3 = q[3], max = if (length(mm)) mm[2] else NA)
+      v <- v[!is.na(v)]
+      args[[if (.syntactic(nm)) nm else make.names(nm)]] <- .code(paste0("c(", paste(sprintf("%s = %s", base::names(v), v), collapse = ", "), ")"))
+    } else args[[length(args) + 1]] <- .code(d$expr)
+    if (length(args) >= 2 && !.ask_yes("Add another variable or sample?", FALSE)) break
+  }
+  .mk("desc_fivenum", args)
+}
 # Optional Freq(X <= x) / Freq(X >= x) / Freq(a <= X <= b); levels = ordered categories (NULL for numbers).
 .ask_cum_query <- function(levels = NULL, approx = FALSE) {
   i <- .ask_choice(sprintf("Also a%s proportion?", if (approx) "n (approximate)" else " cumulative"),
@@ -860,7 +878,8 @@
     list("Sample proportion of one category + its estimated standard error", .m_desc_prop),
     list("Two variables with few values: joint / conditional distributions, chi-square, Cramer's V", .m_desc_crosstab),
     list("Two numerical variables: scatterplot, covariance, correlation, regression line", .m_desc_cor),
-    list("What type is each variable? Overview of a data frame (qualitative / quantitative, graphs, measures)", .m_desc_vars))),
+    list("What type is each variable? Overview of a data frame (qualitative / quantitative, graphs, measures)", .m_desc_vars),
+    list("Compare several variables / samples side by side: five-number summaries + boxplots (raw data, class tables or given quartiles)", .m_desc_fivenum))),
   list(title = "Probability & random variables", items = list(
     list("Events: union, intersection, conditional probability, independence", .m_prob_events),
     list("Law of total probability and Bayes' theorem", .m_prob_bayes),

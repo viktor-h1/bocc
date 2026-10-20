@@ -48,6 +48,7 @@ sc_guide <- function() {
     "  game: type your answer, get a score and the crucial verbs you missed: sc_phrasing_game(n = 5, section = \"6I\")",
     "",
     "Describe data (no population claim)",
+    "  compare samples / variables side by side (raw, classes or given quartiles) desc_fivenum()  sc(1,10)",
     "  frequency table / cumulative / Freq(X <= x), few values .. desc_freq()      sc(1,1)",
     "  numbers grouped into intervals, or measured in classes ... desc_classes()   sc(1,2)",
     "     ([0,50), 10-20 ...): densities, histogram, ogive, approx. Freq(X <= x)",
@@ -112,13 +113,13 @@ sc_guide <- function() {
 }
 
 .index <- data.frame(
-  topic = c(rep("1 Describe", 9), rep("2 Probability", 12), rep("3 Estimation / CIs", 6),
+  topic = c(rep("1 Describe", 10), rep("2 Probability", 12), rep("3 Estimation / CIs", 6),
             rep("4 Hypothesis tests", 6), rep("5 Power / sample size", 6), rep("6 Chi-square", 2),
             rep("7 Regression", 6), rep("8 Data tools", 3), rep("9 Guide", 12)),
-  menu = c(paste0("sc(1,", 1:9, ")"), paste0("sc(2,", 1:12, ")"), paste0("sc(3,", 1:6, ")"), paste0("sc(4,", 1:6, ")"),
+  menu = c(paste0("sc(1,", 1:10, ")"), paste0("sc(2,", 1:12, ")"), paste0("sc(3,", 1:6, ")"), paste0("sc(4,", 1:6, ")"),
            paste0("sc(5,", 1:6, ")"), paste0("sc(6,", 1:2, ")"), paste0("sc(7,", 1:6, ")"),
            "sc(8,1)", "sc(8,3)", "sc(8,6)", "sc(9,1)", "sc(9,2)", "sc(9,3)", "sc(9,4)", "sc(9,5)", "sc(9,6)", "sc(9,6)", "", "", "", "", ""),
-  fun = c("desc_freq", "desc_classes", "desc_summary", "desc_compare", "desc_cv", "desc_prop", "desc_crosstab", "desc_cor", "desc_vars",
+  fun = c("desc_freq", "desc_classes", "desc_summary", "desc_compare", "desc_cv", "desc_prop", "desc_crosstab", "desc_cor", "desc_vars", "desc_fivenum",
           "prob_events", "prob_bayes", "rv_discrete", "prob_binom", "prob_unif", "prob_normal", "prob_t", "prob_chisq",
           "rv_lincomb", "rv_joint", "rv_iid", "rv_prop",
           "ci_mean", "ci_prop", "ci_paired", "ci_2means", "ci_2props", "est_mean",
@@ -137,6 +138,7 @@ sc_guide <- function() {
            "joint / conditional distributions, chi-square, Cramer's V",
            "scatter, covariance, correlation, regression line",
            "type of each variable in a data frame; graphs and measures that fit",
+           "five-number summaries side by side (raw data, class tables, given quartiles) + boxplots",
            "P(A or B), P(A and B), P(A | B), independence",
            "total probability, Bayes' theorem",
            "E(X), Var(X), F(x), median of a discrete r.v.",

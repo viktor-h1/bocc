@@ -4,7 +4,7 @@
 > during it. Use the answer bank to revise and memorise beforehand; do not open statcram or exported
 > cards at the exam. At the exam use only what the rules allow (R, RStudio, UBStats, the R manual).
 
-Install: `install.packages("statcram_0.13.3.tar.gz", repos = NULL, type = "source")`, then
+Install: `install.packages("statcram_0.14.0.tar.gz", repos = NULL, type = "source")`, then
 `library(statcram)`. Everything below works offline and without shiny, except `sc_answers_app()`.
 
 | Command | What it does |

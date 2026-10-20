@@ -1,3 +1,14 @@
+# statcram 0.14.0
+
+* New `desc_fivenum()` (menu `sc(1, 10)`): five-number summaries of two or more variables or
+  samples side by side, with range, IQR, the two halves of the box, mean and SD, side-by-side
+  boxplots on one scale, and exam wording on location, variability and shape. Each input can be
+  raw data (exact quartiles, as `quantile()`), a class table from `sc_table()` (quartiles by
+  interpolation, flagged approximate) or quartiles given in the question,
+  e.g. `desc_fivenum(Bidding$Bid, Bid_N)` or
+  `desc_fivenum(Bid = Bidding$Bid, Bid_N = c(Q1 = 10, median = 24, Q3 = 36))`.
+  In the menu, `s` at the variable prompt types the given quartiles.
+
 # statcram 0.13.3
 
 * Menu variable prompts: typing the name of a data frame (e.g. `Bid_N`) no longer stops with

@@ -120,3 +120,31 @@ test_that("T&E 3.16 / 3.17: SD depends on the unit, CV does not", {
   expect_equal(round(assets$CV[1], 3), 1.682)
   expect_equal(assets$CV, c(.609 / .362, .151 / .072, .137 / .075, .272 / .151))
 })
+
+test_that("desc_fivenum puts raw data, a class table and given quartiles side by side", {
+  cl <- data.frame(class = c("0-10", "10-20", "20-40", "40-60"), lower = c(0, 10, 20, 40), upper = c(10, 20, 40, 60),
+                   freq = c(40, 60, 70, 30))
+  attr(cl, "statcram_kind") <- "classes"; attr(cl, "statcram_values") <- "freq"
+  x <- c(10, 22, 30, 31, 35, 36, 37, 40, 44, 54)
+  r <- q(desc_fivenum(Bid = x, New = cl))
+  expect_equal(unname(r$stats[, "Bid"]), unname(c(min(x), quantile(x, c(.25, .5, .75)), max(x))))
+  expect_equal(round(unname(r$stats[c("Q1", "median", "Q3"), "New"]), 4), c(11.6667, 20, 34.2857))
+  expect_equal(unname(r$stats[c("min", "max"), "New"]), c(0, 60))
+  expect_true(any(grepl("approximate", r$wording)))
+  g <- q(desc_fivenum(Bid = x, Bid_N = c(Q1 = 10, median = 24, Q3 = 36)))
+  expect_equal(unname(g$stats[, "Bid_N"]), c(NA, 10, 24, 36, NA))
+  txt <- paste(g$lines, collapse = "\n")
+  for (lab in c("statistic", "Median", "IQR", "Q3 - Q2", "given", "raw data")) expect_match(txt, lab, fixed = TRUE)
+  h <- q(desc_fivenum(Bid = x + 3, Bid_N = c(Q1 = 10, median = 24, Q3 = 36)))
+  expect_match(paste(h$lines, collapse = "\n"), "Q3 of Bid_N (36) < median of Bid (38.5)", fixed = TRUE)
+  expect_error(desc_fivenum(x), "two or more")
+  expect_error(desc_fivenum(x, c(Q1 = 1, foo = 2)), "name the given numbers")
+})
+
+test_that("menu 1,10 builds desc_fivenum from raw data and typed quartiles", {
+  in_global(list(dd = data.frame(Bid = c(10, 22, 30, 31, 35, 36, 37, 40, 44, 54))), {
+    r <- scripted(c("1", "10", "dd$Bid", "s", "Bid_N", "10 24 36", "", "n", "q"), sc())
+    expect_true(any(grepl("desc_fivenum(dd$Bid, Bid_N = c(Q1 = 10, median = 24, Q3 = 36))", r$out, fixed = TRUE)))
+    expect_true(any(grepl("Five-number summaries side by side", r$out, fixed = TRUE)))
+  })
+})
