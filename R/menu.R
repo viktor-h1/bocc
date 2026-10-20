@@ -246,7 +246,7 @@
   if (is.null(lv) || length(lv) < 2 || length(lv) > 15) return(NULL)
   cat("Categories of Y:", paste(sprintf("%d %s", seq_along(lv), lv), collapse = "   "), "\n")
   repeat {
-    o <- .mq("Share of a group of Y categories in each X group (e.g. 'high veryhigh' or their numbers; Enter = skip)", "")
+    o <- .mq("Percentage of one Y category (or several) within each X group, Freq(Y = ... | X) (e.g. 'Likely' or its number; Enter = skip)", "")
     if (!nzchar(o)) return(NULL)
     tok <- .split_values(o)
     idx <- suppressWarnings(as.integer(tok))
@@ -266,8 +266,9 @@
     if (!is.null(m) && ncol(m) <= 15) a$order_y <- .ask_order(colnames(m), "the column variable")
     if (!is.null(m)) ylv <- colnames(m)
   } else {
-    dx <- .ask_data("the ROW variable X (e.g. the grouping / explanatory one)", "vector")
-    dy <- .ask_data("the COLUMN variable Y (e.g. the response)", "vector")
+    cat("Conditional distributions of Y | X: the groups you compare are X (rows), the variable compared across them is Y (columns).\n")
+    dx <- .ask_data("the CONDITIONING variable X: the groups you compare (rows; e.g. Type)", "vector")
+    dy <- .ask_data("the variable Y whose distribution you compare across those groups (columns; e.g. WouldRepeat)", "vector")
     a <- list(x = .code(dx$expr), y = .code(dy$expr))
     for (w in c("x", "y")) {
       v <- .eval_expr(if (w == "x") dx$expr else dy$expr)

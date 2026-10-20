@@ -1,3 +1,10 @@
+# statcram 0.13.2
+
+* Menu `sc(1, 7)` now names the roles plainly: first "the CONDITIONING variable X: the groups you
+  compare" (rows), then "the variable Y whose distribution you compare across those groups"
+  (columns), and asks for the percentage of a Y category within each group, Freq(Y = ... | X).
+  The analysis is unchanged.
+
 # statcram 0.13.1
 
 * `desc_compare()` (menu `sc(1, 4)`) with a categorical variable in the "numerical variable" slot,
