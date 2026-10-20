@@ -114,6 +114,19 @@
     val <- tryCatch(.eval_expr(a), error = function(e) e)
     if (inherits(val, "error")) { cat("  R could not use that: ", conditionMessage(val), "\n", sep = ""); next }
     if (is.null(val) || is.function(val)) { cat("  That is not data.\n"); next }
+    if (want == "vector" && is.data.frame(val) && ncol(val) > 1) {
+      k <- .kind_attr(val)
+      if ((!is.na(k) && k == "classes") || all(c("lower", "upper") %in% names(val))) {
+        cat(sprintf(paste0("  %s is a class table (classes with frequencies), not raw data.\n",
+                           "  Its quartiles, median and five-number summary come from desc_classes(%s)   [menu: sc(1,2)];\n",
+                           "  they are approximate (values assumed spread evenly within each class). Choose raw data here.\n"), a, a))
+        next
+      }
+      cols <- names(val)
+      j <- .ask_choice(sprintf("%s is a data frame: which column?", a),
+                       sprintf("%s$%s   %s", a, cols, vapply(val, function(v) .kind_tag(v), "")))
+      return(list(expr = paste0(a, "$", if (.syntactic(cols[j])) cols[j] else paste0("`", cols[j], "`")), summary = FALSE))
+    }
     return(list(expr = a, summary = FALSE))
   }
 }

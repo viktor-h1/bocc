@@ -1,3 +1,10 @@
+# statcram 0.13.3
+
+* Menu variable prompts: typing the name of a data frame (e.g. `Bid_N`) no longer stops with
+  "is a data frame with 4 columns". An ordinary data frame offers its columns to pick; a class
+  table entered with `sc_table()` (classes with frequencies) explains that its quartiles and
+  five-number summary come from `desc_classes()` (menu `sc(1, 2)`) and are approximate.
+
 # statcram 0.13.2
 
 * Menu `sc(1, 7)` now names the roles plainly: first "the CONDITIONING variable X: the groups you

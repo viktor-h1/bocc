@@ -75,3 +75,18 @@ test_that("guide, index, recipes and notes print", {
   idx <- statcram:::.index
   expect_true(all(vapply(idx$fun, exists, logical(1), envir = asNamespace("statcram"))))
 })
+
+test_that("a typed data frame at a variable prompt: pick a column, or be sent to desc_classes for a class table", {
+  in_global(list(dd = data.frame(a = c(1, 2, 3, 4), b = c(5, 6, 7, 9))), {
+    r <- scripted(c("1", "3", "dd", "2", "", "q"), sc())
+    expect_true(any(grepl("dd is a data frame: which column?", r$out, fixed = TRUE)))
+    expect_true(any(grepl("desc_summary(x = dd$b", r$out, fixed = TRUE)))
+  })
+  cl <- data.frame(class = c("0-10", "10-20"), lower = c(0, 10), upper = c(10, 20), freq = c(4, 6))
+  attr(cl, "statcram_kind") <- "classes"
+  in_global(list(cl = cl), {
+    r <- scripted(c("1", "3", "cl", "q"), sc())
+    expect_true(any(grepl("cl is a class table", r$out, fixed = TRUE)))
+    expect_true(any(grepl("desc_classes(cl)", r$out, fixed = TRUE)))
+  })
+})

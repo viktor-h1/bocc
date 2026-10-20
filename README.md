@@ -1,4 +1,4 @@
-# statcram 0.13.2
+# statcram 0.13.3
 
 A study companion for 30001 Statistics (R, RStudio and UBStats). Practise with the course data
 and the past papers, check your answers against the official solutions, and learn the UBStats and
@@ -21,7 +21,7 @@ Pure R, no compilation, no internet needed after installing.
 
 ```r
 # from the built file
-install.packages("statcram_0.13.2.tar.gz", repos = NULL, type = "source")
+install.packages("statcram_0.13.3.tar.gz", repos = NULL, type = "source")
 # or from GitHub
 remotes::install_github("viktor-h1/bocc", ref = "claude/quirky-gates-9i7hvr")
 
