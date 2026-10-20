@@ -1,3 +1,11 @@
+# statcram 0.13.1
+
+* `desc_compare()` (menu `sc(1, 4)`) with a categorical variable in the "numerical variable" slot,
+  e.g. a rating scale such as `WouldRepeat` (VeryUnlikely ... VeryLikely), stopped with
+  "missing value where TRUE/FALSE needed". It now says the variable is categorical and gives the
+  call for its conditional distributions, e.g. `desc_crosstab(Bidding$Type, Bidding$WouldRepeat)`
+  (menu `sc(1, 7)`). Numbers stored as a factor still work.
+
 # statcram 0.13.0
 
 ## Phrasing game (study use only)

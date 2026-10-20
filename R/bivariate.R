@@ -181,6 +181,16 @@ desc_compare <- function(x, group, group2 = NULL, probs = c(0.05, 0.10, 0.90, 0.
   xlab <- .label(qx); glab <- .label(qg)
   xx <- .one_column(x, xlab); g <- .one_column(group, glab)
   if (length(xx) != length(g)) stop("x and group must have the same length.", call. = FALSE)
+  # a categorical x (e.g. a rating scale VeryUnlikely ... VeryLikely) has no boxplot or mean:
+  # say so and point to the conditional distributions instead of failing on NAs
+  if ((is.factor(xx) || is.character(xx) || is.logical(xx)) &&
+      anyNA(suppressWarnings(as.numeric(as.character(xx[!is.na(xx)]))))) {
+    cats <- .cats(xx[!is.na(xx)])
+    stop(sprintf(paste0("%s is categorical (%d categories: %s%s), not numerical, so boxplots, means and quartiles of numbers do not apply. ",
+                        "To compare its distribution across %s use the conditional distributions: desc_crosstab(%s, %s)   [menu: sc(1,7)]."),
+                 xlab, length(cats), paste(head(cats, 6), collapse = ", "), if (length(cats) > 6) ", ..." else "",
+                 glab, paste(deparse(qg), collapse = ""), paste(deparse(qx), collapse = "")), call. = FALSE)
+  }
   if (!is.null(group2)) {
     g2lab <- .label(substitute(group2)); g2 <- .one_column(group2, g2lab)
     if (length(g2) != length(g)) stop("group2 must have the same length as group.", call. = FALSE)

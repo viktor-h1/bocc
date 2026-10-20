@@ -99,3 +99,13 @@ test_that("menu: crosstab with ordinal column, two-variable correlation", {
     expect_true(any(grepl("Correlation r_XY", s2$out)))
   })
 })
+
+test_that("desc_compare refuses a categorical x and points to the conditional distributions", {
+  d <- data.frame(Type = factor(rep(c("Inside", "Outside", "Hybrid"), each = 4)),
+                  WouldRepeat = factor(rep(c("Unlikely", "Neutral", "Likely", "VeryLikely"), 3),
+                                       levels = c("Unlikely", "Neutral", "Likely", "VeryLikely")))
+  expect_error(desc_compare(d$WouldRepeat, d$Type), "categorical \\(4 categories: Unlikely, Neutral, Likely, VeryLikely\\)")
+  expect_error(desc_compare(d$WouldRepeat, d$Type), "desc_crosstab(d$Type, d$WouldRepeat)", fixed = TRUE)
+  d$code <- factor(rep(c("1", "2", "3"), 4))           # numbers stored as a factor still work
+  expect_silent(q(desc_compare(d$code, d$Type)))
+})
